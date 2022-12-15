@@ -1,0 +1,5 @@
+rustup target add x86_64-pc-windows-gnu
+mingw64-winpthreads-static
+sudo dnf install  mingw64-gcc
+sudo dnf install  mingw32-gcc
+
