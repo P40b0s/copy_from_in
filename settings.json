@@ -1,6 +1,8 @@
 {
-    "in_dir": "in",
-    "out_dir": "out",
-    "timer": 200000
+    "medo_compliete_in_dir": "in",
+    "medo_in_dir":  "in",
+    "architector_in_dir": "out",
+    "timer": 200000,
+    "except_dirs_file": "except.dirs"
 }
 

@@ -1,6 +1,11 @@
 mod copy;
 mod settings;
-use std::{path::{PathBuf}, thread, time::Duration};
+mod app;
+pub use app::{AppState, Excludes};
+pub use io::DirectoriesSpy;
+mod io;
+
+use std::{path::{PathBuf}, thread, time::Duration, process::{exit, ExitCode}};
 extern crate chrono;
 use chrono::Local;
 use settings::Settings;
@@ -9,29 +14,15 @@ use settings::Settings;
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d][%H:%M:%S";
 fn main()
 {
-   if let Some(settings) = Settings::load_settings()
-   {
-        let mut except = copy::get_except_names(&settings);
-        if except.is_some()
-        {
-            let mut except = except.as_mut().unwrap();
-            loop 
-            {
-                run_process(&settings, &mut except);
-                thread::sleep(Duration::from_millis(settings.timer));
-            }
-        }
-        else
-        {
-            println!("Ошибка получения списка фафлов...");
-            std::io::stdin().read_line(&mut String::new()).unwrap();
-        }
-   }
-   else 
-   {
-        println!("Ошибка чтения настроек...");
-        std::io::stdin().read_line(&mut String::new()).unwrap();
-   }
+    //let config = app::app_config::AppConfig::load().unwrap_or_default();
+    let settings = Settings::initialize();
+    if settings.is_none()
+    {
+        exit(0x0100);
+    }
+    AppState::initialize(settings.unwrap());
+    AppState::initialize_logging();
+   
 }
 
 fn run_process(settings: &Settings, except: &mut Vec<String>)
@@ -49,7 +40,7 @@ fn run_process(settings: &Settings, except: &mut Vec<String>)
                 source.push(d.as_str());
                 let dt = Local::now();
                 println!("{} Обнаружена директория {}, копирую в {}", dt.format(DATE_FORMAT_STR),  source.display(), target.display());
-                copy::copy_recursively(source.as_path(), target.as_path());
+                let _ = copy::copy_recursively(source.as_path(), target.as_path());
             }
         }
     }
