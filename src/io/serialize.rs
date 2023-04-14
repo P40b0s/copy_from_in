@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use serde_json::Error;
 
 ///Сериализация объекта в строковый формат
-pub fn serialize<T>(json : T, file_name : &str, directory: Option<&str>) where T : Clone + Serialize
+pub fn serialize<T>(json : T, file_name : &Path, directory: Option<&str>) where T : Clone + Serialize
 {
     let mut work_dir = PathBuf::default();
     if directory.is_some()
@@ -46,7 +46,7 @@ pub fn serialize<T>(json : T, file_name : &str, directory: Option<&str>) where T
 
 ///Читение файл в строку из чистого utf-8
 /// если false то файл не найден и был создан новый
-pub fn deserialize<'de, T>(file_path: &Path) -> (bool, T) where T : Clone + DeserializeOwned + Default
+pub fn deserialize<'de, T>(file_path: &Path) -> (bool, T) where T : Clone + DeserializeOwned + Default + Serialize
 {
     let file = std::fs::read_to_string(file_path);
     if file.is_err()
@@ -58,10 +58,14 @@ pub fn deserialize<'de, T>(file_path: &Path) -> (bool, T) where T : Clone + Dese
     let result: Result<T, Error> = serde_json::from_str(&file.unwrap());
     if result.is_err()
     {
-        let err_settings = Path::new(file_path).join(".structure_error");
+        //копируем бракованный файл чтобы можно было потом посмотреть в чем проблема  и скопировать оттуда настройки
+        let err_settings = Path::new(file_path).join(".deserialization_error");
         std::fs::copy(file_path, &err_settings);
-        error!("Ошибка десериализации файла {}->{}, будет создан новый файл", file_path.display(), result.err().unwrap());
-        return (true, T::default());
+        error!("Ошибка десериализации файла {}->{}, будет создан новый файл c настройками по умолчанию", file_path.display(), result.err().unwrap());
+        let default = T::default();
+
+        serialize(default, file_path, None);
+        return (false, T::default());
     }
     return (true, result.unwrap());
 }

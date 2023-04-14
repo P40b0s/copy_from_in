@@ -1,9 +1,10 @@
-use std::{self, path::{Path, PathBuf}, sync::Mutex};
+use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap};
 use logger::{error, info};
 use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
+use crate::{settings::{Settings, Task}, app::app_state::{self, AppState}};
 
-use crate::{settings::Settings, app::app_state::{self, AppState}, Excludes};
+pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 
 pub struct DirectoriesSpy;
 
@@ -41,52 +42,120 @@ impl DirectoriesSpy
             error!("{}", dir_searcher_runtime.err().unwrap());
             return None;    
         }
-        
     }
     //TODO сделать инициализацию для первого запуска
-    pub fn check_for_new_packets<F : Send + Sync>(path: &Path, th_name: &str, f: F) where F: Fn(String)
+    pub fn check_for_new_packets<F : Send + Sync + 'static>(task: &Task, f: F) where F: Fn(&String)
     {
-        let pb = path.to_path_buf();
-        let paths = DirectoriesSpy::get_dirs(&pb);
+        let paths = DirectoriesSpy::get_dirs(&task.source_dir);
+        let task = task.clone();
+        DirectoriesSpy::deserialize_exclude(&task);
         if paths.is_none()
         {
             return;
         }
-        if let Some(runtime) = DirectoriesSpy::get_runtime(th_name)
+        //let handle = Handle::current();
+
+        // tokio::task::spawn_blocking(|| 
+        // {
+        //     inner_example(handle);
+        // })
+        // .await
+        // .expect("Blocking task panicked");
+        if let Some(runtime) = DirectoriesSpy::get_runtime(&task.thread_name)
         {
-            runtime.block_on(
-            tokio::spawn(async 
+            let rt = runtime.block_on(
+            async move
             {
-                let time = AppState::get_settings().timer;
-                let interval = tokio::time::interval(std::time::Duration::from_millis(time));
+                let mut interval = tokio::time::interval(std::time::Duration::from_millis(task.timer));
                 loop 
                 {
                     let mut dirs = vec![];
                     let mut is_change = false;
-                    if let Some(reader) = paths
+                    if let Some(reader) = paths.as_ref()
                     {
                         for d in reader
                         {
-                            if !Excludes::in_excludes(&d)
+                            if DirectoriesSpy::add(&task.thread_name, d)
                             {
                                 is_change = true;
-                                Excludes::add(&d);
-                                info!("Процесс {} нашел новый пакет {}", th_name, &d);
+                                info!("Процесс {} нашел новый пакет {}", &task.thread_name, d);
                                 f(d);
-                                dirs.push(d);
+                                dirs.push(d.to_owned());
                             }    
                         }
                         if is_change
                         {
-                            Excludes::serialize();
+                            DirectoriesSpy::serialize_exclude(&task.thread_name);
                         }
                     }
                     interval.tick().await;
                 }
-            }));
+            });
+
         }
     }
-   
+
+
+    fn get(thread_name: &str) -> Option<Vec<String>>
+    {
+        let hm = EXCLUDES.get().unwrap().lock().unwrap();
+        let ex = hm.get(thread_name);
+        ex.cloned()
+    }
+    fn add(thread_name: &str, dir: &String) -> bool
+    {
+        if !EXCLUDES.get().unwrap().lock().unwrap().contains_key(thread_name)
+        {
+            EXCLUDES.get().unwrap().lock().unwrap().insert(thread_name.to_owned(), vec![dir.to_owned()]);
+            return true;
+        }
+        else 
+        {
+            if let Some(ex) = EXCLUDES.get().unwrap().lock().unwrap().get_mut(thread_name)
+            {
+                ex.push(dir.to_owned());
+                return true;
+            }
+        }
+        return false;
+    }
+    fn serialize_exclude(thread_name: &str,)
+    {
+        let concat_path = [thread_name, ".txt"].concat();
+        let file_name = Path::new(&concat_path);
+        let list = EXCLUDES.get().unwrap().lock().unwrap();
+        if let Some(vec) = list.get(thread_name)
+        {
+            crate::io::serialize(vec, file_name, None);
+        }
+
+        
+    }
+    fn deserialize_exclude(task: &Task)
+    {
+        if let Some(excludes) = EXCLUDES.get()
+        {
+            if !EXCLUDES.get().unwrap().lock().unwrap().contains_key(task.thread_name.as_str())
+            {
+                let path = Path::new(&task.thread_name).join(".txt");
+                let ex = crate::io::deserialize::<Vec<String>>(&path);
+                EXCLUDES.get().unwrap().lock().unwrap().insert(task.thread_name.clone(), ex.1);
+            }
+        }
+        else 
+        {
+            EXCLUDES.set(Mutex::new(HashMap::new()));
+        }
+    }
+    
+}
+
+
+
+
+
+
+
     // pub fn get_except_names() -> Option<Vec<String>>
     // {
     //     let path = app_state::get_settings();
@@ -122,7 +191,7 @@ impl DirectoriesSpy
     //         return None;
     //     }
     // }
-}
+
 
 
 // pub fn get_except_names(settings: &Settings) -> Option<Vec<String>>

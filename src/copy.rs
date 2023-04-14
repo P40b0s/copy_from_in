@@ -2,8 +2,24 @@ use crate::DirectoriesSpy;
 
 
 
-pub fn 
-pub fn run_copy_service_for_architector()
+
+
+#[cfg(test)]
+mod tests
 {
-    DirectoriesSpy::check_for_new_packets(path, f)
+    use crate::{DirectoriesSpy, AppState, app::STATE};
+
+    #[test]
+    fn test_directory_spy()
+    {
+        AppState::initialize();
+        let settings = &STATE.get().unwrap().lock().unwrap().settings;
+
+        let t = settings.tasks.iter().nth(0).unwrap();
+
+        DirectoriesSpy::check_for_new_packets(t, |found|
+        {
+            
+        });
+    }
 }

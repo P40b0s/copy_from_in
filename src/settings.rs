@@ -4,16 +4,18 @@ use serde::{Serialize, Deserialize};
 use logger::{error};
 
 //pub static SETTINGS: OnceCell<Mutex<Settings>> = OnceCell::new();
-
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Task
+{
+    pub source_dir : PathBuf,
+    pub target_dir: PathBuf,
+    pub timer : u64,
+    pub thread_name: String
+}
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings
 {
-    pub medo_compliete_in_dir : PathBuf,
-    pub medo_in_dir: PathBuf,
-    pub architector_in_dir : PathBuf,
-    pub timer : u64,
-    pub except_dirs_file: String
-
+    pub tasks: Vec<Task>
 }
 
 impl Settings
@@ -39,20 +41,21 @@ impl Settings
                 return None;
             }
         };
-        if !data.in_dir.exists()
+        for t in &data.tasks
         {
-            error!("Ошибка, директории in_dir = `{}` не существует", data.in_dir.display());
-            return None;
-        }
-        if !data.out_dir.exists()
-        {
-            error!("Ошибка, директории out_dir = `{}` не существует", data.out_dir.display());
-            return None;
+            if !t.source_dir.exists()
+            {
+                error!("Ошибка, директории `{}` не существует", t.source_dir.display());
+                return None;
+            }
+            if !t.target_dir.exists()
+            {
+                error!("Ошибка, директории `{}` не существует", t.target_dir.display());
+                return None;
+            }
         }
        Some(data)
     }
-
-
 }
 
 #[test]
@@ -60,7 +63,6 @@ fn testload()
 {
     if let Some(s) = Settings::initialize()
     {
-        assert_eq!(s.in_dir.display().to_string(), "in".to_owned());
-        assert_eq!(s.out_dir.display().to_string(), "out".to_owned());
+        assert_eq!(s.tasks.iter().nth(0).unwrap().thread_name, "architector_thread".to_owned());
     }
 }
