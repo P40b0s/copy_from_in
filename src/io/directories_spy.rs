@@ -1,8 +1,9 @@
-use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap};
-use logger::{error, info};
+use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap, time::Duration};
+use logger::{error, info, debug};
 use once_cell::sync::OnceCell;
-use tokio::runtime::Runtime;
-use crate::{settings::{Settings, Task}, app::app_state::{self, AppState}};
+use rayon::prelude::IntoParallelRefIterator;
+use tokio::{runtime::Runtime, task::JoinHandle};
+use crate::{settings::{Settings, Task}, app::app_state::{self, AppState, STATE}};
 
 pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 
@@ -43,56 +44,112 @@ impl DirectoriesSpy
             return None;    
         }
     }
-    //TODO сделать инициализацию для первого запуска
-    pub fn check_for_new_packets<F : Send + Sync + 'static>(task: &Task, f: F) where F: Fn(&String)
+
+    //Поток мы можем спавнить только в рантайме токио, поэтому вытащил эту функцию отдельно
+    //Думаю тут же надо осуществлять и обработку найденых пакетов
+    pub fn process_tasks()
     {
-        let paths = DirectoriesSpy::get_dirs(&task.source_dir);
-        let task = task.clone();
-        DirectoriesSpy::deserialize_exclude(&task);
-        if paths.is_none()
-        {
-            return;
-        }
-        //let handle = Handle::current();
-
-        // tokio::task::spawn_blocking(|| 
-        // {
-        //     inner_example(handle);
-        // })
-        // .await
-        // .expect("Blocking task panicked");
-        if let Some(runtime) = DirectoriesSpy::get_runtime(&task.thread_name)
-        {
-            let rt = runtime.block_on(
-            async move
+        //if let Some(rt) = DirectoriesSpy::get_runtime("processing_all_settings_tasks")
+        //{
+            tokio::spawn(async
             {
-                let mut interval = tokio::time::interval(std::time::Duration::from_millis(task.timer));
-                loop 
+                DirectoriesSpy::check_for_new_packets(|thread, found|
                 {
-                    let mut dirs = vec![];
-                    let mut is_change = false;
-                    if let Some(reader) = paths.as_ref()
-                    {
-                        for d in reader
-                        {
-                            if DirectoriesSpy::add(&task.thread_name, d)
-                            {
-                                is_change = true;
-                                info!("Процесс {} нашел новый пакет {}", &task.thread_name, d);
-                                f(d);
-                                dirs.push(d.to_owned());
-                            }    
-                        }
-                        if is_change
-                        {
-                            DirectoriesSpy::serialize_exclude(&task.thread_name);
-                        }
-                    }
-                    interval.tick().await;
-                }
+                    debug!("Сообщение от потока: {} -> найден новый пакет {}", thread, found);
+                });
             });
-
+        //}
+    }
+    ///Обработка осуществляется параллельно, но операция ожидается, поэтому все это надо запускать в процессе
+    pub fn check_for_new_packets<F : Send + Sync + 'static>(callback: F) where F: Fn(&String, &String)
+    {
+        let settings = &STATE.get().unwrap().lock().unwrap().settings;
+        let tasks = settings.tasks.clone();
+        let mut durations: HashMap<String, Duration> = HashMap::new();
+        //let task = copy_task.clone();
+        for t in &tasks
+        {
+            DirectoriesSpy::deserialize_exclude(t);
+            durations.insert(t.thread_name.to_owned(), std::time::Duration::from_millis(t.timer));
         }
+        rayon::scope(|scope|
+        {
+            for t in &tasks
+            {
+                scope.spawn(|task|
+                {
+                    
+                    loop 
+                    {
+                        let paths = DirectoriesSpy::get_dirs(&t.source_dir);
+                        if paths.is_none()
+                        {
+                            break;
+                        }
+                        //let mut dirs = vec![];
+                        let mut is_change = false;
+                        if let Some(reader) = paths.as_ref()
+                        {
+                            for d in reader
+                            {
+                                if DirectoriesSpy::add(&t.thread_name, d)
+                                {
+                                    is_change = true;
+                                    info!("Процесс {} нашел новый пакет {}", &t.thread_name, d);
+                                    callback(&t.thread_name, d);
+                                    //dirs.push(d.to_owned());
+                                }    
+                            }
+                            if is_change
+                            {
+                                DirectoriesSpy::serialize_exclude(&t.thread_name);
+                            }
+                        }
+                        //interval.tick().await;
+                        let delay = durations.get(&t.thread_name).unwrap();
+                        std::thread::sleep(delay.to_owned());
+                    }
+                })
+            }
+        });
+        //let delay = std::time::Duration::from_millis(task.timer);
+        // let _rt = std::thread::spawn(
+        // move ||
+        // {
+        //     loop 
+        //     {
+        //         for t in &tasks
+        //         {
+        //             let paths = DirectoriesSpy::get_dirs(&t.source_dir);
+        //             if paths.is_none()
+        //             {
+        //                 break;
+        //             }
+        //             //let mut dirs = vec![];
+        //             let mut is_change = false;
+        //             if let Some(reader) = paths.as_ref()
+        //             {
+        //                 for d in reader
+        //                 {
+        //                     if DirectoriesSpy::add(&t.thread_name, d)
+        //                     {
+        //                         is_change = true;
+        //                         info!("Процесс {} нашел новый пакет {}", &t.thread_name, d);
+        //                         callback(&t.thread_name, d);
+        //                         //dirs.push(d.to_owned());
+        //                     }    
+        //                 }
+        //                 if is_change
+        //                 {
+        //                     DirectoriesSpy::serialize_exclude(&t.thread_name);
+        //                 }
+        //             }
+        //             //interval.tick().await;
+        //             let delay = durations.get(&t.thread_name).unwrap();
+        //             std::thread::sleep(delay.to_owned());
+        //         } 
+        //     }
+        // });
     }
 
 
@@ -113,8 +170,16 @@ impl DirectoriesSpy
         {
             if let Some(ex) = EXCLUDES.get().unwrap().lock().unwrap().get_mut(thread_name)
             {
-                ex.push(dir.to_owned());
-                return true;
+                let d = dir.to_owned();
+                if !ex.contains(&d)
+                {
+                    ex.push(dir.to_owned());
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
             }
         }
         return false;
@@ -127,25 +192,19 @@ impl DirectoriesSpy
         if let Some(vec) = list.get(thread_name)
         {
             crate::io::serialize(vec, file_name, None);
-        }
-
-        
+        }  
     }
     fn deserialize_exclude(task: &Task)
     {
-        if let Some(excludes) = EXCLUDES.get()
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        if !excl.lock().unwrap().contains_key(task.thread_name.as_str())
         {
-            if !EXCLUDES.get().unwrap().lock().unwrap().contains_key(task.thread_name.as_str())
-            {
-                let path = Path::new(&task.thread_name).join(".txt");
-                let ex = crate::io::deserialize::<Vec<String>>(&path);
-                EXCLUDES.get().unwrap().lock().unwrap().insert(task.thread_name.clone(), ex.1);
-            }
+            let file = [&task.thread_name, ".txt"].concat();
+            let path = Path::new(&file);
+            let ex = crate::io::deserialize::<Vec<String>>(&path);
+            excl.lock().unwrap().insert(task.thread_name.clone(), ex.1);
         }
-        else 
-        {
-            EXCLUDES.set(Mutex::new(HashMap::new()));
-        }
+        logger::info!("{:?}", EXCLUDES.get().unwrap().lock().unwrap());
     }
     
 }

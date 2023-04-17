@@ -3,6 +3,7 @@ mod settings;
 mod app;
 pub use app::{AppState};
 pub use io::DirectoriesSpy;
+use logger::debug;
 mod io;
 
 use std::{path::{PathBuf}, thread, time::Duration, process::{exit, ExitCode}};
@@ -12,7 +13,7 @@ use settings::{Settings, Task};
 
 
 const DATE_FORMAT_STR: &'static str = "%Y-%m-%d][%H:%M:%S";
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main()
 {
     //let config = app::app_config::AppConfig::load().unwrap_or_default();
@@ -20,6 +21,14 @@ async fn main()
     AppState::initialize();
     AppState::initialize_logging();
    
+    DirectoriesSpy::process_tasks();
+    let delay = std::time::Duration::from_secs(3);
+    app::main();
+    loop
+    {
+        println!("sleeping for 3  sec ");
+        std::thread::sleep(delay);
+    }
 }
 
 // fn run_process(settings: &Settings, except: &mut Vec<String>)

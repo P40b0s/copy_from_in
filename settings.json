@@ -5,8 +5,15 @@
             "thread_name": "architector_thread",
             "source_dir": "in",
             "target_dir":  "in",
-            "timer": 200000
+            "timer": 20000
+        },
+        {
+            "thread_name": "in2_thread",
+            "source_dir": "in2",
+            "target_dir":  "in2",
+            "timer": 25000
         }
+
     ]
 }
 

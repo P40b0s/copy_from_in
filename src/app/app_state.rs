@@ -3,11 +3,10 @@ use std::{sync::{Mutex, Arc}, path::Path, process::exit, rc::Rc};
 use once_cell::sync::OnceCell;
 use crate::settings::Settings;
 pub static STATE: OnceCell<Mutex<AppState>> = OnceCell::new();
-
+pub static LOG: OnceCell<Mutex<Vec<String>>> = OnceCell::new();
 pub struct AppState
 {
     pub settings : Settings,
-    pub log: Vec<String>,
 }
 
 
@@ -22,15 +21,15 @@ impl AppState
         }
         STATE.set(Mutex::new(AppState 
         {
-            settings: settings.unwrap(),
-            log: vec![]
+            settings: settings.unwrap()
         }));
     }
     pub fn initialize_logging()
     {
+        LOG.set(Mutex::new(vec![]));
         logger::StructLogger::initialize_logger_with_callback(|log|
         {
-            STATE.get().unwrap().lock().unwrap().log.push(log);
+            LOG.get().unwrap().lock().unwrap().push(log);
         })
     }
     pub fn get_settings(&self) -> &Settings
