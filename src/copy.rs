@@ -15,11 +15,9 @@ mod tests
     fn test_directory_spy()
     {
         AppState::initialize();
-        AppState::initialize_logging();
-      
         DirectoriesSpy::check_for_new_packets(|thread, found|
         {
-            debug!("Сообщение от потока: {} был найден пакет {}", thread, found);
+            debug!("Сообщение от потока: {} был найден пакет {}", thread.thread_name, found);
         });
        
         logger::info!("Потоки выполняются параллельно, пока основной едет дальше");

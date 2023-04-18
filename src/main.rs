@@ -17,16 +17,15 @@ const DATE_FORMAT_STR: &'static str = "%Y-%m-%d][%H:%M:%S";
 async fn main()
 {
     //let config = app::app_config::AppConfig::load().unwrap_or_default();
-   
+    
     AppState::initialize();
-    AppState::initialize_logging();
-   
+    //TODO обработка аргументов до запуска основного функционала
     DirectoriesSpy::process_tasks();
     let delay = std::time::Duration::from_secs(3);
-    app::main();
+
     loop
     {
-        println!("sleeping for 3  sec ");
+        //println!("sleeping for 3  sec ");
         std::thread::sleep(delay);
     }
 }

@@ -1,4 +1,4 @@
-use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}, borrow::{Cow, Borrow}, sync::Arc, time::Instant};
+use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}, borrow::{Cow, Borrow}, sync::Arc, time::Instant, fmt::Display};
 
 use logger::{error, backtrace};
 use serde::Serialize;
@@ -10,15 +10,15 @@ use serde_json::Value;
     std::fs::create_dir_all(&destination)?;
     for entry in std::fs::read_dir(source)? 
     {
-    let entry = entry?;
-    let filetype = entry.file_type()?;
+        let entry = entry?;
+        let filetype = entry.file_type()?;
     if filetype.is_dir() 
     {
-    copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()))?;
+        copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()))?;
     }
     else 
     {
-    std::fs::copy(entry.path(), destination.as_ref().join(entry.file_name()))?;
+        std::fs::copy(entry.path(), destination.as_ref().join(entry.file_name()))?;
     }
     }
     Ok(())
@@ -33,12 +33,12 @@ pub fn extension_path_is(f: &PathBuf, ext:&str) -> bool
     f.extension().is_some() && f.extension().unwrap() == ext
 }
 ///Получает все директории и файлы из указанной директории
-pub fn get_files(path: &Path) -> Option<Vec<String>>
+pub fn get_files<P: AsRef<Path>>(path: P) -> Option<Vec<DirEntry>>
 {
-    let paths = std::fs::read_dir(path);
+    let paths = std::fs::read_dir(path.as_ref());
     if paths.is_err()
     {
-        error!("😳 Ошибка чтения директории {} - {}", path.display(), paths.err().unwrap());
+        error!("😳 Ошибка чтения директории {} -> {}", path.as_ref().display(), paths.err().unwrap());
         return None;
     }
     let mut entry = vec![];
@@ -49,13 +49,13 @@ pub fn get_files(path: &Path) -> Option<Vec<String>>
             error!("{}", e.err().unwrap());
             return None;
         }
-        if let Some(dir) = e.unwrap().file_name().to_str()
+        if let Some(dir) = e.as_ref().unwrap().file_name().to_str()
         {
-            entry.push(dir.to_owned());
+            entry.push(e.unwrap());
         }
         else
         {
-            error!("Невозможно получить имя файла в директории {}", path.display());
+            error!("Невозможно получить имя файла в директории {}", path.as_ref().display());
         }   
     }
     return Some(entry);
@@ -149,15 +149,15 @@ pub fn read_file_to_binary(file_path: &PathBuf) -> Option<Vec<u8>>
 }
 
 //Проверить существует ли указанная директория
-pub fn check_if_dir_exists(path: &str) -> bool
+pub fn path_is_exists<P: AsRef<Path>>(path: P ) -> bool
 {
-    let target_path = Path::new(path);
+    let target_path = Path::new(path.as_ref());
     if let Ok(e) = target_path.try_exists()
     {
         if !e
         {
-            let err = ["Директория ", path, " не существует!"].concat();
-            error!("{}", err);
+            //let err = ["Директория ", path.as_ref(), " не существует!"].concat();
+            //error!("{}", err);
             return false;
         }
         else 

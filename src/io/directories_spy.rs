@@ -1,11 +1,26 @@
 use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap, time::Duration};
-use logger::{error, info, debug};
-use once_cell::sync::OnceCell;
+use logger::{error, info, debug, warn};
+use once_cell::sync::{OnceCell, Lazy};
 use rayon::prelude::IntoParallelRefIterator;
+use regex::Regex;
 use tokio::{runtime::Runtime, task::JoinHandle};
-use crate::{settings::{Settings, Task}, app::app_state::{self, AppState, STATE}};
+use crate::{settings::{Settings, Task, CopyModifier}, app::app_state::{self, AppState, STATE}, io};
 
 pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
+pub static REGEXES: Lazy<Mutex<HashMap<String, Regex>>> = Lazy::new(|| 
+{
+    let mut hm: HashMap<String, Regex> = HashMap::new();
+    let tsk = Settings::initialize().unwrap();
+    for t in &tsk.tasks
+    {
+        for r in &t.rules
+        {
+            let rx = ["(?i)", r].concat();
+            hm.insert(r.clone(), Regex::new(&rx).unwrap());
+        }
+    }
+    Mutex::new(hm)
+});
 
 pub struct DirectoriesSpy;
 
@@ -49,19 +64,99 @@ impl DirectoriesSpy
     //Думаю тут же надо осуществлять и обработку найденых пакетов
     pub fn process_tasks()
     {
+        let args = STATE.get().unwrap().lock().unwrap();
+        let first_time = args.args.first_initialize.clone();
         //if let Some(rt) = DirectoriesSpy::get_runtime("processing_all_settings_tasks")
         //{
-            tokio::spawn(async
+            tokio::spawn(async move
             {
-                DirectoriesSpy::check_for_new_packets(|thread, found|
+                DirectoriesSpy::check_for_new_packets(move |thread, found|
                 {
-                    debug!("Сообщение от потока: {} -> найден новый пакет {}", thread, found);
+                   
+                    if !first_time
+                    {
+                        debug!("Сообщение от задачи `{}` -> найден новый пакет {}", &thread.thread_name, found);
+                        let source = Path::new(&thread.source_dir).join(&found);
+                        let target = Path::new(&thread.target_dir).join(&found);
+                        match thread.copy_modifier
+                        {
+                            CopyModifier::CopyAll =>
+                            {
+                                if io::io::path_is_exists(&target)
+                                {
+                                    warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",found, &target.display())
+                                }
+                                else 
+                                {
+                                    io::io::copy_recursively(&source, &target);
+                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
+                                }
+                                
+                            },
+                            _ =>
+                            {
+                                if let Some(entry) = io::io::get_files(&source)
+                                {
+                                    for e in entry
+                                    {
+                                        if io::io::extension_is(&e, "xml")
+                                        {
+                                            //let path = source.join(&e.path());
+                                            if let Some(text) = io::io::read_file(&e.path())
+                                            {
+                                                for except in &thread.rules
+                                                {
+                                                    if let Some(rx) = REGEXES.lock().unwrap().get(except)
+                                                    {
+                                                        if thread.copy_modifier == CopyModifier::CopyExcept
+                                                        {
+                                                            if !rx.is_match(&text)
+                                                            {
+                                                                if io::io::path_is_exists(&target)
+                                                                {
+                                                                    warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",found, target.display())
+                                                                }
+                                                                else 
+                                                                {
+                                                                    io::io::copy_recursively(&source, &target);
+                                                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
+                                                                }
+                                                            }
+                                                        }
+                                                        if thread.copy_modifier == CopyModifier::CopyOnly
+                                                        {
+                                                            if rx.is_match(&text)
+                                                            {
+                                                                if io::io::path_is_exists(&target)
+                                                                {
+                                                                    warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",found, target.display())
+                                                                }
+                                                                else 
+                                                                {
+                                                                    io::io::copy_recursively(&source, &target);
+                                                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
+                                                                }
+                                                            }
+                                                        } 
+                                                    }
+    
+                                                }
+                                            }
+
+                                        }
+                                    }
+                                }
+                                
+                            },
+                        }
+                    }
+                    
                 });
             });
         //}
     }
     ///Обработка осуществляется параллельно, но операция ожидается, поэтому все это надо запускать в процессе
-    pub fn check_for_new_packets<F : Send + Sync + 'static>(callback: F) where F: Fn(&String, &String)
+    pub fn check_for_new_packets<F : Send + Sync + 'static>(callback: F) where F: Fn(&Task, &String)
     {
         let settings = &STATE.get().unwrap().lock().unwrap().settings;
         let tasks = settings.tasks.clone();
@@ -76,7 +171,7 @@ impl DirectoriesSpy
         {
             for t in &tasks
             {
-                scope.spawn(|task|
+                scope.spawn(|_task|
                 {
                     
                     loop 
@@ -95,8 +190,7 @@ impl DirectoriesSpy
                                 if DirectoriesSpy::add(&t.thread_name, d)
                                 {
                                     is_change = true;
-                                    info!("Процесс {} нашел новый пакет {}", &t.thread_name, d);
-                                    callback(&t.thread_name, d);
+                                    callback(&t.clone(), d);
                                     //dirs.push(d.to_owned());
                                 }    
                             }
@@ -204,7 +298,6 @@ impl DirectoriesSpy
             let ex = crate::io::deserialize::<Vec<String>>(&path);
             excl.lock().unwrap().insert(task.thread_name.clone(), ex.1);
         }
-        logger::info!("{:?}", EXCLUDES.get().unwrap().lock().unwrap());
     }
     
 }
@@ -305,3 +398,13 @@ impl DirectoriesSpy
 //     }
 //     Ok(())
 // }
+
+
+macro_rules! regex 
+{
+    ($re:literal $(,)?) => 
+    {{
+        static RE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
+        RE.get_or_init(|| regex::Regex::new($re).unwrap())
+    }};
+}

@@ -1,0 +1,3 @@
+[18-04-2023 12:00:53]:❌ Ошибка -> Неверный формат файла `/hard/xar/projects/rust/copy_from_in/settings.json` missing field `copy_modifier` at line 9 column 9
+[18-04-2023 14:02:16]:❌ Ошибка -> Неверный формат файла `/hard/xar/projects/rust/copy_from_in/settings.json` trailing comma at line 20 column 13
+[18-04-2023 14:28:22]:❌ Ошибка -> Ошибка чтения файла in2/СФ_53596025_1_3/in2/СФ_53596025_1_3/container.xml - No such file or directory (os error 2)

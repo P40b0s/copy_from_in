@@ -1,12 +1,16 @@
 use std::{sync::{Mutex, Arc}, path::Path, process::exit, rc::Rc};
 
+use logger::error;
 use once_cell::sync::OnceCell;
-use crate::settings::Settings;
+use crate::{settings::Settings, io};
+use clap::Parser;
+use super::Args;
 pub static STATE: OnceCell<Mutex<AppState>> = OnceCell::new();
 pub static LOG: OnceCell<Mutex<Vec<String>>> = OnceCell::new();
 pub struct AppState
 {
     pub settings : Settings,
+    pub args: super::Args
 }
 
 
@@ -14,23 +18,36 @@ impl AppState
 {
     pub fn initialize()
     {
+        LOG.set(Mutex::new(vec![]));
+        logger::StructLogger::initialize_logger_with_callback(|log|
+        {
+            LOG.get().unwrap().lock().unwrap().push(log);
+        });
+
         let settings = Settings::initialize();
         if settings.is_none()
         {
             exit(0x0100);
         }
-        STATE.set(Mutex::new(AppState 
+        let args = Args::try_parse();
+        if args.is_err()
         {
-            settings: settings.unwrap()
-        }));
-    }
-    pub fn initialize_logging()
-    {
-        LOG.set(Mutex::new(vec![]));
-        logger::StructLogger::initialize_logger_with_callback(|log|
+            error!("{}", args.unwrap_err());
+            STATE.set(Mutex::new(AppState 
+            {
+                settings: settings.unwrap(),
+                args: Args::default()
+            }));
+        }
+        else 
         {
-            LOG.get().unwrap().lock().unwrap().push(log);
-        })
+            STATE.set(Mutex::new(AppState 
+            {
+                settings: settings.unwrap(),
+                args: args.unwrap()
+            }));
+        }
+       
     }
     pub fn get_settings(&self) -> &Settings
     {

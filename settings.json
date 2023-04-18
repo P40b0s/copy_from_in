@@ -4,14 +4,20 @@
         {
             "thread_name": "architector_thread",
             "source_dir": "in",
-            "target_dir":  "in",
-            "timer": 20000
+            "target_dir":  "out",
+            "timer": 20000,
+            "copy_modifier": "copy_all",
+            "rules": []
         },
         {
-            "thread_name": "in2_thread",
+            "thread_name": "sf_copy_thread",
             "source_dir": "in2",
-            "target_dir":  "in2",
-            "timer": 25000
+            "target_dir":  "out",
+            "timer": 25000,
+            "copy_modifier": "copy_only",
+            "rules": [
+                "b7eaa52a-ea8e-4f6d-9b2b-c774c58f31e5"
+            ]
         }
 
     ]
