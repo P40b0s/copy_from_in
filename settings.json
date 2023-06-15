@@ -16,7 +16,7 @@
             "timer": 25000,
             "copy_modifier": "copy_only",
             "rules": [
-                "b7eaa52a-ea8e-4f6d-9b2b-c774c58f31e5"
+                "xdms:uid=\"b7eaa52a-ea8e-4f6d-9b2b-c774c58f31e5\""
             ]
         }
 
