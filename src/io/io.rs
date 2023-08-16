@@ -55,7 +55,7 @@ pub fn get_files<P: AsRef<Path>>(path: P) -> Option<Vec<DirEntry>>
             error!("{}", e.err().unwrap());
             return None;
         }
-        if let Some(dir) = e.as_ref().unwrap().file_name().to_str()
+        if let Some(_) = e.as_ref().unwrap().file_name().to_str()
         {
             entry.push(e.unwrap());
         }
@@ -223,7 +223,6 @@ pub fn read_file(path: &Path) -> Option<String>
         return result.ok(); 
     }
 }
-
 
 ///анзипим файлы контейнера попутно добавляя из в paths, и отдаем на обработку xml файл passport.xml (обычно у него такое наименование, но иногда может быть и другое, так что просто ищем в архиве первый попавшийся файл xml)
 fn unzip(zip_file: &PathBuf)

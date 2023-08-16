@@ -88,7 +88,7 @@ impl DirectoriesSpy
                                 }
                                 else 
                                 {
-                                    io::io::copy_recursively(&source, &target);
+                                    let _ = io::io::copy_recursively(&source, &target);
                                     info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
                                 }
                                 
@@ -118,7 +118,7 @@ impl DirectoriesSpy
                                                                 }
                                                                 else 
                                                                 {
-                                                                    io::io::copy_recursively(&source, &target);
+                                                                    let _ = io::io::copy_recursively(&source, &target);
                                                                     info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
                                                                 }
                                                             }
@@ -133,7 +133,7 @@ impl DirectoriesSpy
                                                                 }
                                                                 else 
                                                                 {
-                                                                    io::io::copy_recursively(&source, &target);
+                                                                    let _ = io::io::copy_recursively(&source, &target);
                                                                     info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.thread_name);
                                                                 }
                                                             }
