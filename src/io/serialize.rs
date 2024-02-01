@@ -1,6 +1,6 @@
-use std::{path::{PathBuf, Path}, fs::{OpenOptions, File}, io::{BufWriter, Write, Seek, Read}};
+use std::{path::{PathBuf, Path}, fs::{OpenOptions, File}, io::{BufWriter, Write, Read}};
 use logger::{error, warn};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Error;
 
 ///Сериализация объекта в строковый формат

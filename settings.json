@@ -6,6 +6,7 @@
             "source_dir": "in",
             "target_dir":  "out",
             "timer": 20000,
+            "only_docs": true,
             "copy_modifier": "copy_all",
             "rules": []
         },
@@ -14,6 +15,7 @@
             "source_dir": "in2",
             "target_dir":  "out",
             "timer": 25000,
+            "only_docs": true,
             "copy_modifier": "copy_only",
             "rules": [
                 "source +\\w+:uid=\"b7eaa52a-ea8e-4f6d-9b2b-c774c58f31e5\"",
@@ -21,6 +23,11 @@
             ]
         }
 
+    ],
+    "doc_types":
+    [
+        "Транспортный\\s+контейнер",
+        "Документ"
     ]
 }
 

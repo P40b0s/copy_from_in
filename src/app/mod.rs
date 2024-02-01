@@ -1,5 +1,4 @@
 pub mod app_state;
-pub mod app_style;
-mod app;
+mod args;
 pub use app_state::{AppState, STATE};
-pub use app::Args;
+pub use args::Args;

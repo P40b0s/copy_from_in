@@ -1,13 +1,13 @@
-use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}, borrow::{Cow, Borrow}, sync::Arc, time::Instant, fmt::Display};
+use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}};
 
-use logger::{error, backtrace};
-use serde::Serialize;
+use logger::error;
 use serde_json::Value;
 use encoding::{all::WINDOWS_1251, DecoderTrap, Encoding};
  
  /// Copy files from source to destination recursively.
- pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> std::io::Result<()> 
+ pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> std::io::Result<u64> 
  {
+    let start = std::time::SystemTime::now();
     std::fs::create_dir_all(&destination)?;
     for entry in std::fs::read_dir(source)? 
     {
@@ -27,7 +27,9 @@ use encoding::{all::WINDOWS_1251, DecoderTrap, Encoding};
             }
         }
     }
-    Ok(())
+    let end = std::time::SystemTime::now();
+    let duration = end.duration_since(start).unwrap();
+    Ok(duration.as_secs())
  }
 
 pub fn extension_is(f: &DirEntry, ext:&str) -> bool

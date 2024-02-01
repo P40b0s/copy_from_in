@@ -1,16 +1,15 @@
-use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap, time::Duration};
-use logger::{error, info, debug, warn};
+use std::{self, path::{Path, PathBuf}, sync::Mutex, collections::HashMap};
+use logger::{debug, error, info, warn};
 use once_cell::sync::{OnceCell, Lazy};
 use regex::Regex;
-use tokio::{runtime::Runtime, task::JoinHandle};
-use crate::{settings::{Settings, Task, CopyModifier}, app::app_state::{self, AppState, STATE}, io};
-
+use crate::{settings::{Settings, Task, CopyModifier}, app::app_state::STATE, io};
+use crossbeam_channel::bounded;
 pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 pub static REGEXES: Lazy<Mutex<HashMap<String, Regex>>> = Lazy::new(|| 
 {
     let mut hm: HashMap<String, Regex> = HashMap::new();
-    let tsk = Settings::initialize().unwrap();
-    for t in &tsk.tasks
+    let guard = STATE.get().unwrap().lock().unwrap();
+    for t in &guard.settings.tasks
     {
         for r in &t.rules
         {
@@ -20,6 +19,30 @@ pub static REGEXES: Lazy<Mutex<HashMap<String, Regex>>> = Lazy::new(||
     }
     Mutex::new(hm)
 });
+pub static ONLY_DOC_REGEX: Lazy<Regex> = Lazy::new(|| 
+    {
+        //let tsk = Settings::initialize().unwrap();
+        let guard = STATE.get().unwrap().lock().unwrap();
+        let doc_types = &guard.settings.doc_types;
+        let mut rx = "[a-z]+:type=\"(".to_owned();
+        let end_rx = ")\"";
+        for (i, dt) in doc_types.iter().enumerate()
+        {
+            if i == doc_types.len() - 1
+            {
+                let type_pattern = ["(",dt, ")"].concat();
+                rx.push_str(&type_pattern);
+            }
+            else 
+            {
+                let type_pattern = ["(",dt, ")|"].concat();
+                rx.push_str(&type_pattern);
+            }
+        }
+        rx.push_str(&end_rx);
+        Regex::new(&rx).unwrap()
+    });
+
 
 pub struct DirectoriesSpy;
 
@@ -41,177 +64,351 @@ impl DirectoriesSpy
         }
         return Some(dirs);
     }
-    fn get_runtime(th_name: &str) -> Option<Runtime>
-    {
-        let mut dir_searcher_runtime = tokio::runtime::Builder::new_multi_thread()
-        .thread_name(th_name)
-        .enable_all()
-        .worker_threads(1)
-        .build();
-        if let Ok(r) = dir_searcher_runtime
-        {
-            return Some(r);
-        }
-        else 
-        {
-            error!("{}", dir_searcher_runtime.err().unwrap());
-            return None;    
-        }
-    }
+    // fn get_runtime(th_name: &str) -> Option<Runtime>
+    // {
+    //     let mut dir_searcher_runtime = tokio::runtime::Builder::new_multi_thread()
+    //     .thread_name(th_name)
+    //     .enable_all()
+    //     .worker_threads(1)
+    //     .build();
+    //     if let Ok(r) = dir_searcher_runtime
+    //     {
+    //         return Some(r);
+    //     }
+    //     else 
+    //     {
+    //         error!("{}", dir_searcher_runtime.err().unwrap());
+    //         return None;    
+    //     }
+    // }
 
-    //Поток мы можем спавнить только в рантайме токио, поэтому вытащил эту функцию отдельно
-    //Думаю тут же надо осуществлять и обработку найденых пакетов
+    ///Возвырат сообщений из канала реализован в главном потоке, управление в main не возвращается, 
+    ///так как главный поток больше ни для чего не используется, оставлю так
     pub fn process_tasks()
     {
         let args = STATE.get().unwrap().lock().unwrap();
         let first_time = args.args.first_initialize.clone();
         drop(args);
-            let t = tokio::spawn(async move
+        let (s, r) = bounded::<(Task, String)>(10);
+        DirectoriesSpy::check_for_new_packets_spawn(s);
+        loop 
+        {
+            while let Ok(rec) = r.recv() 
             {
-                DirectoriesSpy::check_for_new_packets(move |thread, found|
+                Self::copy_files_process(first_time, rec.0, rec.1);
+            }
+        }
+    }
+
+    // fn check_regex<F : Send + Sync + 'static>(callback: F) where F: Fn(&Task, &String)
+    // {
+
+    // }
+
+    fn copy_files_process(first_time: bool, task: Task, founded_packet_name : String)
+    {
+        let task_name = task.get_task_name();
+        let source_dir = task.get_source_dir();
+        let target_dir = task.get_target_dir();
+        let dir_name = &founded_packet_name;
+        if !first_time
+        {
+            let source = Path::new(source_dir).join(dir_name);
+            let target = Path::new(target_dir).join(dir_name);
+            debug!("Сообщение от задачи `{}` -> найден новый пакет {}", task_name, source.display());
+            let mut ret = false;
+            // if task.only_docs
+            // {
+            //     if let Some(entry) = io::io::get_files(&source)
+            //     {
+            //         for e in entry
+            //         {
+            //             if io::io::extension_is(&e, "xml")
+            //             {
+            //                 if let Some(text) = io::io::read_file(&e.path())
+            //                 {
+            //                     if task.copy_modifier == CopyModifier::CopyOnly || task.copy_modifier == CopyModifier::CopyExcept
+            //                     {
+            //                         for rule in &task.rules
+            //                         {
+            //                             if let Some(rx) = REGEXES.lock().unwrap().get(rule)
+            //                             {
+
+            //                             }
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
+
+
+            match task.copy_modifier
+            {
+                CopyModifier::CopyAll =>
                 {
-                    if !first_time
+                    if io::io::path_is_exists(&target)
                     {
-                        debug!("Сообщение от задачи `{}` -> найден новый пакет {}", &thread.task_name, found);
-                        let source = Path::new(&thread.source_dir).join(&found);
-                        let target = Path::new(&thread.target_dir).join(&found);
-                        match thread.copy_modifier
+                        warn!("Пакет {} уже существует по пути {} копирование пакета отменено",dir_name, &target.display());
+                    }
+                    else 
+                    {
+                        if task.only_docs
                         {
-                            CopyModifier::CopyAll =>
+                            if let Some(entry) = io::io::get_files(&source)
                             {
-                                if io::io::path_is_exists(&target)
+                                for e in entry
                                 {
-                                    warn!("Пакет {} уже существует по пути {} копирование пакета отменено",found, &target.display())
-                                }
-                                else 
-                                {
-                                    let _ = io::io::copy_recursively(&source, &target);
-                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.task_name);
-                                }
-                                
-                            },
-                            _ =>
-                            {
-                                if let Some(entry) = io::io::get_files(&source)
-                                {
-                                    for e in entry
+                                    if io::io::extension_is(&e, "xml")
                                     {
-                                        if io::io::extension_is(&e, "xml")
+                                        if let Some(text) = io::io::read_file(&e.path())
                                         {
-                                            if let Some(text) = io::io::read_file(&e.path())
+                                            if ONLY_DOC_REGEX.is_match(&text)
                                             {
-                                                for except in &thread.rules
+                                                if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
                                                 {
-                                                    if let Some(rx) = REGEXES.lock().unwrap().get(except)
+                                                    info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, &task.copy_modifier);
+                                                    ret = true;
+                                                }
+                                                else
+                                                {
+                                                    error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    if io::io::extension_is(&e, "rc")
+                                    {
+                                        if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
+                                        {
+                                            info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, &task.copy_modifier);
+                                            ret = true;
+                                        }
+                                        else
+                                        {
+                                            error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
+                            {
+                                info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, &task.copy_modifier);
+                                ret = true;
+                            }
+                            else
+                            {
+                                error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                            }
+                        }
+                    }
+                },
+                CopyModifier::CopyOnly =>
+                {
+                    if let Some(entry) = io::io::get_files(&source)
+                    {
+                        for e in entry
+                        {
+                            //info!("найден файл {}", &e.file_name().to_str().unwrap());
+                            if io::io::extension_is(&e, "xml")
+                            {
+                                //info!("найден xml файл {}", &e.file_name().to_str().unwrap());
+                                if let Some(text) = io::io::read_file(&e.path())
+                                {
+                                    //info!("xml {}", &text);
+                                    for rule in &task.rules
+                                    {
+                                        if let Some(rx) = REGEXES.lock().unwrap().get(rule)
+                                        {
+                                            if task.only_docs
+                                            {
+                                                if rx.is_match(&text) && ONLY_DOC_REGEX.is_match(&text)
+                                                {
+                                                    if io::io::path_is_exists(&target)
                                                     {
-                                                        if thread.copy_modifier == CopyModifier::CopyExcept
+                                                        warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",dir_name, target_dir.display())
+                                                    }
+                                                    else 
+                                                    {
+                                                        if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
                                                         {
-                                                            if !rx.is_match(&text)
-                                                            {
-                                                                if io::io::path_is_exists(&target)
-                                                                {
-                                                                    warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",found, target.display())
-                                                                }
-                                                                else 
-                                                                {
-                                                                    let _ = io::io::copy_recursively(&source, &target);
-                                                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.task_name);
-                                                                }
-                                                            }
+                                                            info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, rule);
+                                                            ret = true;
                                                         }
-                                                        if thread.copy_modifier == CopyModifier::CopyOnly
+                                                        else
                                                         {
-                                                            if rx.is_match(&text)
-                                                            {
-                                                                if io::io::path_is_exists(&target)
-                                                                {
-                                                                    warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",found, target.display())
-                                                                }
-                                                                else 
-                                                                {
-                                                                    let _ = io::io::copy_recursively(&source, &target);
-                                                                    info!("Пакет {} скопирован в {} в соответсвии с правилом {}", found, &target.display(), &thread.task_name);
-                                                                }
-                                                            }
-                                                        } 
+                                                            error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if rx.is_match(&text)
+                                                {
+                                                    if io::io::path_is_exists(&target)
+                                                    {
+                                                        warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",dir_name, target_dir.display())
+                                                    }
+                                                    else 
+                                                    {
+                                                        if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
+                                                        {
+                                                            info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, rule);
+                                                            ret = true;
+                                                        }
+                                                        else
+                                                        {
+                                                            error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
                                 }
-                            },
+                            }
                         }
                     }
-                });
-            });
-        //}
+                },
+                CopyModifier::CopyExcept =>
+                {
+                    if let Some(entry) = io::io::get_files(&source)
+                    {
+                        for e in entry
+                        {
+                            if io::io::extension_is(&e, "xml")
+                            {
+                                if let Some(text) = io::io::read_file(&e.path())
+                                {
+                                    for rule in &task.rules
+                                    {
+                                        if let Some(rx) = REGEXES.lock().unwrap().get(rule)
+                                        {
+                                            if task.only_docs
+                                            {
+                                                if !rx.is_match(&text) && ONLY_DOC_REGEX.is_match(&text)
+                                                {
+                                                    if io::io::path_is_exists(&target)
+                                                    {
+                                                        warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",dir_name, target_dir.display())
+                                                    }
+                                                    else 
+                                                    {
+                                                        if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
+                                                        {
+                                                            info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, rule);
+                                                            ret = true;
+                                                        }
+                                                        else
+                                                        {
+                                                            error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if !rx.is_match(&text)
+                                                {
+                                                    if io::io::path_is_exists(&target)
+                                                    {
+                                                        warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",dir_name, target_dir.display())
+                                                    }
+                                                    else 
+                                                    {
+                                                        if let Ok(copy_time) = io::io::copy_recursively(&source, &target)
+                                                        {
+                                                            info!("Задачей `{}` пакет {} скопирован в {} за {}с. в соответсвии с правилом {}",task_name, dir_name, target_dir.display(), copy_time, rule);
+                                                            ret = true;
+                                                        }
+                                                        else
+                                                        {
+                                                            error!("Ошибка копирования пакета {} в {} для задачи {}",dir_name, target_dir.display(), task_name);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+            }
+            if !ret
+            {
+                warn!("Пакет {} не скопирован из-за ошибки или потому-что он не указан в правилах", &source.display());
+            }
+        }
     }
-    ///Обработка осуществляется параллельно, но операция ожидается, поэтому все это надо запускать в процессе
-    pub fn check_for_new_packets<F : Send + Sync + 'static>(callback: F) where F: Fn(&Task, &String)
+
+    ///Каждый таск обрабатывается в отдельном потоке
+    fn check_for_new_packets_spawn(sender : crossbeam_channel::Sender<(Task, String)>)
     {
         let guard = STATE.get().unwrap().lock().unwrap();
         let tasks = guard.settings.tasks.clone();
         let _ = drop(guard);
-        rayon::scope(|scope|
+        for t in tasks
         {
-            for t in &tasks
+            let builder = std::thread::Builder::new().name(t.task_name.clone());
+            let sender = sender.clone();
+            let _ = builder.spawn(move ||
             {
-                scope.spawn(|_task|
+                loop 
                 {
-                    loop 
+                    let start = std::time::SystemTime::now();
+                    let paths = DirectoriesSpy::get_dirs(&t.source_dir);
+                    if paths.is_none()
                     {
-                        let start = std::time::SystemTime::now();
-                        let paths = DirectoriesSpy::get_dirs(&t.source_dir);
-                        if paths.is_none()
-                        {
-                            break;
-                        }
-                        let mut is_change = false;
-                        if let Some(reader) = paths.as_ref()
-                        {
-                            for d in reader
-                            {
-                                if DirectoriesSpy::add(&t.task_name, d)
-                                {
-                                    is_change = true;
-                                    callback(&t.clone(), d);
-                                }    
-                            }
-                            if is_change
-                            {
-                                DirectoriesSpy::serialize_exclude(&t.task_name);
-                            }
-                        }
-                        let delay = std::time::Duration::from_millis(t.timer);
-                        let end = std::time::SystemTime::now();
-                        let duration = end.duration_since(start).unwrap();
-                        logger::warn!("Задача {} была завершена за {}c", &t.task_name, duration.as_secs());
-                        std::thread::sleep(delay.to_owned());
+                        break;
                     }
-                })
-            }
-        });
+                    let mut is_change = false;
+                    if let Some(reader) = paths.as_ref()
+                    {
+                        for d in reader
+                        {
+                            if DirectoriesSpy::add(&t.task_name, d)
+                            {
+                                is_change = true;
+                                let _ = sender.send((t.clone(), d.to_owned())).unwrap();
+                            }    
+                        }
+                        if is_change
+                        {
+                            DirectoriesSpy::serialize_exclude(&t.task_name);
+                        }
+                    }
+                    let delay = t.get_task_delay();
+                    let end = std::time::SystemTime::now();
+                    let duration = end.duration_since(start).unwrap();
+                    if is_change
+                    {
+                        logger::info!("Задача {} была завершена за {}c., перезапуск задачи через {}c.", std::thread::current().name().unwrap(), duration.as_secs(), &delay.as_secs());
+                    }
+                    std::thread::sleep(delay);
+                }
+            });
+        }
     }
-
-
-    fn get(thread_name: &str) -> Option<Vec<String>>
-    {
-        let hm = EXCLUDES.get().unwrap().lock().unwrap();
-        let ex = hm.get(thread_name);
-        ex.cloned()
-    }
-    fn add(thread_name: &str, dir: &String) -> bool
+    ///Добавить к задаче имя директории, чтобы больше ее не копировать
+    /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
+    fn add(task_name: &str, dir: &String) -> bool
     {
         let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-        if !guard.contains_key(thread_name)
+        if !guard.contains_key(task_name)
         {
-            guard.insert(thread_name.to_owned(), vec![dir.to_owned()]);
+            guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
             return true;
         }
         else 
         {
-            if let Some(ex) = guard.get_mut(thread_name)
+            if let Some(ex) = guard.get_mut(task_name)
             {
                 let d = dir.to_owned();
                 if !ex.contains(&d)
@@ -231,8 +428,8 @@ impl DirectoriesSpy
     {
         let concat_path = [task_name, ".txt"].concat();
         let file_name = Path::new(&concat_path);
-        let list = EXCLUDES.get().unwrap().lock().unwrap();
-        if let Some(vec) = list.get(task_name)
+        let guard = EXCLUDES.get().unwrap().lock().unwrap();
+        if let Some(vec) = guard.get(task_name)
         {
             crate::io::serialize(vec, file_name, None);
         }  
@@ -240,12 +437,13 @@ impl DirectoriesSpy
     pub fn deserialize_exclude(task: &Task)
     {
         let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
-        if !excl.lock().unwrap().contains_key(task.task_name.as_str())
+        let mut guard = excl.lock().unwrap();
+        if !guard.contains_key(task.task_name.as_str())
         {
             let file = [&task.task_name, ".txt"].concat();
             let path = Path::new(&file);
             let ex = crate::io::deserialize::<Vec<String>>(&path);
-            excl.lock().unwrap().insert(task.task_name.clone(), ex.1);
+            guard.insert(task.task_name.clone(), ex.1);
         }
     }
     
