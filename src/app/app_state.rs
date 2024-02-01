@@ -18,7 +18,7 @@ impl AppState
 {
     pub fn initialize()
     {
-        LOG.set(Mutex::new(vec![]));
+        let _= LOG.set(Mutex::new(vec![]));
         logger::StructLogger::initialize_logger_with_callback(|log|
         {
             LOG.get().unwrap().lock().unwrap().push(log);
@@ -33,7 +33,7 @@ impl AppState
         if args.is_err()
         {
             error!("{}", args.unwrap_err());
-            STATE.set(Mutex::new(AppState 
+            let _ = STATE.set(Mutex::new(AppState 
             {
                 settings: settings.unwrap(),
                 args: Args::default()
@@ -41,7 +41,7 @@ impl AppState
         }
         else 
         {
-            STATE.set(Mutex::new(AppState 
+            let _ = STATE.set(Mutex::new(AppState 
             {
                 settings: settings.unwrap(),
                 args: args.unwrap()

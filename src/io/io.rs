@@ -21,7 +21,7 @@ use encoding::{all::WINDOWS_1251, DecoderTrap, Encoding};
         {
             let dest = destination.as_ref().join(entry.file_name());
             std::fs::copy(entry.path(), &dest)?;
-            if entry.path().extension().unwrap() == "zip"
+            if entry.path().extension().is_some() && entry.path().extension().unwrap() == "zip"
             {
                 unzip(&dest);
             }

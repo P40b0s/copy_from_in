@@ -2,7 +2,7 @@ use std::{fs, path::PathBuf, sync::Mutex, fmt::Display};
 use once_cell::sync::{OnceCell, Lazy};
 use serde::{Serialize, Deserialize};
 use logger::{error, warn};
-use crate::app::STATE;
+use crate::{app::STATE, DirectoriesSpy};
 
 //pub static SETTINGS: OnceCell<Mutex<Settings>> = OnceCell::new();
 #[derive(Serialize, Deserialize, Clone)]
@@ -11,7 +11,7 @@ pub struct Task
     pub source_dir : PathBuf,
     pub target_dir: PathBuf,
     pub timer : u64,
-    pub thread_name: String,
+    pub task_name: String,
     #[serde(deserialize_with="deserialize_copy_modifier")]
     pub copy_modifier: CopyModifier,
     pub rules: Vec<String>
@@ -26,7 +26,7 @@ impl Default for Task
             source_dir: PathBuf::from("in"),
             target_dir: PathBuf::from("out"),
             timer: 20000,
-            thread_name: "default_thread".to_owned(),
+            task_name: "default_thread".to_owned(),
             copy_modifier: CopyModifier::CopyAll,
             rules: vec![] 
         }
@@ -113,6 +113,7 @@ impl Settings
                 error!("Ошибка, директории `{}` не существует", t.target_dir.display());
                 return None;
             }
+            crate::io::DirectoriesSpy::deserialize_exclude(t);
         }
        Some(data)
     }
@@ -139,6 +140,6 @@ fn testload()
 {
     if let Some(s) = Settings::initialize()
     {
-        assert_eq!(s.tasks.iter().nth(0).unwrap().thread_name, "architector_thread".to_owned());
+        assert_eq!(s.tasks.iter().nth(0).unwrap().task_name, "architector_thread".to_owned());
     }
 }
