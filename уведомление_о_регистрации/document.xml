@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xdms:communication xdms:version="2.0" xmlns:xdms="http://www.infpres.com/IEDMS">
+  <xdms:header xdms:type="Квитанция">
+    <xdms:source xdms:uid="1953a86e-e35e-45cc-b031-556ca72c4080">
+      <xdms:organization>Управление обеспечения правовой информатизации Службы специальной связи Федеральной службы охраны Российской Федерации (УОПИ Спецсвязи ФСО России)</xdms:organization>
+    </xdms:source>
+  </xdms:header>
+  <xdms:acknowledgment xdms:uid="9ce238f7-18ab-48bd-9c87-2fe8abb5fede">
+    <xdms:time>2023-06-16T11:14:28</xdms:time>
+    <xdms:accepted>true</xdms:accepted>
+  </xdms:acknowledgment>
+</xdms:communication>

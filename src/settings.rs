@@ -13,7 +13,13 @@ pub struct Task
     pub copy_modifier: CopyModifier,
     ///Копировать только документы
     pub only_docs: bool,
+    pub delete_after_copy: bool,
+    #[serde(default="empty_rules")]
     pub rules: Vec<String>
+}
+fn empty_rules() -> Vec<String>
+{
+    Vec::with_capacity(0)
 }
 
 impl Default for Task
@@ -29,6 +35,7 @@ impl Default for Task
             copy_modifier: CopyModifier::CopyAll,
            //""source +\\w+:uid=\"b7eaa52a-ea8e-4f6d-9b2b-c774c58f31e5\"","
             only_docs: true,
+            delete_after_copy: false,
             rules: vec![] 
         }
     }
@@ -87,7 +94,7 @@ impl Default for Settings
         Settings 
         { 
             tasks: vec![Task::default()],
-            doc_types: vec!["Транспортный пакет".to_owned(), "Документ".to_owned()]
+            doc_types: vec!["Транспортный\\s+пакет".to_owned(), "Документ".to_owned()]
         }
     }
 }
@@ -159,4 +166,15 @@ fn testload()
     {
         assert_eq!(s.tasks.iter().nth(0).unwrap().task_name, "architector_thread".to_owned());
     }
+}
+
+#[test]
+fn test_load_settings()
+{
+    logger::StructLogger::initialize_logger();
+    if let Some(s) = Settings::initialize()
+    {
+        println!("{:?}", s.doc_types);
+    }
+    
 }
