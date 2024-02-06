@@ -1,0 +1,18 @@
+mod user;
+mod disease_type;
+mod disease_test;
+pub use disease_test::DiseaseTest;
+mod dictionary;
+pub use dictionary::Dictionary;
+mod vactination;
+pub use vactination::Vactination;
+pub use disease_type::DiseaseType;
+pub use user::User;
+mod post;
+pub use post::Post;
+mod status;
+pub use status::Status;
+mod phones;
+pub use phones::Phones;
+mod disease;
+pub use disease::Disease;

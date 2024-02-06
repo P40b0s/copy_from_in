@@ -1,0 +1,45 @@
+[package]
+name = "packets_copyist_tasker"
+version = "0.1.0"
+description = "Планировщик копирования пакетов МЭДО"
+authors = ["you"]
+license = ""
+repository = ""
+default-run = "packets_copyist_tasker"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[build-dependencies]
+tauri-build = { version = "1.5.1", features = [] }
+
+#sudo dnf install mingw32-gcc mingw64-gcc
+[target.x86_64-pc-windows-gnu]
+linker = "x86_64-w64-mingw32-gcc"
+ar = "x86_64-w64-mingw32-ar"
+
+[dependencies]
+serde_json = "1.0.108"
+serde = { version = "1.0.190", features = ["derive"] }
+tauri = { version = "1.5.2", features = ["app-all", "clipboard-all", "fs-all"] }
+#logger = {path = "../../../rust/universal_format/format_constructor/logger"}
+logger = {path = "../../../rust/logger"}
+once_cell="*"
+chrono="0.4.31"
+anyhow="1.0.79"
+thiserror="1.0.56"
+tokio= {version = "*", features = ["macros"] }
+tokio-test= {version ="*"}
+uuid = {version = "1.6.1", features = ["v4"] }
+const_format = "0.2.32"
+settings = {path = "../libs/settings"}
+medo_parser = {path = "../libs/medo_parser"}
+crossbeam-channel="0.5.11"
+
+[features]
+# by default Tauri runs in production mode
+# when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
+default = [ "custom-protocol" ]
+# this feature is used used for production builds where `devPath` points to the filesystem
+# DO NOT remove this
+custom-protocol = [ "tauri/custom-protocol" ]

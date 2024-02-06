@@ -1,0 +1,14 @@
+/hard/xar/projects/rust/copy_from_in/libs/settings/target/debug/deps/libuuid-71b213e8e6a1a418.rmeta: /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/lib.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/builder.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/error.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/parser.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/fmt.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/timestamp.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/v4.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/rng.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/external.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/macros.rs
+
+/hard/xar/projects/rust/copy_from_in/libs/settings/target/debug/deps/uuid-71b213e8e6a1a418.d: /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/lib.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/builder.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/error.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/parser.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/fmt.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/timestamp.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/v4.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/rng.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/external.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/macros.rs
+
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/lib.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/builder.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/error.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/parser.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/fmt.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/timestamp.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/v4.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/rng.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/external.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/uuid-1.7.0/src/macros.rs:

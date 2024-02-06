@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:svg="http://www.w3.org/2000/svg" id="svg2172" viewBox="0 0 342.32 155.24" version="1.0">
+  <path id="path3335" d="m341.56 50.928l-161.08-46.68c-14.98-4.496-57.26-6.3154-81.561 5.1206-28.16 13.251-51.939 33.65-66.569 54.864-14.631 21.214-30.358 50.477-31.456 59.257-1.0969 8.77 4.9613 23.34 17.923 27.43 13.899 4.39 45.33 5.69 96.193-1.83 32.31-4.78 226.41-76.81 226.41-76.81l0.14-21.352z" fill-rule="evenodd" stroke="#000" stroke-width="1.5362" fill="#fff"/>
+  <path id="path4309" fill-rule="evenodd" d="m180.77 41.517c-20.09 0.253-50.55 19.281-73.85 40.597-1.07 0.972-0.75 1.877 0.94 1.536 8.89-1.792 33.51-5.578 44.28-6.257 16-1.008 50.07-3.436 84.94-5.985v-24.435c-26.01-2.808-48.35-5.122-54.41-5.424-0.62-0.032-1.25-0.041-1.9-0.032zm63.35 3.328c-1.82 0-3.28 5.093-3.28 11.425v5.681c0 6.332 1.46 11.426 3.28 11.426s3.3-5.094 3.3-11.426v-5.681c0-6.332-1.48-11.425-3.3-11.425zm6.13 3.568v22.019c27-1.982 50.09-3.686 67.38-4.976v-9.554c-17.89-2.013-41.53-4.665-67.38-7.489zm69.24 7.697v9.202c3.59-0.269 4.24-0.309 7.15-0.528v-7.857c-2.93-0.331-3.69-0.427-7.15-0.817zm10.64 1.201v7.201c5-0.376 11.11-0.833 11.11-0.833v-5.12s-6.1-0.685-11.11-1.248z"/>
+  <path id="path2283" fill="#f00" d="m340.7 66.003c-1.39 0.028-2.49 0.155-2.89 0.173-1.43 0.067-2.74 0.742-3.05 1.056-0.64 0.635-0.15 0.87 2.57 0.776 1.04-0.036 2.66-0.429 3.37-0.469-0.02-0.799-0.01-0.736 0-1.536zm-7.88 1.021c-4.49 0.165-8.92 0.627-13.33 1.168v2.592c3.74-0.675 7.84-1.407 11.26-1.888 2.07-0.464 3.19-1.926 2.07-1.872zm-15.19 1.408c-3.71 0.47-7.42 0.975-11.15 1.376-1.97 0.258-8.29 1.062-14.05 1.793-10.28 1.303-11.61 1.696-11.03 3.28 0.14 0.375 0.24 1.049 0.24 1.488 0 1.002 1.1 0.875 15.88-1.888 6.05-1.132 8.63-1.534 12.5-2.064 1.65-0.227 4.48-0.745 7.61-1.313v-2.672zm-40.72 5.473c-2.86 0.003-14.87 1.238-34.69 3.584-2.4 0.284-14.27 1.676-26.38 3.089-12.11 1.412-25.59 3.03-29.95 3.6-4.37 0.571-13.58 1.737-20.48 2.592-23.37 2.899-72.268 9.417-74.527 9.938-0.896 0.207-8.368 8.692-8.849 10.052-0.094 0.26 0.593 0.48 1.536 0.48 1.785 0 41.92-4.69 59.3-6.93 5.5-0.709 12.41-1.519 15.37-1.81 8.03-0.791 11.81-1.327 19.71-2.768 3.94-0.72 11.2-1.992 16.13-2.833 27.73-4.729 80.81-14.147 82.52-14.642 0.85-0.244 1.54-3.348 0.96-4.288-0.03-0.051-0.24-0.065-0.65-0.064z"/>
+  <path id="path5308" d="m139.52 20.89c-4.19 3.409-43.344 38.954-51.208 42.611-7.864 3.658-30.724 9.145-42.429 8.413-11.704-0.732-15.179-1.905-16.276-3.551 18.688-28.543 45.838-47.212 67.849-58.285 15.544-2.9261 35.874-0.572 39.324 1.851 4.93 3.475 5.6 6.636 2.74 8.961z" fill-rule="evenodd"/>
+  <path id="path7248" d="m62.256 107.15l16.423-21.208c-9.733 0.424-20.131 1.989-23.148 4.914-3.084 2.989-10.086 13.194-10.086 13.194l16.811 3.1z" fill-rule="evenodd" stroke="#000" stroke-width=".51207px" fill="#acf"/>
+  <path id="path7252" d="m10.917 100.04l1.035 0.26s4.412-7.731 5.043-9.444c0.394-1.07 0.129-1.94 0.129-1.94l-6.207 11.124z" fill-rule="evenodd" stroke="#000" stroke-width=".51207px" fill="#acf"/>
+  <path id="path7255" stroke="#f00" stroke-width="1.0241" fill="none" d="m32.254 96.416c0.356 1.067-3.75 9.244-4.655 9.824-0.816 0.53-9.172-0.8-9.828-1.81-0.614-0.93 4.021-9.245 4.785-9.695 0.701-0.412 9.354 0.647 9.698 1.681z"/>
+  <path id="path7250" stroke="#000" stroke-width=".51207px" fill="none" d="m8.0722 105.21s35.298 4.95 44.744 6.34c9.698 1.42 14.208 5.53 15.647 10.21 1.475 4.81 2.457 24.44-3.362 32.2"/>
+  <path id="path11134" stroke="#000" stroke-width=".51207px" fill="none" d="m311.9 42.298c2.5 1.39 6.49 5.849 6.53 12.414l0.13 18.427c0.02 3.314-0.27 5.89-1.25 7.965"/>
+  <path id="path11142" fill-rule="evenodd" d="m328.46 56.849c-0.53 0-0.95 1.488-0.95 3.338v1.659c0 1.85 0.42 3.339 0.95 3.339 0.54 0 0.97-1.489 0.97-3.339v-1.659c0-1.85-0.43-3.338-0.97-3.338z"/>
+  <path id="path12118" fill-rule="evenodd" d="m327.01 74.929l-6.67 2.064 0.19 2.833 6.45-2.289 0.03-2.608zm-11.6 3.52l-7.78 2.241 0.18 3.888 7.77-2.832-0.17-3.297zm-84.36 24.911c-22.41 6.51-45.36 11.92-68.49 17.21-2.56 0.87-14.6 15.49-17.29 20.29 30.91-9.6 85.33-28.71 85.33-28.71l0.45-8.79z"/>
+  <path id="path12116" stroke="#000" stroke-width=".51207px" fill="none" d="m69.239 136.76c41.121-3.36 124.14-22.24 167.08-34.91 42.93-12.675 105.26-31.297 105.26-31.297"/>
+  <metadata>
+    <rdf:RDF>
+      <cc:Work>
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <cc:license rdf:resource="http://creativecommons.org/licenses/publicdomain/"/>
+        <dc:publisher>
+          <cc:Agent rdf:about="http://openclipart.org/">
+            <dc:title>Openclipart</dc:title>
+          </cc:Agent>
+        </dc:publisher>
+        <dc:title>ICE-Train</dc:title>
+        <dc:date>2008-09-01T13:02:19</dc:date>
+        <dc:description>An German "Inter City Express" (ICE) train. http://en.wikipedia.org/wiki/InterCityExpress</dc:description>
+        <dc:source>http://openclipart.org/detail/18947/ice-train-by-mbs</dc:source>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>mbs</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>clip art</rdf:li>
+            <rdf:li>clipart</rdf:li>
+            <rdf:li>germany</rdf:li>
+            <rdf:li>ice</rdf:li>
+            <rdf:li>image</rdf:li>
+            <rdf:li>inkscape</rdf:li>
+            <rdf:li>media</rdf:li>
+            <rdf:li>png</rdf:li>
+            <rdf:li>public domain</rdf:li>
+            <rdf:li>speed</rdf:li>
+            <rdf:li>svg</rdf:li>
+            <rdf:li>train</rdf:li>
+            <rdf:li>transportation</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+      </cc:Work>
+      <cc:License rdf:about="http://creativecommons.org/licenses/publicdomain/">
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Reproduction"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Distribution"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#DerivativeWorks"/>
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>

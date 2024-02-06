@@ -1,0 +1,14 @@
+mod container;
+mod requisites;
+mod author;
+mod addressee;
+mod organization;
+mod document;
+mod attachment;
+pub use container::{Container};
+use requisites::Requisites;
+use author::{Authors};
+use organization::Organization;
+use addressee::{Addresseess};
+use document::Document;
+use attachment::{Attachments};

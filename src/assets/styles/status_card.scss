@@ -1,0 +1,39 @@
+
+.card {
+  margin: 5px;
+  padding: 5px;
+  display: flex;
+  border-radius: 10px;
+  box-shadow: 0px 6px 10px rgba(138, 240, 235, 0.4);
+  transition: all 0.2s;
+  background: var(--card-background);
+}
+
+.card:hover {
+  box-shadow: 0px 6px 10px var(--card-boxshadow);
+  transform: scale(1.01);
+}
+
+
+
+/* CARD BACKGROUNDS */
+
+.card-1 {
+  background: radial-gradient(#86e7f077, #6fbbe467);
+}
+
+.card-2 {
+  background: radial-gradient(#fbc1cc, #fa99b2);
+}
+
+.card-3 {
+  background: radial-gradient(#76b2fe, #b69efe);
+}
+
+.card-4 {
+  background: radial-gradient(#60efbc, #58d5c9);
+}
+
+.card-5 {
+  background: radial-gradient(#f588d8, #c0a3e5);
+}
