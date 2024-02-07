@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import vue ,{ type Options} from '@vitejs/plugin-vue'
+import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   clearScreen: false,
@@ -14,13 +14,6 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_DEBUG,
   },
   plugins: [
-    vue(
-      { 
-        script: 
-        {
-          defineModel: true,
-          defineSlots: true
-        },
-      } as Options),
+    react(),
   ],
 });

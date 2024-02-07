@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 serde = {version = "1.0.196", features = ["derive"]}
 serde_json = "1.0.113"
-logger = {path = "../../../../rust/format/format_struct/logger"}
+logger = {path = "../../../../rust/logger"}
 tokenizer = {path = "../../../../rust/tokenizer/tokenizer"}
 tokenizer_derive = {path = "../../../../rust/tokenizer/tokenizer_derive"}
 settings = {path = "../settings"}

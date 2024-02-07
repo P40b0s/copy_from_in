@@ -1,7 +1,7 @@
 [[tasks]]
 name = "from_backup_to_architector"
-source_dir = "/hard/xar/projects/rust/copy_from_in/test_data/in"
-target_dir = "/hard/xar/projects/rust/copy_from_in/test_data/out"
+source_dir = "/home/sam/projects/rust/copy_from_in/test_data/in"
+target_dir = "/home/sam/projects/rust/copy_from_in/test_data/out"
 timer = 15000
 delete_after_copy = false
 is_active = true
@@ -10,8 +10,8 @@ copy_modifier = "copy_all"
 
 [[tasks]]
 name = "from_in_to_backup"
-source_dir = "/hard/xar/projects/rust/copy_from_in/test_data/in2"
-target_dir = "/hard/xar/projects/rust/copy_from_in/test_data/out"
+source_dir = "/home/sam/projects/rust/copy_from_in/test_data/in2"
+target_dir = "/home/sam/projects/rust/copy_from_in/test_data/out"
 timer = 12000
 delete_after_copy = false
 is_active = true
