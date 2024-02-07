@@ -7,15 +7,16 @@ mod helpers;
 mod file;
 mod error;
 mod copyer;
+use copyer::{DirectoriesSpy, NewDocument};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
+use medo_parser::Packet;
 use serde::Serialize;
 use settings::FileMethods;
 use state_updater::{DateState, StateUpdater};
 mod state;
 mod state_updater;
 use std::{sync::{Arc, atomic::AtomicU32}, ops::Deref, fmt::Display, process::exit};
-
 use helpers::{Date, DateTimeFormat};
 pub use logger;
 mod commands;
@@ -26,10 +27,10 @@ use logger::{info, LevelFilter, StructLogger};
 use once_cell::sync::{OnceCell};
 use state::AppState;
 use tauri::Manager;
-use tokio::{sync::Mutex };
+use tokio::sync::Mutex;
 
 pub static LOG_SENDER: OnceCell<Mutex<Sender<(LevelFilter, String)>>> = OnceCell::new();
-
+pub static NEW_DOCS: OnceCell<Mutex<Sender<NewDocument>>> = OnceCell::new();
 
 fn main() 
 {
@@ -46,7 +47,8 @@ fn main()
   //let (async_proc_input_tx, async_proc_input_rx) = mpsc::channel(1);
   let (log_sender, log_receiver) = bounded::<(LevelFilter, String)>(5);
   let _ = LOG_SENDER.set(Mutex::new(log_sender));
-
+  let (new_doc_sender, new_doc_receiver) = bounded::<NewDocument>(5);
+  let _ = NEW_DOCS.set(Mutex::new(new_doc_sender));
   tauri::Builder::default()
   .manage(AppState::default())
   .setup(|app| 
@@ -55,35 +57,43 @@ fn main()
       //новая арка на каждый асинхронный рантайм
       let handle_1 = Arc::clone(&app_handle);
       let handle_2 = Arc::clone(&app_handle);
-      let handle_3 = Arc::clone(&app_handle);
       tauri::async_runtime::spawn(async move 
       {
-          loop 
-          {
-            if let Ok(output) = log_receiver.recv()
-            {
-              //надо разделить на ошибки предупрежедения итд
-              logger::info!("Приехало сообщение от directories_spy! {}", output.1);
-              //rs2js(output, Arc::clone(&handle_1));
-            }
-          }
+        let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;
       });
       tauri::async_runtime::spawn(async move 
       {
-          loop 
-          {
-            let _ = DateState::update_from_thread(Arc::clone(&handle_2)).await;
-            tokio::time::sleep(tokio::time::Duration::new(60, 0)).await;
-          }
-      });
-      tauri::async_runtime::spawn(async move 
+        loop 
         {
-            loop 
-            {
-              let _ = DateState::update_from_thread(Arc::clone(&handle_3)).await;
-              tokio::time::sleep(tokio::time::Duration::new(60, 0)).await;
-            }
-        });
+          let _ = DateState::update_from_thread(Arc::clone(&handle_2)).await;
+          logger::info!("апдейтнулось время!");
+          tokio::time::sleep(tokio::time::Duration::new(60, 0)).await;
+        }
+      });
+      tauri::async_runtime::spawn(async move
+      {
+        loop
+        {
+          if let Ok(output) = new_doc_receiver.recv()
+          {
+            //надо разделить на ошибки предупрежедения итд
+            logger::info!("Поступил новый документ! {}", &output.parse_time);
+            //rs2js(output, Arc::clone(&handle_1));
+          }
+        }
+      });
+      tauri::async_runtime::spawn(async move 
+      {
+        loop 
+        {
+          if let Ok(output) = log_receiver.recv()
+          {
+            //надо разделить на ошибки предупрежедения итд
+            logger::info!("Приехало сообщение от directories_spy! {}", output.1);
+            //rs2js(output, Arc::clone(&handle_1));
+          }
+        }
+      });
       Ok(())
     })
     //.plugin(commands::dictionaries_plugin())
@@ -141,4 +151,3 @@ impl Display for TauriEvent
       }
   }
 }
-

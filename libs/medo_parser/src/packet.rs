@@ -75,6 +75,28 @@ impl Packet
     {
         self.founded_files.as_ref()
     }
+    ///Получение организации из поля source
+    pub fn get_organization(&self) -> Option<Cow<'_, str>>
+    {
+        let org = self.get_xml().and_then(|x| x.get_organization());
+        org
+    }
+     ///Получение организации из поля source
+    pub fn get_document_date_number(&self) -> Option<super::xml::Number>
+    {
+        let num1 = self.get_xml().and_then(|x| x.get_document().and_then(|d| d.num.clone()));
+        let num2 = self.get_container()
+        .and_then(|c| c.authors.authors.first()
+            .and_then(|a| Some( super::xml::Number { number: a.registration.number.clone(), date: a.registration.date.clone()})));
+        num1.or(num2)
+    }
+    ///получение вида документа из поля kind
+    pub fn get_document_type(&self) -> Option<String>
+    {
+        let org = self.get_xml().and_then(|x| x.get_document().and_then(|d| d.kind.clone()));
+        let org2 = self.get_container().and_then(|c| Some(c.requisites.document_kind.clone()));
+        org.or(org2)
+    }
     pub fn get_packet_date_time(&self) -> Option<Cow<str>>
     {
         let dt = self.packet_date_time.as_ref();

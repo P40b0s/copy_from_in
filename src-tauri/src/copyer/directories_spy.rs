@@ -4,8 +4,10 @@ use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
 use settings::{CopyModifier, Settings, Task};
 use tauri::Manager;
-use crate::{ state::AppState, LOG_SENDER};
+use crate::{ state::AppState, LOG_SENDER, NEW_DOCS};
 use crossbeam_channel::bounded;
+
+use super::NewDocument;
 pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 
 pub struct DirectoriesSpy;
@@ -35,7 +37,7 @@ impl DirectoriesSpy
         let state = manager.state::<AppState>().inner();
         let (s, r) = bounded::<(Task, String)>(10);
         let settings = state.get_settings();
-        DirectoriesSpy::check_for_new_packets_spawn(settings, s);
+        DirectoriesSpy::start_tasks(settings, s).await;
         loop 
         {
             while let Ok(rec) = r.recv() 
@@ -54,105 +56,121 @@ impl DirectoriesSpy
         let source_path = Path::new(source_dir).join(packet_name);
         let target_path = Path::new(target_dir).join(packet_name);
         debug!("Сообщение от задачи `{}` -> найден новый пакет {}", task_name, source_path.display());
-        let packet = medo_parser::Packet::parse(&source_path);
-        if let Some(errors) = packet.get_error()
-        {
-            let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
-            let lg = LOG_SENDER.get().unwrap().lock().await;
-            error!("{}", &err);
-            let _ = lg.send((LevelFilter::Error, err));
-            Self::delete(task_name, &founded_packet_name);
-            return;
-        }
         match task.copy_modifier
         {
             CopyModifier::CopyAll =>
             {
-                Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
+                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task)
+                {
+                    send_new_document(NewDocument::new()).await;
+                }
             },
             CopyModifier::CopyOnly =>
             {
-                Self::rule_is_confirmed(&source_path, &target_path, &packet, &task, true).await;
+                if let Some(packet) = Self::get_packet(task_name, &founded_packet_name, &source_path).await
+                {
+                    if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
+                    {
+                        send_new_document(&packet).await;
+                    }
+                }
+                else
+                {
+                    return;
+                }
             },
             CopyModifier::CopyExcept =>
             {
-                Self::rule_is_confirmed(&source_path, &target_path, &packet, &task, false).await;
+                if let Some(packet) = Self::get_packet(task_name, &founded_packet_name, &source_path).await
+                {
+                    if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
+                    {
+                        send_new_document(&packet).await;
+                    }
+                }
+                else
+                {
+                    return;
+                }
+                
             },
         }
+    }
+
+    async fn get_packet(task_name: &str, packet_name: &String, source_path: &PathBuf) -> Option<Packet>
+    {
+        let packet = medo_parser::Packet::parse(&source_path);
+        if let Some(errors) = packet.get_error()
+        {
+            let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
+            error!("{}", &err);
+            send_message(err, LevelFilter::Error).await;
+            Self::delete(task_name, packet_name);
+            return None;
+        }
+        return Some(packet)
     }
 
     ///Отработали ли правила из текущей задачи
     ///`need_rule_accept` при ключе фильтра copy_only нужно поставить true а при ключе copy_except - false
     ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
-    async fn rule_is_confirmed(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
+    async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
     {
-        // if task.document_types.len() == 0 && task.document_uids.len() == 0
-        // {
-        //     let wrn = format!("Для задачи {} -> не определены правила!", source_path.display());
-        //     let lg = LOG_SENDER.get().unwrap().lock().await;
-        //     warn!("{}", &wrn);
-        //     let _ = lg.send((LevelFilter::Warn, wrn));
-        //     Self::delete(&task.name, &packet.get_packet_name().to_owned());
-        //     return false;
-        // }
-        //rc пакеты не копиаируются если включен режим известных типов документов
-
-        if task.document_types.len() > 0 && task.document_uids.len() > 0
+        if task.document_types.len() > 0 && task.document_uids.len() > 0 
+        && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
+        && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
         {
-            let packet_type = packet.get_packet_type();
-            if packet_type.is_none()
-            {
-                let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
-                let lg = LOG_SENDER.get().unwrap().lock().await;
-                error!("{}", &err);
-                let _ = lg.send((LevelFilter::Error, err));
-                Self::delete(&task.name, &packet.get_packet_name().to_owned());
-                return false;
-            }
-            if task.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
+            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
+        }
+        else
+        {
+            if task.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
             {
                 return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
-            }    
-        }
-        else 
-        {
-            if task.document_types.len() > 0
-            {
-                let packet_type = packet.get_packet_type();
-                if packet_type.is_none()
-                {
-                    let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
-                    let lg = LOG_SENDER.get().unwrap().lock().await;
-                    error!("{}", &err);
-                    let _ = lg.send((LevelFilter::Error, err));
-                    Self::delete(&task.name, &packet.get_packet_name().to_owned());
-                    return false;
-                }
-                if task.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
-                {
-                    return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
-                }    
             }
-            if task.document_uids.len() > 0
+            if task.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
             {
-                let source_uid = packet.get_source_uid();
-                if source_uid.is_none()
-                {
-                    let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
-                    let lg = LOG_SENDER.get().unwrap().lock().await;
-                    error!("{}", &err);
-                    let _ = lg.send((LevelFilter::Error, err));
-                    Self::delete(&task.name, &packet.get_packet_name().to_owned());
-                    return false;
-                }
-                if task.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
-                {
-                    return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
-                }    
+                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
             }
         }
         return false;
     }
+
+    async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
+    {
+        let packet_type = packet.get_packet_type();
+        if packet_type.is_none()
+        {
+            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
+            error!("{}", &err);
+            Self::delete(&task.name, &packet.get_packet_name().to_owned());
+            send_message(err, LevelFilter::Error).await;
+            return false;
+        }
+        if task.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
+        {
+            return true;
+        }
+        false 
+    }
+    async fn source_uid_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
+    {
+        let source_uid = packet.get_source_uid();
+        if source_uid.is_none()
+        {
+            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
+            error!("{}", &err);
+            Self::delete(&task.name, &packet.get_packet_name().to_owned());
+            send_message(err, LevelFilter::Error).await;
+            return false;
+        }
+        if task.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
+        {
+            return true;
+        }    
+        false 
+    }
+
 
     fn copy_process(target_path: &PathBuf,
         source_path: &PathBuf,
@@ -187,7 +205,7 @@ impl DirectoriesSpy
     }
 
     ///Каждый таск обрабатывается в отдельном потоке
-    async fn check_for_new_packets_spawn(settings: Settings, sender : crossbeam_channel::Sender<(Task, String)>)
+    async fn start_tasks(settings: Settings, sender : crossbeam_channel::Sender<(Task, String)>)
     {
         let tasks = settings.tasks;
         for t in tasks
@@ -195,19 +213,20 @@ impl DirectoriesSpy
             if !t.is_active
             {
                 let wrn = format!("Задач {} -> не активна и не будет запущена (флаг is_active)", t.get_task_name());
-                let lg = LOG_SENDER.get().unwrap().lock().await;
                 warn!("{}", &wrn);
-                let _ = lg.send((LevelFilter::Warn, wrn));
+                send_message(wrn, LevelFilter::Warn).await;
+                continue;
             }
             else if (t.copy_modifier == CopyModifier::CopyOnly || t.copy_modifier == CopyModifier::CopyExcept) && (t.document_types.len() == 0 && t.document_uids.len() == 0)
             {
                 let wrn = format!("Для задачи {} -> не определены правила!", t.get_task_name());
-                let lg = LOG_SENDER.get().unwrap().lock().await;
                 warn!("{}", &wrn);
-                let _ = lg.send((LevelFilter::Warn, wrn));
+                send_message(wrn, LevelFilter::Warn).await;
+                continue;
             }
             else
             {
+                Self::deserialize_exclude(&t);
                 let builder = std::thread::Builder::new().name(t.name.clone());
                 let sender = sender.clone();
                 let _ = builder.spawn(move ||
@@ -247,7 +266,6 @@ impl DirectoriesSpy
                     }
                 });
             }
-            
         }
     }
     ///Добавить к задаче имя директории, чтобы больше ее не копировать
@@ -308,5 +326,16 @@ impl DirectoriesSpy
             guard.insert(task.name.clone(), ex.1);
         }
     }
-    
+}
+
+
+async fn send_message(msg: String, msg_type: LevelFilter)
+{
+    let lg = LOG_SENDER.get().unwrap().lock().await;
+    let _ = lg.send((msg_type, msg));
+}
+async fn send_new_document(packet: impl Into<NewDocument>)
+{
+    let lg = NEW_DOCS.get().unwrap().lock().await;
+    let _ = lg.send(packet.into());
 }

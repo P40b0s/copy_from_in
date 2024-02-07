@@ -1,0 +1,69 @@
+[07-02-2024 13:25:47]:⚠ Предупреждение -> Ошибка чтения файла /hard/xar/projects/rust/copy_from_in/settings.toml, текущий объект инициализирован с настроками по умолчанию No such file or directory (os error 2)
+[07-02-2024 13:25:47]:❌ Ошибка -> Ошибка десериализации файла настроек, выход из программы...
+[07-02-2024 13:26:37]:❌ Ошибка -> Ошибка десериализации файла /hard/xar/projects/rust/copy_from_in/settings.toml->TOML parse error at line 9, column 17
+  |
+9 | copy_modifier = "copy_all"
+  |                 ^^^^^^^^^^
+invalid type: string "copy_all", expected a borrowed string
+, текущий объект инициализирован с настроками по умолчанию
+[07-02-2024 13:26:37]:❌ Ошибка -> Ошибка десериализации файла настроек, выход из программы...
+[07-02-2024 14:44:53]:⚠ Предупреждение -> Ошибка чтения файла from_backup_to_architector.task, будет создан новый файл
+[07-02-2024 14:44:53]:💬 Информация -> апдейтнулось время!
+[07-02-2024 14:44:53]:❌ Ошибка -> 😳 Ошибка чтения директории /test_data/in - Нет такого файла или каталога (os error 2)
+[07-02-2024 14:47:37]:💬 Информация -> апдейтнулось время!
+[07-02-2024 14:48:37]:💬 Информация -> апдейтнулось время!
+[07-02-2024 14:49:08]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:49:08]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:08]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:08]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:49:23]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:49:23]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:23]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:23]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:49:37]:💬 Информация -> апдейтнулось время!
+[07-02-2024 14:49:38]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:49:38]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:38]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:38]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:49:53]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:49:53]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:53]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:49:53]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:50:08]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:50:08]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:08]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:08]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:50:23]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:50:23]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:23]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:23]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:50:37]:💬 Информация -> апдейтнулось время!
+[07-02-2024 14:50:38]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:50:38]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:39]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:39]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:50:54]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:50:54]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:54]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:50:54]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 14:51:09]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16
+[07-02-2024 14:51:09]:❌ Ошибка -> Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:51:09]:💬 Информация -> Приехало сообщение от directories_spy! Ошибка обработки пакета /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16 -> /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 16/123.rc, Expecting `Event::Start`
+[07-02-2024 14:51:09]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 15:23:09]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:24:09]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:24:55]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/22 copy 17
+[07-02-2024 15:24:55]:💬 Информация -> Задачей `from_backup_to_architector` c модификатором copy_all пакет 22 copy 17 скопирован в /hard/xar/projects/rust/copy_from_in/test_data/out/22 copy 17 за 0с.
+[07-02-2024 15:24:55]:💬 Информация -> Поступил новый документ! 2024-02-07T15:24:55
+[07-02-2024 15:24:55]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 15:25:09]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:25:25]:⚙ DEBUG -> Сообщение от задачи `from_backup_to_architector` -> найден новый пакет /hard/xar/projects/rust/copy_from_in/test_data/in/38773995_1 copy 7
+[07-02-2024 15:25:25]:💬 Информация -> Задачей `from_backup_to_architector` c модификатором copy_all пакет 38773995_1 copy 7 скопирован в /hard/xar/projects/rust/copy_from_in/test_data/out/38773995_1 copy 7 за 0с.
+[07-02-2024 15:25:25]:💬 Информация -> Поступил новый документ! 2024-02-07T15:25:25
+[07-02-2024 15:25:25]:💬 Информация -> Задача from_backup_to_architector была завершена за 0c., перезапуск задачи через 15c.
+[07-02-2024 15:29:12]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:30:12]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:31:12]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:32:12]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:33:12]:💬 Информация -> апдейтнулось время!
+[07-02-2024 15:34:12]:💬 Информация -> апдейтнулось время!

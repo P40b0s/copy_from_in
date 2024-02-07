@@ -167,8 +167,8 @@ fn deserialize_copy_modifier<'de, D>(deserializer: D) -> Result<CopyModifier, D:
 where
     D: serde::de::Deserializer<'de>,
 {
-    let s: &str = serde::de::Deserialize::deserialize(deserializer)?;
-    match s 
+    let s: String = serde::de::Deserialize::deserialize(deserializer)?;
+    match s.as_str()
     {
         "copy_only" => Ok(CopyModifier::CopyOnly),
         "copy_all" => Ok(CopyModifier::CopyAll),

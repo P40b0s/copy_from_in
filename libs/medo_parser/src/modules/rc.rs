@@ -61,7 +61,7 @@ impl MedoParser for RcParser
         let de: Result<RcParser, DeError> = quick_xml::de::from_reader(decoded.1.as_bytes());
         if de.is_err()
         {
-            return Err(MedoParserError::SerdeError(format!("{}, {}", file.display(), de.err().unwrap())));
+            return Err(MedoParserError::SerdeError(format!("Ошибка разбора файла rc: {}, {}", file.display(), de.err().unwrap())));
         }
         Ok(de.unwrap())
     }
