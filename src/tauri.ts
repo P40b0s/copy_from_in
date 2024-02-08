@@ -1,36 +1,3 @@
-// import { InvokeArgs, invoke as inv} from '@tauri-apps/api/tauri';
-// import { Disease, DiseaseTest, DiseaseType, Phones, User, Vacation, Vactination } from '../models/user';
-// import { global_store } from '../store';
-// import { parseDate } from './date';
-// import { ref } from 'vue';
-
-// function is_tauri() : boolean
-// {
-//     if (window.__TAURI_IPC__)
-//         return true;
-//     else
-//         return false;
-// }
-// type TauriCmd = 'get_diseases_types_command'
-
-// /** Запуск команды из бэкэнда, если таури не заинжекчен то undefined*/
-// async function invoke<T>(cmd: TauriCmd, args?: InvokeArgs) : Promise<T|undefined>
-// {
-//     if (is_tauri())
-//     {
-//         return await inv<T>(cmd, args);
-//     }
-//     else
-//     {
-//         return new Promise<undefined>((resolve) => 
-//         {
-//             resolve(undefined);
-//         });
-//     }
-// }
-
-// export {is_tauri, type TauriCmd, invoke}
-
 import { InvokeArgs, invoke as inv,} from '@tauri-apps/api/tauri';
 import { Dictionary, Disease, DiseaseTest, DiseaseType, Journal, Ordered, Phones, User, Vacation, Vactination } from '../models/user';
 import { global_store } from '../store';
@@ -49,11 +16,15 @@ function is_tauri() : boolean
 }
 
 
-enum TauriEventName
+type Document = 
 {
-    /**возникает при обновлении времени (раз в минуту) */
-    RefreshTime = 'refresh_time_event',
+    organization?: string,
+    doc_type?: string,
+    number?: string,
+    sign_date?: string,
+    parse_time?: string
 }
+ 
 
 export class TauriEvents
 {

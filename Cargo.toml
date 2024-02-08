@@ -7,7 +7,6 @@ authors = ["Alex_Xar <P40b0s@gmail.com>"]
 [workspace]
 members = [
     "src-tauri",
-    "libs/copy",
     "libs/medo_parser",
     "libs/settings",]
 default-members = ["src-tauri"]

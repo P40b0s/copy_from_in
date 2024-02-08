@@ -18,8 +18,12 @@ impl Default for AppState
     fn default() -> Self 
     {
         let settings = Settings::load();
-        if !settings.0
+        if settings.is_err()
         {
+            for e in settings.err().unwrap()
+            {
+                
+            }
             logger::error!("Ошибка десериализации файла настроек, выход из программы...");
             exit(01);
         }
@@ -28,7 +32,7 @@ impl Default for AppState
             copies_count: AtomicU32::new(0),
             errors_count: AtomicU32::new(0),
             errors: Mutex::new(vec![]),
-            settings: Mutex::new(settings.1),
+            settings: Mutex::new(settings.unwrap()),
             current_date: Mutex::new(*Date::now())
         }
     }

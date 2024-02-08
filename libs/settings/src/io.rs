@@ -5,7 +5,7 @@ use toml::de::Error;
 
 ///Сериализация объекта в строковый формат
 ///если linux то 
-pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) where T : Clone + Serialize
+pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) -> Result<(), String> where T : Clone + Serialize 
 {
     let mut path : PathBuf = PathBuf::default();
     if cfg!(unix)
@@ -24,32 +24,6 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) w
     {
         path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
     }
-    
-    //let mut work_dir = PathBuf::default();
-    // if directory.is_some()
-    // {
-    //     let p = PathBuf::from(directory.unwrap());
-    //     work_dir = p;
-    //     work_dir.push(file_name);
-    // }
-    // else
-    // {
-    //     work_dir = std::env::current_dir().unwrap();
-    //     work_dir.push(file_name);
-    // }
-    //let _del = std::fs::remove_file(&work_dir);
-    // work_dir = std::env::current_dir().unwrap();
-    // work_dir.push(file_name);
-    // if !work_dir.exists()
-    // {
-    //     work_dir = PathBuf::from_str(file_path).unwrap();
-    //     if !work_dir.exists()
-    //     {
-    //         error!("Ошибка сохранения файла настроек {}!", &work_dir.display());
-    //         return;
-    //     }
-    // }
-    //     work_dir.push(file_name);
     let write = OpenOptions::new()
     .write(true)
     .create(true)
@@ -64,17 +38,20 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) w
         {
             let mut f = BufWriter::new(wr);
             let _write = f.write_all(toml.as_bytes());
+            return Ok(());
         }
         else
         {
-            error!("Ошибка сохранения файла настроек {}! -> {}", &path.display(), ser.err().unwrap());
-            return;
+            let err = ["Ошибка сохранения файла настроек ", &path.display().to_string(), " -> ", &ser.err().unwrap().to_string()].concat();
+            error!("{}", &err);
+            return Err(err);
         }
     }
     else 
     {
-        error!("{}", write.err().unwrap());
-        return;
+        let err = ["Ошибка сохранения файла настроек -> ", &write.err().unwrap().to_string()].concat();
+        error!("{}", &err);
+        return Err(err);
     }
    
 }
@@ -109,7 +86,7 @@ pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: &str, file_name: P) -> (bo
     if result.is_err()
     {
         let err_settings = Path::new(&path).join(".structure_error");
-        std::fs::copy(&path, &err_settings);
+        let _ = std::fs::copy(&path, &err_settings);
         error!("Ошибка десериализации файла {}->{}, текущий объект инициализирован с настроками по умолчанию", &path.display(), result.err().unwrap());
         return (false, T::default());
     }

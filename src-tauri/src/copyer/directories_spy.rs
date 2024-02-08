@@ -116,7 +116,7 @@ impl DirectoriesSpy
     ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
     async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
     {
-        if task.document_types.len() > 0 && task.document_uids.len() > 0 
+        if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
         && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
         && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
         {
@@ -124,11 +124,11 @@ impl DirectoriesSpy
         }
         else
         {
-            if task.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
+            if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
             {
                 return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
             }
-            if task.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
+            if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
             {
                 return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
             }
@@ -147,7 +147,7 @@ impl DirectoriesSpy
             send_message(err, LevelFilter::Error).await;
             return false;
         }
-        if task.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
+        if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
         {
             return true;
         }
@@ -164,7 +164,7 @@ impl DirectoriesSpy
             send_message(err, LevelFilter::Error).await;
             return false;
         }
-        if task.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
+        if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
         {
             return true;
         }    
@@ -213,13 +213,6 @@ impl DirectoriesSpy
             if !t.is_active
             {
                 let wrn = format!("Задач {} -> не активна и не будет запущена (флаг is_active)", t.get_task_name());
-                warn!("{}", &wrn);
-                send_message(wrn, LevelFilter::Warn).await;
-                continue;
-            }
-            else if (t.copy_modifier == CopyModifier::CopyOnly || t.copy_modifier == CopyModifier::CopyExcept) && (t.document_types.len() == 0 && t.document_uids.len() == 0)
-            {
-                let wrn = format!("Для задачи {} -> не определены правила!", t.get_task_name());
                 warn!("{}", &wrn);
                 send_message(wrn, LevelFilter::Warn).await;
                 continue;
