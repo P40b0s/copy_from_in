@@ -4,10 +4,10 @@ use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
 use settings::{CopyModifier, Settings, Task};
 use tauri::Manager;
-use crate::{ state::AppState, LOG_SENDER, NEW_DOCS};
+use crate::{ new_packet_found, state::AppState, NEW_DOCS};
 use crossbeam_channel::bounded;
 
-use super::NewDocument;
+use super::{NewDocument, NewPacketInfo};
 pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 
 pub struct DirectoriesSpy;
@@ -62,12 +62,12 @@ impl DirectoriesSpy
             {
                 if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task)
                 {
-                    send_new_document(NewDocument::new()).await;
+                    send_new_document(NewDocument::new(&founded_packet_name)).await;
                 }
             },
             CopyModifier::CopyOnly =>
             {
-                if let Some(packet) = Self::get_packet(task_name, &founded_packet_name, &source_path).await
+                if let Some(packet) = Self::get_packet(&source_path).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
@@ -81,7 +81,7 @@ impl DirectoriesSpy
             },
             CopyModifier::CopyExcept =>
             {
-                if let Some(packet) = Self::get_packet(task_name, &founded_packet_name, &source_path).await
+                if let Some(packet) = Self::get_packet(&source_path).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
@@ -97,15 +97,14 @@ impl DirectoriesSpy
         }
     }
 
-    async fn get_packet(task_name: &str, packet_name: &String, source_path: &PathBuf) -> Option<Packet>
+    async fn get_packet(source_path: &PathBuf) -> Option<Packet>
     {
         let packet = medo_parser::Packet::parse(&source_path);
         if let Some(errors) = packet.get_error()
         {
             let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
             error!("{}", &err);
-            send_message(err, LevelFilter::Error).await;
-            Self::delete(task_name, packet_name);
+            send_new_document(err).await;
             return None;
         }
         return Some(packet)
@@ -143,8 +142,7 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
             error!("{}", &err);
-            Self::delete(&task.name, &packet.get_packet_name().to_owned());
-            send_message(err, LevelFilter::Error).await;
+            send_new_document(err).await;
             return false;
         }
         if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
@@ -160,8 +158,7 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
             error!("{}", &err);
-            Self::delete(&task.name, &packet.get_packet_name().to_owned());
-            send_message(err, LevelFilter::Error).await;
+            send_new_document(err).await;
             return false;
         }
         if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
@@ -214,7 +211,6 @@ impl DirectoriesSpy
             {
                 let wrn = format!("Задач {} -> не активна и не будет запущена (флаг is_active)", t.get_task_name());
                 warn!("{}", &wrn);
-                send_message(wrn, LevelFilter::Warn).await;
                 continue;
             }
             else
@@ -321,13 +317,7 @@ impl DirectoriesSpy
     }
 }
 
-
-async fn send_message(msg: String, msg_type: LevelFilter)
-{
-    let lg = LOG_SENDER.get().unwrap().lock().await;
-    let _ = lg.send((msg_type, msg));
-}
-async fn send_new_document(packet: impl Into<NewDocument>)
+async fn send_new_document(packet: impl Into<NewPacketInfo>)
 {
     let lg = NEW_DOCS.get().unwrap().lock().await;
     let _ = lg.send(packet.into());

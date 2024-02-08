@@ -19,21 +19,31 @@ function is_tauri() : boolean
 type Document = 
 {
     organization?: string,
-    doc_type?: string,
+    docType?: string,
     number?: string,
-    sign_date?: string,
-    parse_time?: string
+    signDate?: string,
+    name: string,
+    parseTime: string
+}
+type Error = 
+{
+    error?: string,
+}
+type Packet = 
+{
+    document?: Document,
+    error?: Error
 }
  
 
 export class TauriEvents
 {
-    static async update_state_event(func: (arg: event.Event<AppState>) => void)
+    static async new_document_event(func: (arg: event.Event<Packet>) => void)
     {
         if(is_tauri())
-            await listen<AppState>('update_state', (event) => 
+            await listen<Packet>('new_document_event', (event) => 
             {
-                console.log(`Эвент update_state обновлен ${event.windowLabel}, payload: ${event.payload.current_date}`);
+                console.log(`Эвент new_document_event обновлен ${event.windowLabel}, payload: ${event.payload.document?.parseTime}`);
                 func(event);
             });
         else

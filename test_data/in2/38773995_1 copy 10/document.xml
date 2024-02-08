@@ -5,6 +5,6 @@
     </xdms:source>
   </xdms:header>
   <xdms:container>
-    <xdms:body>container.zip</xdms:body>
+    <xdms:body>document.edc.zip</xdms:body>
   </xdms:container>
 </xdms:communication>

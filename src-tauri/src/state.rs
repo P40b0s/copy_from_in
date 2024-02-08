@@ -22,7 +22,7 @@ impl Default for AppState
         {
             for e in settings.err().unwrap()
             {
-                
+                logger::error!("{}", e.to_string());
             }
             logger::error!("Ошибка десериализации файла настроек, выход из программы...");
             exit(01);

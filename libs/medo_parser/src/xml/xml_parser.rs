@@ -188,6 +188,7 @@ fn process_container_xml(file_path: &PathBuf, zip_file: &String, paths: &mut Vec
     //путь к архиву
     dir.push(zip_file);
     let xml_in_container = unzip(&dir, paths)?;
+    logger::info!("unzip container {}", &dir.display());
     //if let  Ok(xml_in_container) = xml_in_container.as_ref()
     //{
     let clear_xml = clear_xml(&xml_in_container, None)?;
