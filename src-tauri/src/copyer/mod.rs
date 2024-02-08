@@ -1,4 +1,5 @@
 mod directories_spy;
+mod service;
 pub use  directories_spy::DirectoriesSpy;
 use medo_parser::Packet;
 use serde::{Deserialize, Serialize};

@@ -13,23 +13,6 @@ pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::n
 pub struct DirectoriesSpy;
 impl DirectoriesSpy
 {
-    fn get_dirs(path: &PathBuf) -> Option<Vec<String>>
-    {
-        let paths = std::fs::read_dir(path);
-        if paths.is_err()
-        {
-            error!("😳 Ошибка чтения директории {} - {}", path.display(), paths.err().unwrap());
-            return None;
-        }
-        let mut dirs = vec![];
-        for d in paths.unwrap()
-        {
-            let dir = d.unwrap().file_name().to_str().unwrap().to_owned();
-            dirs.push(dir);
-        }
-        return Some(dirs);
-    }
-
     ///Возвырат сообщений из канала реализован в главном потоке, управление в main не возвращается, 
     ///так как главный поток больше ни для чего не используется, оставлю так
     pub async fn process_tasks<R: tauri::Runtime>(manager: Arc<impl Manager<R>>) -> anyhow::Result<()>
@@ -223,10 +206,10 @@ impl DirectoriesSpy
                     loop 
                     {
                         let start = std::time::SystemTime::now();
-                        let paths = Self::get_dirs(&t.source_dir);
+                        let paths = super::io::get_dirs(&t.source_dir);
                         if paths.is_none()
                         {
-                            break;
+                            continue;
                         }
                         let mut is_change = false;
                         if let Some(reader) = paths.as_ref()

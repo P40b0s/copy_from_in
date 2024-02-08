@@ -2,24 +2,21 @@
   all(not(debug_assertions), target_os = "windows"),
   windows_subsystem = "windows"
 )]
-mod models;
 mod helpers;
-mod file;
 mod error;
 mod copyer;
 use copyer::{DirectoriesSpy, NewPacketInfo};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
-mod state;
-mod state_updater;
 use std::{sync::Arc, fmt::Display};
 pub use logger;
 mod commands;
 use commands::*;
+mod state;
+use state::AppState;
 pub use const_format::concatcp;
 use logger::StructLogger;
 use once_cell::sync::OnceCell;
-use state::AppState;
 use tauri::Manager;
 use tokio::sync::Mutex;
 
@@ -66,9 +63,10 @@ fn main()
       Ok(())
     })
     .plugin(commands::date_plugin())
-    .invoke_handler(tauri::generate_handler![
-      //initialize_app_state,
-    ])
+    .plugin(commands::settings_plugin())
+    // .invoke_handler(tauri::generate_handler![
+    //   //initialize_app_state,
+    // ])
     .run(tauri::generate_context!())
     .expect("Ошибка запуска приложения!");
 }

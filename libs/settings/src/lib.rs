@@ -28,6 +28,8 @@ pub struct Task
     pub copy_modifier: CopyModifier,
     #[serde(default="is_default")]
     pub is_active: bool,
+    #[serde(default="is_default")]
+    pub cleaning: bool,
     pub filters: Filter
     
 }
@@ -80,6 +82,7 @@ impl Display for ValidationError
         }
     }
 }
+
 fn def_timer() -> u64
 {
     200000
@@ -101,7 +104,7 @@ impl Default for Task
 {
     fn default() -> Self 
     {
-        Task 
+        Task
         {
             source_dir: PathBuf::from("in"),
             target_dir: PathBuf::from("out"),
@@ -110,6 +113,7 @@ impl Default for Task
             copy_modifier: CopyModifier::CopyAll,
             delete_after_copy: false,
             is_active: false,
+            cleaning: false,
             filters: Filter
             {
                 document_types: vec![],

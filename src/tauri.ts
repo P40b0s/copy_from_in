@@ -34,7 +34,23 @@ type Packet =
     document?: Document,
     error?: Error
 }
- 
+
+type Task = 
+{
+    name: string,
+    source_dir: string,
+    target_dir: string,
+    timer: number,
+    delete_after_copy: boolean,
+    copy_modifier: 'copy_all' | 'copy_only' | 'copy_except',
+    is_active: boolean,
+    filters: Filter
+}
+type Filter = 
+{
+    document_types: string[],
+    document_uids: string[]
+}
 
 export class TauriEvents
 {
@@ -53,14 +69,98 @@ export class TauriEvents
     }
 }
 
+
+abstract class Plugin  
+{
+    abstract plugin: string;
+    abstract cmd_names: string[];
+    /** Запуск команды таури, если таури не заинжекчен то undefined если тип unknown то значит пришла ошибка*/
+    async save<I, O>(cmd: string, saved_obj: I) : Promise<O|undefined|unknown>
+    {
+        if (is_tauri())
+        {
+            try
+            {
+                const data = await inv<O>(cmd, {payload: saved_obj});
+                return data;
+            }
+            catch(e: unknown)
+            {
+                console.error(e);
+                return new Promise<unknown>((resolve) => 
+                {
+                    resolve(e);
+                });
+            }
+        }
+        else
+        {
+            console.error("Tauri не заинжекчен, невозможно сохранить ", saved_obj);
+            return new Promise<undefined>((resolve) => 
+            {
+                resolve(undefined);
+            });
+        }
+    }
+    /** Запуск команды таури, если таури не заинжекчен то undefined если тип unknown то значит пришла ошибка*/
+    async get<T>(cmd: string, args?: InvokeArgs) : Promise<T|undefined|unknown>
+    {
+        if (is_tauri())
+        {
+            try
+            {
+                const data = await inv<T>(cmd, args);
+                return data;
+            }
+            catch(e: unknown)
+            {
+                console.error(e);
+                return new Promise<unknown>((resolve) => 
+                {
+                    resolve(e);
+                });
+            }
+        }
+        else
+        {
+            console.error("Tauri не заинжекчен, невозможно выполнить команду");
+            return new Promise<undefined>((resolve) => 
+            {
+                resolve(undefined);
+            });
+        }
+    }
+    functionGenerator = <T extends string, U = { [K in T]?: string }>(keys: T[]): U => 
+    {
+        return keys.reduce((oldType: any, type) => ({ ...oldType, [type]: type }), {})
+    }
+}
+
+class Settings extends Plugin
+{
+    plugin = "plugin:settings|";
+    cmd_names = ['update', 'get'];
+    public async save_settings(types: Task[]): Promise<void|undefined|unknown>
+    {
+        return await this.save<Task[], void>(this.plugin + this.cmd_names[0], types);
+    }
+    public async load_settings(): Promise<void|undefined|unknown>
+    {
+        return await this.get<Task[]>(this.plugin + this.cmd_names[1]);
+    }
+}
+
+const settings = new Settings();
+export {settings}
+
 export class TauriCommands
 {
-    static Dictionaries = class
+    static Settings = class extends Plugin
     {
-        static dictionary_plugin = "plugin:dictionaries|";
-        public static async save_diseases_types(types: DiseaseType[]): Promise<DiseaseType[]|undefined>
+        plugin = "plugin:settings|";
+        public static async save_settings(types: Task[]): Promise<DiseaseType[]|undefined>
         {
-            return await save_cmd<DiseaseType[]>(TauriCommands.Dictionaries.dictionary_plugin + 'save_diseases_types', types);
+            return await save_cmd<DiseaseType[]>(TauriCommands.Dictionaries.dictionary_plugin + 'update', types);
         }
         public static async get_diseases_types(): Promise<DiseaseType[]|undefined>
         {
@@ -302,13 +402,13 @@ async function invoke_or_default<T>(cmd: TauriGetCmd, default_value: T, args?: I
         });
     }
 }
-async function save_cmd<T>(cmd: string, saved_obj: T) : Promise<undefined|T>
+async function save<I, O>(cmd: string, saved_obj: I) : Promise<undefined|O>
 {
     if (is_tauri())
     {
         try
         {
-            const data = await inv<T>(cmd, {payload: saved_obj});
+            const data = await inv<O>(cmd, {payload: saved_obj});
             return data;
         }
         catch(e: unknown)

@@ -1,4 +1,4 @@
-use std::{path::Path, ffi::OsStr};
+use std::path::Path;
 use serde::{Serialize, de::DeserializeOwned};
 use crate::ValidationError;
 
