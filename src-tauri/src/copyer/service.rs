@@ -5,13 +5,9 @@ use settings::{Settings, Task};
 
 use crate::Error;
 
-
-
-pub struct Services{}
-
-impl Services
+pub trait PacketsCleaner
 {
-    pub fn clear_dirs(settings: &Settings) -> Result<u32, Error>
+    fn clear_packets(settings: &Settings) -> Result<u32, Error>
     {
         let mut errors: Vec<String> = vec![];
         let mut count = 0;
@@ -65,49 +61,31 @@ impl Services
             return Ok(count);
         }
     }
-
-    // pub fn clear_excepts(tasks: &Vec<Task>) -> u32
-    // {
-    //     let mut count: u32 = 0;
-    //     for t in tasks
-    //     {
-    //         let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //         let excludes = guard.get(t.get_task_name()).unwrap().clone();
-    //         let mut del: Vec<String> = vec![];
-    //         if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
-    //         {
-    //             for ex in &excludes
-    //             {
-    //                 if dirs.contains(ex)
-    //                 {
-    //                     del.push(ex.to_owned());
-    //                 }
-    //                 else
-    //                 {
-    //                     count+=1;
-    //                 }
-    //             }
-    //         }
-    //         guard.insert(t.get_task_name().to_owned(), del);
-    //     }
-    //     logger::info!("При проверке списка задач исключено {} несуществующих директорий", count);
-    //     count
-    // }
 }
+
+impl PacketsCleaner for Settings{}
 
 #[cfg(test)]
 mod tests
 {
     use settings::{FileMethods, Serializer, Settings};
 
-    use crate::copyer::service::Services;
+    use crate::copyer::service::PacketsCleaner;
 
     #[test]
-    fn test_dir_cleaner()
+    fn test_task_cleaner()
     {
         logger::StructLogger::initialize_logger();
         let s = Settings::load(true, Serializer::Toml).unwrap();
-        let _ = Services::clear_dirs(&s);
-        println!("{:?}", s);
+        let r = s.clean_excludes();
+        println!("{:?} => {}", s, r);
+    }
+    #[test]
+    fn test_packets_cleaner()
+    {
+        logger::StructLogger::initialize_logger();
+        let s = Settings::load(true, Serializer::Toml).unwrap();
+        let r = Settings::clear_packets(&s);
+        println!("{:?} => {}", s, r.unwrap());
     }
 }
