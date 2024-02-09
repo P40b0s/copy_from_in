@@ -3,9 +3,15 @@ use logger::{error, warn};
 use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use toml::de::Error;
 
+
+pub enum Serializer
+{
+    Json,
+    Toml
+}
 ///Сериализация объекта в строковый формат
 ///если linux то 
-pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool) -> Result<(), String> where T : Clone + Serialize 
+pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool, serializer: Serializer) -> Result<(), String> where T : Clone + Serialize 
 {
     let path = if root_dir
     {
@@ -25,7 +31,12 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool) -> 
     if let Ok(wr) = write
     {
         //let pretty = serde_json::to_string_pretty(&json);
-        let ser = toml::to_string(&json);
+        let ser = match serializer
+        {
+            Serializer::Toml => toml::to_string(&json).map_err(|e| e.to_string()),
+            Serializer::Json => serde_json::to_string_pretty(&json).map_err(|e|e.to_string())
+        };
+     
         if let Ok(toml) = ser
         {
             let mut f = BufWriter::new(wr);
@@ -51,7 +62,7 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool) -> 
 
 ///Читение файл в строку из чистого utf-8
 /// если false то файл не найден и был создан новый
-pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool) -> (bool, T) where T : Clone + DeserializeOwned + Default
+pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool, serializer: Serializer) -> (bool, T) where T : Clone + DeserializeOwned + Default
 {
     let path = if root_dir
     {
@@ -69,7 +80,12 @@ pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool) -> (boo
         warn!("Ошибка чтения файла {}, текущий объект инициализирован с настроками по умолчанию {}", &path.display(), err);
         return (false, T::default());
     }
-    let result: Result<T, Error> = toml::from_str(&file.unwrap());
+    //let result: Result<T, Error> = toml::from_str(&file.unwrap());
+    let result: Result<T, String>  = match serializer
+    {
+        Serializer::Toml => toml::from_str(file.as_ref().unwrap()).map_err(|e| e.to_string()),
+        Serializer::Json => serde_json::from_str(file.as_ref().unwrap()).map_err(|e|e.to_string())
+    };
     if result.is_err()
     {
         let err_settings = Path::new(&path).join(".structure_error");

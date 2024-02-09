@@ -98,7 +98,7 @@ impl Services
 #[cfg(test)]
 mod tests
 {
-    use settings::{FileMethods, Settings};
+    use settings::{FileMethods, Serializer, Settings};
 
     use crate::copyer::service::Services;
 
@@ -106,7 +106,7 @@ mod tests
     fn test_dir_cleaner()
     {
         logger::StructLogger::initialize_logger();
-        let s = Settings::load(true).unwrap();
+        let s = Settings::load(true, Serializer::Toml).unwrap();
         let _ = Services::clear_dirs(&s);
         println!("{:?}", s);
     }

@@ -4,7 +4,7 @@ mod file_methods;
 pub use file_methods::FileMethods;
 use once_cell::sync::OnceCell;
 use std::{borrow::Cow, fmt::{Display, Write}, path::{Path, PathBuf}, sync::{Arc, Mutex, RwLock}, time::Duration};
-use io::{serialize, deserialize};
+pub use io::{serialize, deserialize, Serializer};
 use serde::{Serialize, Deserialize};
 extern crate toml;
 extern crate blake2;
@@ -231,9 +231,9 @@ impl FileMethods for Settings
         }
     }
 
-    fn load(root_dir: bool) -> Result<Self, Vec<ValidationError>> 
+    fn load(root_dir: bool, serializer: io::Serializer) -> Result<Self, Vec<ValidationError>> 
     {
-        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, root_dir);
+        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, root_dir, serializer);
         if !des.0
         {
             Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
@@ -292,7 +292,10 @@ impl Settings
         let guard = EXCLUDES.get().unwrap().lock().unwrap();
         if let Some(vec) = guard.get(task_name)
         {
-            io::serialize(vec, file_name, true);
+            if let Err(e) = io::serialize(vec, file_name, true, io::Serializer::Json)
+            {
+                logger::error!("Ошибка сохранения исключений списка {} -> {}", &concat_path, e);
+            }
         }  
     }
     pub fn load_tasks_exludes(&self)
@@ -310,7 +313,7 @@ impl Settings
         {
             let file = [&task.name, ".task"].concat();
             let path = Path::new(&file);
-            let ex: (bool, Vec<String>) = io::deserialize(&path, true);
+            let ex: (bool, Vec<String>) = io::deserialize(&path, true, io::Serializer::Json);
             guard.insert(task.name.clone(), ex.1);
         }
     }
@@ -399,20 +402,26 @@ fn is_default() -> bool
 mod test
 {
     use serde::Deserialize;
-    use crate::{Settings,  file_methods::FileMethods};
+    use crate::{file_methods::FileMethods, Settings, EXCLUDES};
 
     #[test]
     fn test_serialize_medo()
     {
         let medo: Settings = Settings::default();
-        medo.save(true);
+        medo.save(true, crate::io::Serializer::Toml);
     }
 
     #[test]
     fn test_deserialize_medo()
     {
-        let settings = Settings::load(true);
-        println!("{:?}", settings.err().unwrap())
+        logger::StructLogger::initialize_logger();
+        let settings = Settings::load(true, crate::io::Serializer::Toml).unwrap();
+        Settings::add_to_exclude("TASK", &"5555555".to_owned());
+        Settings::add_to_exclude("TASK", &"4555555".to_owned());
+        Settings::add_to_exclude("TASK", &"3555555".to_owned());
+        Settings::add_to_exclude("TASK", &"2555555".to_owned());
+        logger::info!("{:?}", EXCLUDES.get().unwrap().lock().unwrap());
+        Settings::save_exclude("TASK");
         //let adm_prez = settings.organs.iter().find(|s|s.internal_id == OrganInternalId::AdmPrez);
         //assert_eq!(adm_prez.unwrap().source_uid, String::from("0b21bba1-f44d-4216-b465-147665360c06"));
     }
