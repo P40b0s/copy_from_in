@@ -467,46 +467,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clap"
-version = "4.4.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e578d6ec4194633722ccf9544794b71b1385c3c027efe0c55db226fc880865c"
-dependencies = [
- "clap_builder",
- "clap_derive",
-]
-
-[[package]]
-name = "clap_builder"
-version = "4.4.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4df4df40ec50c46000231c914968278b1eb05098cf8f1b3a518a95030e71d1c7"
-dependencies = [
- "anstream",
- "anstyle",
- "clap_lex",
- "strsim",
-]
-
-[[package]]
-name = "clap_derive"
-version = "4.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf9804afaaf59a91e75b022a30fb7229a7901f60c755489cc61c9b423b836442"
-dependencies = [
- "heck 0.4.1",
- "proc-macro2",
- "quote",
- "syn 2.0.48",
-]
-
-[[package]]
-name = "clap_lex"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "702fc72eb24e5a1e48ce58027a675bc24edd52096d5397d4aea7c6dd9eca0bd1"
-
-[[package]]
 name = "clipboard-win"
 version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -600,23 +560,6 @@ name = "convert_case"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6245d59a3e82a7fc217c5828a6692dbc6dfb63a0c8c90495621f7b9d79704a0e"
-
-[[package]]
-name = "copy_from_in"
-version = "0.1.1"
-dependencies = [
- "chrono",
- "clap",
- "crossbeam-channel",
- "encoding",
- "logger",
- "once_cell",
- "regex",
- "serde",
- "serde_json",
- "tokio",
- "zip",
-]
 
 [[package]]
 name = "core-foundation"
@@ -1876,6 +1819,7 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 [[package]]
 name = "logger"
 version = "0.1.1"
+source = "git+https://github.com/P40b0s/logger.git?branch=main#91a2e6bee89766f41f469f1d68664349cdcba1b4"
 dependencies = [
  "chrono",
  "env_logger",
@@ -3492,6 +3436,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tokenizer"
 version = "0.1.5"
+source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
 dependencies = [
  "itertools",
  "regex",
@@ -3501,6 +3446,7 @@ dependencies = [
 [[package]]
 name = "tokenizer_derive"
 version = "0.10.12"
+source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
 dependencies = [
  "proc-macro2",
  "quote",

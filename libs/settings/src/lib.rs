@@ -2,13 +2,16 @@ mod io;
 use logger::error;
 mod file_methods;
 pub use file_methods::FileMethods;
-use std::{borrow::Cow, collections::HashMap, fmt::Display, path::{Path, PathBuf}, sync::{RwLock, Arc, Mutex}, time::Duration};
+use once_cell::sync::OnceCell;
+use std::{borrow::Cow, fmt::{Display, Write}, path::{Path, PathBuf}, sync::{Arc, Mutex, RwLock}, time::Duration};
 use io::{serialize, deserialize};
 use serde::{Serialize, Deserialize};
 extern crate toml;
 extern crate blake2;
 mod dates;
 pub use dates::*;
+use hashbrown::hash_map::HashMap;
+pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<String>>>> = OnceCell::new();
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 //#[serde(rename_all = "camelCase")]
@@ -28,11 +31,62 @@ pub struct Task
     pub copy_modifier: CopyModifier,
     #[serde(default="is_default")]
     pub is_active: bool,
+    ///Типы пакетов которые будут очищаться
+    #[serde(default="empty_doc_types")]
+    pub clean_types: Vec<String>,
+    pub filters: Filter
+    
+}
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+//#[serde(rename_all = "camelCase")]
+pub struct Filter
+{
     #[serde(default="empty_doc_types")]
     pub document_types: Vec<String>,
     #[serde(default="empty_doc_types")]
     pub document_uids: Vec<String>
 }
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+//#[serde(rename_all = "camelCase")]
+pub struct ValidationError
+{
+    pub field_name: Option<String>,
+    pub error: String
+}
+impl ValidationError
+{
+    pub fn new(field_name: Option<String>, error: String)-> Self
+    {
+        Self 
+        { 
+            field_name, 
+            error 
+        }
+    }
+    pub fn new_from_str(field_name: Option<String>, error: &str)-> Self
+    {
+        Self 
+        { 
+            field_name, 
+            error: error.to_owned()
+        }
+    }
+}
+impl Display for ValidationError
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+    {
+        if let Some(field) = self.field_name.as_ref()
+        {   let msg = ["Ошибка настроек в поле ", field, " -> ", &self.error].concat();
+            f.write_str(&msg)
+        }   
+        else
+        {
+            f.write_str(&self.error)
+        }
+    }
+}
+
 fn def_timer() -> u64
 {
     200000
@@ -54,7 +108,7 @@ impl Default for Task
 {
     fn default() -> Self 
     {
-        Task 
+        Task
         {
             source_dir: PathBuf::from("in"),
             target_dir: PathBuf::from("out"),
@@ -63,8 +117,13 @@ impl Default for Task
             copy_modifier: CopyModifier::CopyAll,
             delete_after_copy: false,
             is_active: false,
-            document_types: vec![],
-            document_uids: vec![]
+            clean_types: vec![],
+            filters: Filter
+            {
+                document_types: vec![],
+                document_uids: vec![]
+            }
+            
         }
     }
 }
@@ -110,7 +169,7 @@ impl Display for CopyModifier
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings
 {
     pub tasks: Vec<Task>
@@ -124,29 +183,25 @@ impl Default for Settings
             tasks: vec![Task::default()],
         }
     }
+    
 }
 impl FileMethods for Settings
 {
-    const FILE_NAME: &'static str = "settings.toml";
-    const FILE_PATH: &'static str = "";
-}
-
-impl Settings
-{
-    pub fn validate(&self) -> Vec<(String, String)>
+    const FILE_PATH: &'static str = "settings.toml";
+    fn validate(&self) -> Result<(), Vec<ValidationError>>
     {
-        let mut errors :Vec<(String, String)> = vec![];
+        let mut errors: Vec<ValidationError> = vec![];
         for task in &self.tasks
         {
             //Проверяем директории только если есть активный фильтр
-            if !task.is_active
+            if task.is_active
             {
                 if let Ok(e) = task.source_dir.try_exists()
                 {
                     if !e
                     {
                         let err = ["Директория", &task.source_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
-                        errors.push(("source_directory".to_owned(), err));
+                        errors.push(ValidationError::new(Some("source_directory".to_owned()), err));
                     }
                 }
                 if let Ok(e) = task.target_dir.try_exists()
@@ -154,15 +209,139 @@ impl Settings
                     if !e
                     {
                         let err = ["Директория ", &task.target_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
-                        errors.push(("target_directory".to_owned(), err));
+                        errors.push(ValidationError::new(Some("target_directory".to_owned()), err));
                     }
+                }
+                if task.copy_modifier != CopyModifier::CopyAll
+                && task.filters.document_types.len() == 0
+                && task.filters.document_uids.len() == 0
+                {
+                    let err = ["Для копирования выбран модификатор ", &task.copy_modifier.to_string(), " но не определены фильтры, для данного модификатора необходимо добавить хоть один фильтр"].concat();
+                    errors.push(ValidationError::new(Some("filters".to_owned()), err));
                 }
             }
         }
-        errors
+        if errors.len() > 0
+        {
+            Err(errors)
+        }
+        else 
+        {
+            Ok(())
+        }
+    }
+
+    fn load(root_dir: bool) -> Result<Self, Vec<ValidationError>> 
+    {
+        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, root_dir);
+        if !des.0
+        {
+            Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
+        }
+        else 
+        {
+            des.1.validate()?;
+            des.1.load_tasks_exludes();
+            Ok(des.1)
+        }
     }
 }
 
+impl Settings
+{
+     ///Добавить к задаче имя директории, чтобы больше ее не копировать
+    /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
+    pub fn add_to_exclude(task_name: &str, dir: &String) -> bool
+    {
+        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        if !guard.contains_key(task_name)
+        {
+            guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
+            return true;
+        }
+        else 
+        {
+            if let Some(ex) = guard.get_mut(task_name)
+            {
+                let d = dir.to_owned();
+                if !ex.contains(&d)
+                {
+                    ex.push(dir.to_owned());
+                    return true;
+                }
+                else 
+                {
+                    return false;
+                }
+            }
+        }
+        return false;
+    }
+    fn delete_from_exclude(task_name: &str, dir: &String)
+    {
+        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        if let Some(v) = guard.get_mut(task_name)
+        {
+            v.retain(|r| r != dir);
+        }
+    }
+    pub fn save_exclude(task_name: &str,)
+    {
+        let concat_path = [task_name, ".task"].concat();
+        let file_name = Path::new(&concat_path);
+        let guard = EXCLUDES.get().unwrap().lock().unwrap();
+        if let Some(vec) = guard.get(task_name)
+        {
+            io::serialize(vec, file_name, true);
+        }  
+    }
+    pub fn load_tasks_exludes(&self)
+    {
+        for t in &self.tasks
+        {
+            Self::load_exclude(t);
+        }
+    }
+    pub fn load_exclude(task: &Task)
+    {
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = excl.lock().unwrap();
+        if !guard.contains_key(task.name.as_str())
+        {
+            let file = [&task.name, ".task"].concat();
+            let path = Path::new(&file);
+            let ex: (bool, Vec<String>) = io::deserialize(&path, true);
+            guard.insert(task.name.clone(), ex.1);
+        }
+    }
+    pub fn clean_excludes(&self) -> u32
+    {
+        let mut count: u32 = 0;
+        for t in &self.tasks
+        {
+            let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+            let excludes = guard.get(t.get_task_name()).unwrap().clone();
+            let mut del: Vec<String> = vec![];
+            if let Some(dirs) = io::get_dirs(t.get_source_dir()) 
+            {
+                for ex in &excludes
+                {
+                    if dirs.contains(ex)
+                    {
+                        del.push(ex.to_owned());
+                    }
+                    else
+                    {
+                        count+=1;
+                    }
+                }
+            }
+            guard.insert(t.get_task_name().to_owned(), del);
+        }
+        logger::info!("При проверке списка задач исключено {} несуществующих директорий", count);
+        count
+    }
+}
 fn deserialize_copy_modifier<'de, D>(deserializer: D) -> Result<CopyModifier, D::Error>
 where
     D: serde::de::Deserializer<'de>,
@@ -211,48 +390,29 @@ where
 //     }
 // }
 
-fn default_api_port() -> String
-{
-    String::from("9009")
-}
-fn default_websocket_port() -> String
-{
-    String::from("9008")
-}
-fn default_date_format() -> String
-{
-    String::from("[year]-[month]-[day]")
-}
-fn default_time_format() -> String
-{
-    String::from("[hour]:[minute]:[second]")
-}
+
 fn is_default() -> bool
 {
     false
 }
-fn default_scan_interval() -> u32
-{
-    120
-}
-
 #[cfg(test)]
 mod test
 {
     use serde::Deserialize;
-    use crate::{Settings,  default_time_format, file_methods::FileMethods};
+    use crate::{Settings,  file_methods::FileMethods};
 
     #[test]
     fn test_serialize_medo()
     {
         let medo: Settings = Settings::default();
-        medo.save();
+        medo.save(true);
     }
 
     #[test]
     fn test_deserialize_medo()
     {
-        let settings = Settings::load();
+        let settings = Settings::load(true);
+        println!("{:?}", settings.err().unwrap())
         //let adm_prez = settings.organs.iter().find(|s|s.internal_id == OrganInternalId::AdmPrez);
         //assert_eq!(adm_prez.unwrap().source_uid, String::from("0b21bba1-f44d-4216-b465-147665360c06"));
     }

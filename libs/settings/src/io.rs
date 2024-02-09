@@ -5,51 +5,17 @@ use toml::de::Error;
 
 ///Сериализация объекта в строковый формат
 ///если linux то 
-pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) where T : Clone + Serialize
+pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool) -> Result<(), String> where T : Clone + Serialize 
 {
-    let mut path : PathBuf = PathBuf::default();
-    if cfg!(unix)
+    let path = if root_dir
     {
-        let p = Path::new(file_path);
-        if p.exists()
-        {
-            path = p.join(file_name);
-        }
-        else
-        {
-           path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-        }
+        Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }
-    else 
+    else
     {
-        path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-    }
-    
-    //let mut work_dir = PathBuf::default();
-    // if directory.is_some()
-    // {
-    //     let p = PathBuf::from(directory.unwrap());
-    //     work_dir = p;
-    //     work_dir.push(file_name);
-    // }
-    // else
-    // {
-    //     work_dir = std::env::current_dir().unwrap();
-    //     work_dir.push(file_name);
-    // }
-    //let _del = std::fs::remove_file(&work_dir);
-    // work_dir = std::env::current_dir().unwrap();
-    // work_dir.push(file_name);
-    // if !work_dir.exists()
-    // {
-    //     work_dir = PathBuf::from_str(file_path).unwrap();
-    //     if !work_dir.exists()
-    //     {
-    //         error!("Ошибка сохранения файла настроек {}!", &work_dir.display());
-    //         return;
-    //     }
-    // }
-    //     work_dir.push(file_name);
+        file_path.as_ref().to_path_buf()
+    };
+   
     let write = OpenOptions::new()
     .write(true)
     .create(true)
@@ -64,17 +30,20 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) w
         {
             let mut f = BufWriter::new(wr);
             let _write = f.write_all(toml.as_bytes());
+            return Ok(());
         }
         else
         {
-            error!("Ошибка сохранения файла настроек {}! -> {}", &path.display(), ser.err().unwrap());
-            return;
+            let err = ["Ошибка сохранения файла настроек ", &path.display().to_string(), " -> ", &ser.err().unwrap().to_string()].concat();
+            error!("{}", &err);
+            return Err(err);
         }
     }
     else 
     {
-        error!("{}", write.err().unwrap());
-        return;
+        let err = ["Ошибка сохранения файла настроек -> ", &write.err().unwrap().to_string()].concat();
+        error!("{}", &err);
+        return Err(err);
     }
    
 }
@@ -82,21 +51,16 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) w
 
 ///Читение файл в строку из чистого utf-8
 /// если false то файл не найден и был создан новый
-pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: &str, file_name: P) -> (bool, T) where T : Clone + DeserializeOwned + Default
+pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool) -> (bool, T) where T : Clone + DeserializeOwned + Default
 {
-    let mut path : PathBuf = PathBuf::default();
-    if cfg!(unix)
+    let path = if root_dir
     {
-        let p = Path::new(file_path);
-        if p.exists()
-        {
-            path = p.join(file_name);
-        }
-        else
-        {
-           path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-        }
+        Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }
+    else
+    {
+        file_path.as_ref().to_path_buf()
+    };
     let file = std::fs::read_to_string(&path);
     if file.is_err()
     { 
@@ -109,7 +73,7 @@ pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: &str, file_name: P) -> (bo
     if result.is_err()
     {
         let err_settings = Path::new(&path).join(".structure_error");
-        std::fs::copy(&path, &err_settings);
+        let _ = std::fs::copy(&path, &err_settings);
         error!("Ошибка десериализации файла {}->{}, текущий объект инициализирован с настроками по умолчанию", &path.display(), result.err().unwrap());
         return (false, T::default());
     }
@@ -133,4 +97,21 @@ pub fn read_file_to_binary(file_path: &PathBuf) -> Option<Vec<u8>>
         }
     }
     None
+}
+
+pub fn get_dirs(path: &PathBuf) -> Option<Vec<String>>
+{
+    let paths = std::fs::read_dir(path);
+    if paths.is_err()
+    {
+        error!("😳 Ошибка чтения директории {} - {}", path.display(), paths.err().unwrap());
+        return None;
+    }
+    let mut dirs = vec![];
+    for d in paths.unwrap()
+    {
+        let dir = d.unwrap().file_name().to_str().unwrap().to_owned();
+        dirs.push(dir);
+    }
+    return Some(dirs);
 }

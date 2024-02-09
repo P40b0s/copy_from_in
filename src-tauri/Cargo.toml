@@ -23,7 +23,7 @@ serde_json = "1.0.108"
 serde = { version = "1.0.190", features = ["derive"] }
 tauri = { version = "1.5.2", features = ["app-all", "clipboard-all", "fs-all"] }
 #logger = {path = "../../../rust/universal_format/format_constructor/logger"}
-logger = {path = "../../../rust/logger"}
+logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
 once_cell="*"
 chrono="0.4.31"
 anyhow="1.0.79"

@@ -64,7 +64,22 @@ pub fn get_files<P: AsRef<Path>>(path: P) -> Option<Vec<DirEntry>>
     }
     return Some(entry);
 }
-
+pub fn get_dirs(path: &PathBuf) -> Option<Vec<String>>
+{
+    let paths = std::fs::read_dir(path);
+    if paths.is_err()
+    {
+        error!("😳 Ошибка чтения директории {} - {}", path.display(), paths.err().unwrap());
+        return None;
+    }
+    let mut dirs = vec![];
+    for d in paths.unwrap()
+    {
+        let dir = d.unwrap().file_name().to_str().unwrap().to_owned();
+        dirs.push(dir);
+    }
+    return Some(dirs);
+}
 pub fn write_value_to_file(data: &Value, file_name: &str) -> bool
 {
     let pretty = serde_json::to_string_pretty(&data);

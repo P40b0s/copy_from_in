@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><xdms:communication xmlns:xdms="http://www.infpres.com/IEDMS" xdms:version="2.7">
+  <xdms:header xdms:type="Транспортный контейнер" xdms:uid="4a26d46f-fe64-3d6c-90e5-3ff6731f158e" xdms:created="2022-08-16T09:38:04+03:00">
+    <xdms:source xdms:uid="db617a7c-bd8f-4159-afda-aabdbbcdba18">
+      <xdms:organization>Министерство Российской Федерации по развитию Дальнего Востока и Арктики</xdms:organization>
+    </xdms:source>
+  </xdms:header>
+  <xdms:container>
+    <xdms:body>document.edc.zip</xdms:body>
+  </xdms:container>
+</xdms:communication>

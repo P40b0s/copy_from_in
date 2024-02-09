@@ -2,35 +2,25 @@
   all(not(debug_assertions), target_os = "windows"),
   windows_subsystem = "windows"
 )]
-mod models;
 mod helpers;
-mod file;
 mod error;
 mod copyer;
-use copyer::{DirectoriesSpy, NewDocument};
+use copyer::{DirectoriesSpy, NewPacketInfo};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
-use medo_parser::Packet;
-use serde::Serialize;
-use settings::FileMethods;
-use state_updater::{DateState, StateUpdater};
-mod state;
-mod state_updater;
-use std::{sync::{Arc, atomic::AtomicU32}, ops::Deref, fmt::Display, process::exit};
-use helpers::{Date, DateTimeFormat};
+use std::{sync::Arc, fmt::Display};
 pub use logger;
 mod commands;
 use commands::*;
-pub use const_format::concatcp;
-use file::*;
-use logger::{info, LevelFilter, StructLogger};
-use once_cell::sync::{OnceCell};
+mod state;
 use state::AppState;
+pub use const_format::concatcp;
+use logger::StructLogger;
+use once_cell::sync::OnceCell;
 use tauri::Manager;
 use tokio::sync::Mutex;
 
-pub static LOG_SENDER: OnceCell<Mutex<Sender<(LevelFilter, String)>>> = OnceCell::new();
-pub static NEW_DOCS: OnceCell<Mutex<Sender<NewDocument>>> = OnceCell::new();
+pub static NEW_DOCS: OnceCell<Mutex<Sender<NewPacketInfo>>> = OnceCell::new();
 
 fn main() 
 {
@@ -45,9 +35,8 @@ fn main()
   //   }
   // });
   //let (async_proc_input_tx, async_proc_input_rx) = mpsc::channel(1);
-  let (log_sender, log_receiver) = bounded::<(LevelFilter, String)>(5);
-  let _ = LOG_SENDER.set(Mutex::new(log_sender));
-  let (new_doc_sender, new_doc_receiver) = bounded::<NewDocument>(5);
+
+  let (new_doc_sender, new_doc_receiver) = bounded::<NewPacketInfo>(5);
   let _ = NEW_DOCS.set(Mutex::new(new_doc_sender));
   tauri::Builder::default()
   .manage(AppState::default())
@@ -61,74 +50,49 @@ fn main()
       {
         let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;
       });
-      tauri::async_runtime::spawn(async move 
-      {
-        loop 
-        {
-          let _ = DateState::update_from_thread(Arc::clone(&handle_2)).await;
-          logger::info!("апдейтнулось время!");
-          tokio::time::sleep(tokio::time::Duration::new(60, 0)).await;
-        }
-      });
       tauri::async_runtime::spawn(async move
       {
         loop
         {
-          if let Ok(output) = new_doc_receiver.recv()
+          if let Ok(packet) = new_doc_receiver.recv()
           {
-            //надо разделить на ошибки предупрежедения итд
-            logger::info!("Поступил новый документ! {}", &output.parse_time);
-            //rs2js(output, Arc::clone(&handle_1));
-          }
-        }
-      });
-      tauri::async_runtime::spawn(async move 
-      {
-        loop 
-        {
-          if let Ok(output) = log_receiver.recv()
-          {
-            //надо разделить на ошибки предупрежедения итд
-            logger::info!("Приехало сообщение от directories_spy! {}", output.1);
-            //rs2js(output, Arc::clone(&handle_1));
+            new_packet_found(packet, Arc::clone(&handle_2));
           }
         }
       });
       Ok(())
     })
-    //.plugin(commands::dictionaries_plugin())
-    //.plugin(commands::users_plugin())
     .plugin(commands::date_plugin())
-    //.plugin(commands::statuses_plugin())
-    //.invoke_handler(tauri::generate_handler![
-    //  initialize_app_state,
-    //  ])
+    .plugin(commands::settings_plugin())
+    // .invoke_handler(tauri::generate_handler![
+    //   //initialize_app_state,
+    // ])
     .run(tauri::generate_context!())
     .expect("Ошибка запуска приложения!");
 }
 
-fn rs2js<R: tauri::Runtime>(message: String, manager: Arc<impl Manager<R>>) 
+fn new_packet_found<R: tauri::Runtime>(packet: NewPacketInfo, manager: Arc<impl Manager<R>>) 
 {
-    info!("{} rs2js",message);
+  logger::info!("Поступил новый документ! {} {:?}", packet.get_packet_name(), &packet);
     manager
-        .emit_all("rs2js", message)
+        .emit_all("new_packet_found", packet)
         .unwrap();
 }
-fn event_to_front<R: tauri::Runtime, P: Serialize + Clone>(event: TauriEvent, payload: P, manager: Arc<impl Manager<R>>) 
-{
-    manager
-        .emit_all(&event.to_string(), payload)
-        .unwrap();
-}
+// fn event_to_front<R: tauri::Runtime, P: Serialize + Clone>(event: TauriEvent, payload: P, manager: Arc<impl Manager<R>>) 
+// {
+//     manager
+//         .emit_all(&event.to_string(), payload)
+//         .unwrap();
+// }
 
 // The Tauri command that gets called when Tauri `invoke` JavaScript API is
 // called
-#[tauri::command]
-async fn js2rs(message: String, state: tauri::State<'_, AppState>) -> Result<(), String> 
-{
-  info!("{} js2rs", message);
-  Ok(())
-}
+// #[tauri::command]
+// async fn js2rs(message: String, state: tauri::State<'_, AppState>) -> Result<(), String> 
+// {
+//   info!("{} js2rs", message);
+//   Ok(())
+// }
 
 pub enum TauriEvent
 {
