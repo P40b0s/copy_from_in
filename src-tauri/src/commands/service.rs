@@ -12,13 +12,13 @@ use crate::Error;
 pub async fn clear_dirs(state: tauri::State<'_, AppState>) -> Result<(), Error>
 {
   let settings = state.get_settings();
-  Ok(settings.tasks)
+  Ok(())
 }
 #[tauri::command]
 pub async fn clear_tasks(state: tauri::State<'_, AppState>) -> Result<(), Error>
 {
     let settings = state.get_settings();
-    Ok(settings.tasks)
+    Ok(())
 }
 
 pub fn service_plugin<R: Runtime>() -> TauriPlugin<R> 

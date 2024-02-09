@@ -74,8 +74,8 @@ abstract class Plugin
 {
     abstract plugin: string;
     abstract cmd_names: string[];
-    /** Запуск команды таури, если таури не заинжекчен то undefined если тип unknown то значит пришла ошибка*/
-    async save<I, O>(cmd: string, saved_obj: I) : Promise<O|undefined|unknown>
+    /** Запуск команды таури, если таури не заинжекчен то undefined если тип string то значит пришла ошибка*/
+    async save<I, O>(cmd: string, saved_obj: I) : Promise<O|undefined|string>
     {
         if (is_tauri())
         {
@@ -87,9 +87,9 @@ abstract class Plugin
             catch(e: unknown)
             {
                 console.error(e);
-                return new Promise<unknown>((resolve) => 
+                return new Promise<string>((resolve) => 
                 {
-                    resolve(e);
+                    resolve(String(e));
                 });
             }
         }
@@ -102,8 +102,8 @@ abstract class Plugin
             });
         }
     }
-    /** Запуск команды таури, если таури не заинжекчен то undefined если тип unknown то значит пришла ошибка*/
-    async get<T>(cmd: string, args?: InvokeArgs) : Promise<T|undefined|unknown>
+    /** Запуск команды таури, если таури не заинжекчен то undefined если тип string то значит пришла ошибка*/
+    async get<T>(cmd: string, args?: InvokeArgs) : Promise<T|undefined|string>
     {
         if (is_tauri())
         {
@@ -115,9 +115,9 @@ abstract class Plugin
             catch(e: unknown)
             {
                 console.error(e);
-                return new Promise<unknown>((resolve) => 
+                return new Promise<string>((resolve) => 
                 {
-                    resolve(e);
+                    resolve(String(e));
                 });
             }
         }
@@ -140,11 +140,11 @@ class Settings extends Plugin
 {
     plugin = "plugin:settings|";
     cmd_names = ['update', 'get'];
-    public async save_settings(types: Task[]): Promise<void|undefined|unknown>
+    public async save_settings(types: Task[]): Promise<void|undefined|string>
     {
         return await this.save<Task[], void>(this.plugin + this.cmd_names[0], types);
     }
-    public async load_settings(): Promise<void|undefined|unknown>
+    public async load_settings(): Promise<Task[]|undefined|string>
     {
         return await this.get<Task[]>(this.plugin + this.cmd_names[1]);
     }

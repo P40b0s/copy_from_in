@@ -10,7 +10,7 @@ impl Default for AppState
 {
     fn default() -> Self 
     {
-        let settings = Settings::load();
+        let settings = Settings::load(true);
         if settings.is_err()
         {
             for e in settings.err().unwrap()

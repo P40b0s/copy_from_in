@@ -22,7 +22,7 @@ pub async fn update(payload: Vec<Task>) -> Result<(), Error>
     {
         tasks: payload
     };
-    let _ = settings.save().map_err(|e| Error::SettingsValidation(e))?;
+    let _ = settings.save(true).map_err(|e| Error::SettingsValidation(e))?;
     Ok(())
 }
 

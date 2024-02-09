@@ -8,7 +8,7 @@ use crate::{ new_packet_found, state::AppState, NEW_DOCS};
 use crossbeam_channel::bounded;
 
 use super::{NewDocument, NewPacketInfo};
-pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
+//pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
 
 pub struct DirectoriesSpy;
 impl DirectoriesSpy
@@ -198,7 +198,7 @@ impl DirectoriesSpy
             }
             else
             {
-                Self::deserialize_exclude(&t);
+                Settings::load_exclude(&t);
                 let builder = std::thread::Builder::new().name(t.name.clone());
                 let sender = sender.clone();
                 let _ = builder.spawn(move ||
@@ -216,7 +216,7 @@ impl DirectoriesSpy
                         {
                             for d in reader
                             {
-                                if Self::add(&t.name, d)
+                                if Settings::add_to_exclude(&t.name, d)
                                 {
                                     is_change = true;
                                     let _ = sender.send((t.clone(), d.to_owned())).unwrap();
@@ -224,7 +224,7 @@ impl DirectoriesSpy
                             }
                             if is_change
                             {
-                                Self::serialize_exclude(&t.name);
+                                Settings::save_exclude(&t.name);
                             }
                         }
                         let delay = t.get_task_delay();
@@ -240,64 +240,64 @@ impl DirectoriesSpy
             }
         }
     }
-    ///Добавить к задаче имя директории, чтобы больше ее не копировать
-    /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
-    fn add(task_name: &str, dir: &String) -> bool
-    {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-        if !guard.contains_key(task_name)
-        {
-            guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
-            return true;
-        }
-        else 
-        {
-            if let Some(ex) = guard.get_mut(task_name)
-            {
-                let d = dir.to_owned();
-                if !ex.contains(&d)
-                {
-                    ex.push(dir.to_owned());
-                    return true;
-                }
-                else 
-                {
-                    return false;
-                }
-            }
-        }
-        return false;
-    }
-    fn delete(task_name: &str, dir: &String)
-    {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-        if let Some(v) = guard.get_mut(task_name)
-        {
-            v.retain(|r| r != dir);
-        }
-    }
-    fn serialize_exclude(task_name: &str,)
-    {
-        let concat_path = [task_name, ".task"].concat();
-        let file_name = Path::new(&concat_path);
-        let guard = EXCLUDES.get().unwrap().lock().unwrap();
-        if let Some(vec) = guard.get(task_name)
-        {
-            super::serialize::serialize(vec, file_name, None);
-        }  
-    }
-    pub fn deserialize_exclude(task: &Task)
-    {
-        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
-        let mut guard = excl.lock().unwrap();
-        if !guard.contains_key(task.name.as_str())
-        {
-            let file = [&task.name, ".task"].concat();
-            let path = Path::new(&file);
-            let ex = super::serialize::deserialize::<Vec<String>>(&path);
-            guard.insert(task.name.clone(), ex.1);
-        }
-    }
+    //Добавить к задаче имя директории, чтобы больше ее не копировать
+    // если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
+    // fn add(task_name: &str, dir: &String) -> bool
+    // {
+    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+    //     if !guard.contains_key(task_name)
+    //     {
+    //         guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
+    //         return true;
+    //     }
+    //     else 
+    //     {
+    //         if let Some(ex) = guard.get_mut(task_name)
+    //         {
+    //             let d = dir.to_owned();
+    //             if !ex.contains(&d)
+    //             {
+    //                 ex.push(dir.to_owned());
+    //                 return true;
+    //             }
+    //             else 
+    //             {
+    //                 return false;
+    //             }
+    //         }
+    //     }
+    //     return false;
+    // }
+    // fn delete(task_name: &str, dir: &String)
+    // {
+    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+    //     if let Some(v) = guard.get_mut(task_name)
+    //     {
+    //         v.retain(|r| r != dir);
+    //     }
+    // }
+    // fn serialize_exclude(task_name: &str,)
+    // {
+    //     let concat_path = [task_name, ".task"].concat();
+    //     let file_name = Path::new(&concat_path);
+    //     let guard = EXCLUDES.get().unwrap().lock().unwrap();
+    //     if let Some(vec) = guard.get(task_name)
+    //     {
+    //         super::serialize::serialize(vec, file_name, None);
+    //     }  
+    // }
+    // pub fn deserialize_exclude(task: &Task)
+    // {
+    //     let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+    //     let mut guard = excl.lock().unwrap();
+    //     if !guard.contains_key(task.name.as_str())
+    //     {
+    //         let file = [&task.name, ".task"].concat();
+    //         let path = Path::new(&file);
+    //         let ex = super::serialize::deserialize::<Vec<String>>(&path);
+    //         guard.insert(task.name.clone(), ex.1);
+    //     }
+    // }
 }
 
 async fn send_new_document(packet: impl Into<NewPacketInfo>)

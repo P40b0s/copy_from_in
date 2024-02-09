@@ -1819,6 +1819,7 @@ checksum = "b5e6163cb8c49088c2c36f57875e58ccd8c87c7427f7fbd50ea6710b2f3f2e8f"
 [[package]]
 name = "logger"
 version = "0.1.1"
+source = "git+https://github.com/P40b0s/logger.git?branch=main#91a2e6bee89766f41f469f1d68664349cdcba1b4"
 dependencies = [
  "chrono",
  "env_logger",
@@ -3435,6 +3436,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "tokenizer"
 version = "0.1.5"
+source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
 dependencies = [
  "itertools",
  "regex",
@@ -3444,6 +3446,7 @@ dependencies = [
 [[package]]
 name = "tokenizer_derive"
 version = "0.10.12"
+source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
 dependencies = [
  "proc-macro2",
  "quote",

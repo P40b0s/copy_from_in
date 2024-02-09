@@ -7,9 +7,12 @@ edition = "2021"
 [dependencies]
 serde = {version = "1.0.196", features = ["derive"]}
 serde_json = "1.0.113"
-logger = {path = "../../../../rust/logger"}
-tokenizer = {path = "../../../../rust/tokenizer/tokenizer"}
-tokenizer_derive = {path = "../../../../rust/tokenizer/tokenizer_derive"}
+#logger = {path = "../../../../rust/logger"}
+logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
+tokenizer = {git = "https://github.com/P40b0s/tokenizer.git", branch = "master"}
+tokenizer_derive = {git = "https://github.com/P40b0s/tokenizer.git", branch = "master"}
+#tokenizer = {path = "../../../../rust/tokenizer/tokenizer"}
+#tokenizer_derive = {path = "../../../../rust/tokenizer/tokenizer_derive"}
 settings = {path = "../settings"}
 #quickxml_to_serde={version = "0.5.0", features = ["json_types"]}
 quick-xml={version ="0.31.0", features = ["serialize", "overlapped-lists"]}

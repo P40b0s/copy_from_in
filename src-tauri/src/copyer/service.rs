@@ -1,22 +1,23 @@
 use std::path::Path;
 
 use medo_parser::Packet;
-use settings::Task;
+use settings::{Settings, Task};
 
 use crate::Error;
 
-use super::directories_spy::EXCLUDES;
+
 
 pub struct Services{}
 
 impl Services
 {
-    pub fn clear_dirs(tasks: &Vec<Task>) -> Result<(), Error>
+    pub fn clear_dirs(settings: &Settings) -> Result<u32, Error>
     {
         let mut errors: Vec<String> = vec![];
-        for t in tasks
+        let mut count = 0;
+        for t in &settings.tasks
         {
-            if t.cleaning
+            if t.clean_types.len() > 0
             {   
                 if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
                 {
@@ -32,9 +33,17 @@ impl Services
                         }
                         else 
                         {
-                            if let Some(pt) = packet.get_document_type()
+                            if let Some(pt) = packet.get_packet_type()
                             {
-
+                                let pt = pt.into_owned();
+                                logger::info!("{} {:?}", &pt, t.clean_types);
+                                if t.clean_types.contains(&pt)
+                                {
+                                    let _ = std::fs::remove_dir_all(&source_path);
+                                    let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
+                                    logger::info!("{}", inf);
+                                    count+=1;
+                                }
                             }
                             else 
                             {
@@ -47,37 +56,58 @@ impl Services
                 }
             }
         }
-        Self::clear_excepts(tasks);
+        settings.clean_excludes();
         if errors.len() > 0
         {
             return Err(Error::ServiceErrors(errors));
         }
         {
-            return Ok(());
+            return Ok(count);
         }
     }
 
-    pub fn clear_excepts(tasks: &Vec<Task>) -> u32
-    {
-        let mut count: u32 = 0;
-        for t in tasks
-        {
-            let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-            let excludes = guard.get(t.get_task_name()).unwrap();
-            if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
-            {
-                for ex in excludes
-                {
-                    if !dirs.contains(ex)
-                    {
-                        excludes.retain(|r| r != ex);
-                        count+=1;
-                    }
-                }
-            }
-        }
-        logger::info!("При проверке списка задач исключено {} несуществующих директорий", count);
-        count
-    }
+    // pub fn clear_excepts(tasks: &Vec<Task>) -> u32
+    // {
+    //     let mut count: u32 = 0;
+    //     for t in tasks
+    //     {
+    //         let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+    //         let excludes = guard.get(t.get_task_name()).unwrap().clone();
+    //         let mut del: Vec<String> = vec![];
+    //         if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
+    //         {
+    //             for ex in &excludes
+    //             {
+    //                 if dirs.contains(ex)
+    //                 {
+    //                     del.push(ex.to_owned());
+    //                 }
+    //                 else
+    //                 {
+    //                     count+=1;
+    //                 }
+    //             }
+    //         }
+    //         guard.insert(t.get_task_name().to_owned(), del);
+    //     }
+    //     logger::info!("При проверке списка задач исключено {} несуществующих директорий", count);
+    //     count
+    // }
 }
 
+#[cfg(test)]
+mod tests
+{
+    use settings::{FileMethods, Settings};
+
+    use crate::copyer::service::Services;
+
+    #[test]
+    fn test_dir_cleaner()
+    {
+        logger::StructLogger::initialize_logger();
+        let s = Settings::load(true).unwrap();
+        let _ = Services::clear_dirs(&s);
+        println!("{:?}", s);
+    }
+}

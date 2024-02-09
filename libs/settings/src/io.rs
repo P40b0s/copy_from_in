@@ -5,25 +5,17 @@ use toml::de::Error;
 
 ///Сериализация объекта в строковый формат
 ///если linux то 
-pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) -> Result<(), String> where T : Clone + Serialize 
+pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool) -> Result<(), String> where T : Clone + Serialize 
 {
-    let mut path : PathBuf = PathBuf::default();
-    if cfg!(unix)
+    let path = if root_dir
     {
-        let p = Path::new(file_path);
-        if p.exists()
-        {
-            path = p.join(file_name);
-        }
-        else
-        {
-           path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-        }
+        Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }
-    else 
+    else
     {
-        path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-    }
+        file_path.as_ref().to_path_buf()
+    };
+   
     let write = OpenOptions::new()
     .write(true)
     .create(true)
@@ -59,21 +51,16 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : &str, file_name : P) -
 
 ///Читение файл в строку из чистого utf-8
 /// если false то файл не найден и был создан новый
-pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: &str, file_name: P) -> (bool, T) where T : Clone + DeserializeOwned + Default
+pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool) -> (bool, T) where T : Clone + DeserializeOwned + Default
 {
-    let mut path : PathBuf = PathBuf::default();
-    if cfg!(unix)
+    let path = if root_dir
     {
-        let p = Path::new(file_path);
-        if p.exists()
-        {
-            path = p.join(file_name);
-        }
-        else
-        {
-           path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
-        }
+        Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }
+    else
+    {
+        file_path.as_ref().to_path_buf()
+    };
     let file = std::fs::read_to_string(&path);
     if file.is_err()
     { 
@@ -110,4 +97,21 @@ pub fn read_file_to_binary(file_path: &PathBuf) -> Option<Vec<u8>>
         }
     }
     None
+}
+
+pub fn get_dirs(path: &PathBuf) -> Option<Vec<String>>
+{
+    let paths = std::fs::read_dir(path);
+    if paths.is_err()
+    {
+        error!("😳 Ошибка чтения директории {} - {}", path.display(), paths.err().unwrap());
+        return None;
+    }
+    let mut dirs = vec![];
+    for d in paths.unwrap()
+    {
+        let dir = d.unwrap().file_name().to_str().unwrap().to_owned();
+        dirs.push(dir);
+    }
+    return Some(dirs);
 }
