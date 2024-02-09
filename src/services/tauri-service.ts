@@ -40,7 +40,7 @@ abstract class Plugin
         {
             try
             {
-                const data = await inv<O>(cmd, {payload: saved_obj});
+                const data = await invoke<O>(cmd, {payload: saved_obj});
                 return data;
             }
             catch(e: unknown)
@@ -68,7 +68,7 @@ abstract class Plugin
         {
             try
             {
-                const data = await inv<T>(cmd, args);
+                const data = await invoke<T>(cmd, args);
                 return data;
             }
             catch(e: unknown)
