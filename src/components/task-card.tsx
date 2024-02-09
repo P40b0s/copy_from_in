@@ -9,8 +9,6 @@ export const TaskCard: React.FC<Task & { onDelete: () => void }> = ({
   delete_after_copy,
   copy_modifier,
   is_active,
-  filters,
-  onDelete,
 }) => {
   return (
     <div className="task-card">
