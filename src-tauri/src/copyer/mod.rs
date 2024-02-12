@@ -1,6 +1,6 @@
 mod directories_spy;
 mod service;
-pub use  directories_spy::DirectoriesSpy;
+pub use  {directories_spy::DirectoriesSpy, service::PacketsCleaner};
 use medo_parser::Packet;
 use serde::{Deserialize, Serialize};
 use settings::{DateTimeFormat, ValidationError};

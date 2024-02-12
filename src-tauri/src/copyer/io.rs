@@ -46,20 +46,20 @@ pub fn get_files<P: AsRef<Path>>(path: P) -> Option<Vec<DirEntry>>
         return None;
     }
     let mut entry = vec![];
-    for e in paths.unwrap()
+    for file in paths.unwrap()
     {
-        if e.is_err()
+        if file.is_err()
         {
-            error!("{}", e.err().unwrap());
+            error!("😳{}", file.err().unwrap());
             return None;
         }
-        if let Some(_) = e.as_ref().unwrap().file_name().to_str()
+        if let Some(_) = file.as_ref().unwrap().file_name().to_str()
         {
-            entry.push(e.unwrap());
+            entry.push(file.unwrap());
         }
         else
         {
-            error!("Невозможно получить имя файла в директории {}", path.as_ref().display());
+            error!("😳Невозможно получить имя файла в директории {}", path.as_ref().display());
         }   
     }
     return Some(entry);

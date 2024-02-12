@@ -5,6 +5,7 @@ target_dir = "test_data/out"
 timer = 15000
 delete_after_copy = false
 is_active = true
+clean_types = ["Квитанция"]
 copy_modifier = "copy_all"
 [tasks.filters]
 document_types =  ["Транспортный контейнер","Документ"]
