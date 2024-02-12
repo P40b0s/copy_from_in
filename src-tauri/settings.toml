@@ -1,0 +1,25 @@
+[[tasks]]
+name = "from_backup_to_architector"
+source_dir = "../test_data/in"
+target_dir = "../test_data/out"
+timer = 15000
+delete_after_copy = false
+is_active = true
+clean_types = ["Квитанция"]
+copy_modifier = "copy_all"
+[tasks.filters]
+document_types =  ["Транспортный контейнер","Документ"]
+document_uids =  []
+
+
+[[tasks]]
+name = "from_in_to_backup"
+source_dir = "../test_data/in2"
+target_dir = "../test_data/out"
+timer = 12000
+delete_after_copy = false
+is_active = true
+copy_modifier = "copy_only"
+[tasks.filters]
+document_types =  ["Транспортный контейнер","Документ"]
+document_uids =  []

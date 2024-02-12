@@ -1,0 +1,13 @@
+/hard/xar/projects/rust/copy_from_in/libs/settings/target/debug/deps/libtoml-a267d45bbd124be8.rmeta: /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/lib.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/map.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/value.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/de.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/ser.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/macros.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/edit.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/fmt.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/table.rs
+
+/hard/xar/projects/rust/copy_from_in/libs/settings/target/debug/deps/toml-a267d45bbd124be8.d: /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/lib.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/map.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/value.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/de.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/ser.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/macros.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/edit.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/fmt.rs /home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/table.rs
+
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/lib.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/map.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/value.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/de.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/ser.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/macros.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/edit.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/fmt.rs:
+/home/phobos/.cargo/registry/src/index.crates.io-6f17d22bba15001f/toml-0.8.9/src/table.rs:

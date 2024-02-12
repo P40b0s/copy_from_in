@@ -1,0 +1,96 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<c:container c:uid="490477f8-bea2-4c46-b3d0-fbc6cd00bdce" c:version="1.0" xmlns:c="http://minsvyaz.ru/container">
+  <c:requisites>
+    <c:documentKind>Исх.переписка ГД в эл.виде (МЭДО 2.7)</c:documentKind>
+    <c:annotation>Данные для подготовки технических заданий по реализации проекта «Совершенствование информационно-аналитической работы и статистической отчетности на основе рассмотрения обращений граждан в формате «Ситуационного центра».</c:annotation>
+  </c:requisites>
+  <c:authors>
+    <c:author>
+      <c:organization>
+        <c:title>Государственная Дума Федерального Собрания Российской Федерации</c:title>
+        <c:address>ул.Охотный ряд, 1</c:address>
+      </c:organization>
+      <c:registration>
+        <c:number>М2.15-4064</c:number>
+        <c:date>2023-06-22</c:date>
+        <c:registrationStamp c:localName="regnum_2dbc72c1c8ff43fba24e022d2262238d.png">
+          <c:position>
+            <c:page>1</c:page>
+            <c:topLeft>
+              <c:x>25</c:x>
+              <c:y>73</c:y>
+            </c:topLeft>
+            <c:dimension>
+              <c:w>77</c:w>
+              <c:h>7</c:h>
+            </c:dimension>
+          </c:position>
+        </c:registrationStamp>
+      </c:registration>
+      <c:sign>
+        <c:person>
+          <c:post>Начальник управления</c:post>
+          <c:name>Ермолаев Эмиль Петрович</c:name>
+        </c:person>
+        <c:documentSignature c:localName="sign250061628.p7s" c:type="Утверждающая">
+          <c:signatureStamp c:localName="eds_5b359200b2724d6ba808fa2784354b61.png">
+            <c:position>
+              <c:page>2</c:page>
+              <c:topLeft>
+                <c:x>67</c:x>
+                <c:y>56</c:y>
+              </c:topLeft>
+              <c:dimension>
+                <c:w>80</c:w>
+                <c:h>28</c:h>
+              </c:dimension>
+            </c:position>
+          </c:signatureStamp>
+        </c:documentSignature>
+      </c:sign>
+      <c:executor>
+        <c:post>ведущий консультант отдела сопровождения информационных систем и развития новых технологий</c:post>
+        <c:name>Тимонин А.Б.</c:name>
+        <c:phone>НЕТ ДАННЫХ</c:phone>
+      </c:executor>
+    </c:author>
+  </c:authors>
+  <c:addressees>
+    <c:addressee>
+      <c:organization>
+        <c:title>Управление информационно-телекоммуникационного обеспечения Спецсвязи ФСО России</c:title>
+        <c:address>пл.Старая, д.4, под.14</c:address>
+      </c:organization>
+    </c:addressee>
+  </c:addressees>
+  <c:document c:localName="250547365.pdf">
+    <c:pagesQuantity>1</c:pagesQuantity>
+    <c:enclosurePagesQuantity>4</c:enclosurePagesQuantity>
+  </c:document>
+  <c:attachments>
+    <c:attachment c:localName="250547366.docx">
+      <c:order>0</c:order>
+      <c:description>1. Исходные данные ЗАКУПКА ОБОРУДОВАНИЯ ДЛЯ НУЖД ПРИЕМНОЙ ГД.docx</c:description>
+      <c:signature c:localName="sign250061629.p7s" />
+      <c:signature c:localName="sign250061630.p7s" />
+    </c:attachment>
+    <c:attachment c:localName="250547367.docx">
+      <c:order>1</c:order>
+      <c:description>2. Исходные данные СОЗДАНИЕ АППАРАТНО-ПРОГРАММНОГО КОМПЛЕКСА АНАЛИЗА ОБРАЩЕНИЙ.docx</c:description>
+      <c:signature c:localName="sign250061631.p7s" />
+      <c:signature c:localName="sign250061632.p7s" />
+    </c:attachment>
+    <c:attachment c:localName="250547368.docx">
+      <c:order>2</c:order>
+      <c:description>3. Исходные данные СООГ.docx</c:description>
+      <c:signature c:localName="sign250061633.p7s" />
+      <c:signature c:localName="sign250061634.p7s" />
+    </c:attachment>
+    <c:attachment c:localName="250547369.docx">
+      <c:order>3</c:order>
+      <c:description>4. Исходные данные САДД.docx</c:description>
+      <c:signature c:localName="sign250061635.p7s" />
+      <c:signature c:localName="sign250061636.p7s" />
+    </c:attachment>
+  </c:attachments>
+</c:container>

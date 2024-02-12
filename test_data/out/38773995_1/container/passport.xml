@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?><c:container xmlns:c="http://minsvyaz.ru/container" c:version="1.0" c:uid="4a26d46f-fe64-3d6c-90e5-3ff6731f158e">
+    <c:requisites>
+        <c:documentKind>Служебное письмо Аппарата Правительства Российской Федерации</c:documentKind>
+        <c:documentPlace>Министерство Российской Федерации по развитию Дальнего Востока и Арктики</c:documentPlace>
+        <c:annotation>Об обеспечении Министра Российской Федерации по развитию Дальнего Востока и Арктики А.О.Чекункова в период нахождения  на самоизоляции специальной связью 
+</c:annotation>
+            </c:requisites>
+    <c:authors>
+        <c:author>
+            <c:organization>
+                <c:title>Министерство Российской Федерации по развитию Дальнего Востока и Арктики</c:title>
+            </c:organization>
+            <c:registration>
+                <c:number>ПВ-00-14/11756</c:number>
+                <c:date>2022-08-16</c:date>
+                <c:registrationStamp c:localName="reg.png">
+                    <c:position>
+                        <c:page>1</c:page>
+                        <c:topLeft>
+                            <c:x>43</c:x>
+                            <c:y>87</c:y>
+                        </c:topLeft>
+                        <c:dimension>
+                            <c:w>55</c:w>
+                            <c:h>17</c:h>
+                        </c:dimension>
+                    </c:position>
+                </c:registrationStamp>
+            </c:registration>
+
+
+                        <c:sign>
+                <c:person>
+                    <c:post>Статс-секретарь - заместитель Министра </c:post>
+                    <c:name>Волков Павел Михайлович</c:name>
+                </c:person>
+                                <c:documentSignature c:localName="visa1.sig" c:type="Утверждающая">
+                    <c:signatureStamp c:localName="visa1.png">
+                        <c:position>
+                            <c:page>1</c:page>
+                            <c:topLeft>
+                                <c:x>88</c:x>
+                                <c:y>214</c:y>
+                            </c:topLeft>
+                            <c:dimension>
+                                <c:w>67</c:w>
+                                <c:h>24</c:h>
+                            </c:dimension>
+                        </c:position>
+                    </c:signatureStamp>
+                </c:documentSignature>
+            </c:sign>
+        </c:author>
+    </c:authors>
+
+    <c:addressees>
+        <c:addressee>
+            <c:organization>
+                <c:title>Управление обеспечения правовой информатизации Службы специальной связи Федеральной службы охраны Российской Федерации</c:title>
+            </c:organization>
+                    </c:addressee>    </c:addressees>
+
+        <c:document c:localName="874070.pdf">
+        <c:pagesQuantity>1</c:pagesQuantity>
+                <c:enclosurePagesQuantity>0</c:enclosurePagesQuantity>
+        <c:description>письмо ФСО 2022.docx</c:description>
+    </c:document>
+
+    </c:container>
