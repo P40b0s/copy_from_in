@@ -6,11 +6,13 @@ use crate::ValidationError;
 pub trait FileMethods where Self : Clone + Serialize + Default + DeserializeOwned
 {
     const FILE_PATH: &'static str;
+    const PATH_IS_ABSOLUTE: bool;
+
     fn validate(&self) -> Result<(), Vec<ValidationError>>;
-    fn save(&self, root_dir: bool, serializer: super::io::Serializer) -> Result<(), Vec<ValidationError>>
+    fn save(&self, serializer: super::io::Serializer) -> Result<(), Vec<ValidationError>>
     {
         let _val_ok = self.validate()?;
-        if let Err(e) = crate::io::serialize(self, Self::FILE_PATH, root_dir, serializer)
+        if let Err(e) = crate::io::serialize(self, Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer)
         {
             Err(vec![ValidationError::new(None, e); 1])
         }
@@ -31,9 +33,9 @@ pub trait FileMethods where Self : Clone + Serialize + Default + DeserializeOwne
     //         Ok(())    
     //     }
     // }
-    fn load(root_dir: bool, serializer: super::io::Serializer) -> Result<Self, Vec<ValidationError>>
+    fn load(serializer: super::io::Serializer) -> Result<Self, Vec<ValidationError>>
     {
-        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, root_dir, serializer);
+        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer);
         if !des.0
         {
             Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])

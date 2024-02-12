@@ -69,14 +69,14 @@ mod test
     fn test_serialize_medo()
     {
         let medo: Settings = Settings::default();
-        medo.save(true, crate::io::Serializer::Toml);
+        medo.save(crate::io::Serializer::Toml);
     }
 
     #[test]
     fn test_deserialize_medo()
     {
         logger::StructLogger::initialize_logger();
-        let settings = Settings::load(true, crate::io::Serializer::Toml).unwrap();
+        let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
         Settings::add_to_exclude("TASK", &"5555555".to_owned());
         Settings::add_to_exclude("TASK", &"4555555".to_owned());
         Settings::add_to_exclude("TASK", &"3555555".to_owned());
@@ -91,7 +91,7 @@ mod test
     fn test_del_one_exclude()
     {
         logger::StructLogger::initialize_logger();
-        let settings = Settings::load(true, crate::io::Serializer::Toml).unwrap();
+        let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
         Settings::del_exclude(settings.tasks.first().as_ref().unwrap(), "38773995_1");
         //let adm_prez = settings.organs.iter().find(|s|s.internal_id == OrganInternalId::AdmPrez);
         //assert_eq!(adm_prez.unwrap().source_uid, String::from("0b21bba1-f44d-4216-b465-147665360c06"));

@@ -24,6 +24,7 @@ impl Default for Settings
 impl FileMethods for Settings
 {
     const FILE_PATH: &'static str = "settings.toml";
+    const PATH_IS_ABSOLUTE: bool = false;
     fn validate(&self) -> Result<(), Vec<ValidationError>>
     {
         let mut errors: Vec<ValidationError> = vec![];
@@ -66,10 +67,14 @@ impl FileMethods for Settings
             Ok(())
         }
     }
-
-    fn load(root_dir: bool, serializer: io::Serializer) -> Result<Self, Vec<ValidationError>> 
+    ///Десериализовать обьект из файла
+    /// # Arguments
+    ///
+    /// * `serializer` - Из какого формата десериализовывать файл
+    ///
+    fn load(serializer: io::Serializer) -> Result<Self, Vec<ValidationError>> 
     {
-        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, root_dir, serializer);
+        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer);
         if !des.0
         {
             Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
@@ -85,7 +90,7 @@ impl FileMethods for Settings
 
 impl Settings
 {
-     ///Добавить к задаче имя директории, чтобы больше ее не копировать
+    ///Добавить к задаче имя директории, чтобы больше ее не копировать
     /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
     pub fn add_to_exclude(task_name: &str, dir: &String) -> bool
     {
@@ -121,6 +126,7 @@ impl Settings
             v.retain(|r| r != dir);
         }
     }
+    ///Сохранить исключения текущей задачи в файл
     pub fn save_exclude(task_name: &str,)
     {
         let concat_path = [task_name, ".task"].concat();
@@ -134,6 +140,7 @@ impl Settings
             }
         }  
     }
+    ///Загрузить все списки исключений из внешних файлов
     pub fn load_tasks_exludes(&self)
     {
         for t in &self.tasks
@@ -141,6 +148,7 @@ impl Settings
             Self::load_exclude(t);
         }
     }
+    ///загрузить исключение из файла
     pub fn load_exclude(task: &Task)
     {
         let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
@@ -149,10 +157,12 @@ impl Settings
         {
             let file = [&task.name, ".task"].concat();
             let path = Path::new(&file);
-            let ex: (bool, Vec<String>) = io::deserialize(&path, true, io::Serializer::Json);
+            let mut ex: (bool, Vec<String>) = io::deserialize(&path, true, io::Serializer::Json);
+            ex.1.sort();
             guard.insert(task.name.clone(), ex.1);
         }
     }
+    ///удалить исключение из файла *.task
     pub fn del_exclude(t: &Task, packet_name: &str)
     {
         let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
@@ -161,7 +171,9 @@ impl Settings
         drop(guard);
         Self::save_exclude(t.get_task_name());
     }
-    pub fn clean_excludes(&self) -> u32
+    ///Обрезать файл с исключениями (*.task) удаляет из файла все директории которые отсутсвуют в текущий момент 
+    /// по пути source_dir в текущей задаче
+    pub fn truncate_excludes(&self) -> u32
     {
         let mut count: u32 = 0;
         for t in &self.tasks

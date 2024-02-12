@@ -150,6 +150,20 @@
 //     }
 // }
 
+// class Settings extends Plugin
+// {
+//     plugin = "plugin:settings|";
+//     cmd_names = ['update', 'get'];
+//     public async save_settings(types: Task[]): Promise<void|undefined|string>
+//     {
+//         return await this.save<Task[], void>(this.plugin + this.cmd_names[0], types);
+//     }
+//     public async load_settings(): Promise<Task[]|undefined|string>
+//     {
+//         return await this.get<Task[]>(this.plugin + this.cmd_names[1]);
+//     }
+// }
+
 // const settings = new Settings();
 // export {settings}
 

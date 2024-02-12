@@ -3,7 +3,7 @@ use std::path::Path;
 use medo_parser::Packet;
 use settings::{Settings, Task};
 
-use crate::Error;
+use crate::{copyer::io::get_files, Error};
 
 pub trait PacketsCleaner
 {
@@ -23,9 +23,18 @@ pub trait PacketsCleaner
                         let packet = Packet::parse(&source_path);
                         if let Some(e) = packet.get_error()
                         {
-                            let err = ["Ошибка очистки пакета ", d, " -> ", e.as_ref()].concat();
-                            logger::error!("{}", &err);
-                            errors.push(err);
+                            let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();
+                            logger::warn!("{}", &wrn);
+                            if let Some(files) = get_files(&source_path)
+                            {
+                                if files.is_empty()
+                                {
+                                    let _ = std::fs::remove_dir_all(&source_path);
+                                    let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
+                                    logger::info!("{}", inf);
+                                    count+=1;
+                                }
+                            }
                         }
                         else 
                         {
@@ -52,8 +61,8 @@ pub trait PacketsCleaner
                 }
             }
         }
-        settings.clean_excludes();
-        if errors.len() > 0
+        settings.truncate_excludes();
+        if !errors.is_empty()
         {
             return Err(Error::ServiceErrors(errors));
         }
@@ -76,16 +85,17 @@ mod tests
     fn test_task_cleaner()
     {
         logger::StructLogger::initialize_logger();
-        let s = Settings::load(true, Serializer::Toml).unwrap();
-        let r = s.clean_excludes();
+        let s = Settings::load(Serializer::Toml).unwrap();
+        let r = s.truncate_excludes();
         println!("{:?} => {}", s, r);
     }
     #[test]
     fn test_packets_cleaner()
     {
         logger::StructLogger::initialize_logger();
-        let s = Settings::load(true, Serializer::Toml).unwrap();
+        let s = Settings::load(Serializer::Toml).unwrap();
         let r = Settings::clear_packets(&s);
+        assert!(r.as_ref().unwrap() == &31);
         println!("{:?} => {}", s, r.unwrap());
     }
 }
