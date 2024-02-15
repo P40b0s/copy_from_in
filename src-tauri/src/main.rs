@@ -8,6 +8,7 @@ mod copyer;
 use copyer::{DirectoriesSpy, NewPacketInfo};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
+use websocket_service::Server;
 use std::{sync::Arc, fmt::Display};
 pub use logger;
 mod commands;
@@ -35,6 +36,8 @@ fn main()
   //   }
   // });
   //let (async_proc_input_tx, async_proc_input_rx) = mpsc::channel(1);
+  #[cfg(feature = "websocket")]
+  Server::start_server("127.0.0.1:3010");
 
   let (new_doc_sender, new_doc_receiver) = bounded::<NewPacketInfo>(5);
   let _ = NEW_DOCS.set(Mutex::new(new_doc_sender));

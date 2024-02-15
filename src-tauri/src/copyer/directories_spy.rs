@@ -4,6 +4,7 @@ use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
 use settings::{CopyModifier, Settings, Task};
 use tauri::Manager;
+use websocket_service::{impl_name, ClientSideMessage, ServerSideMessage};
 use crate::{ new_packet_found, state::AppState, NEW_DOCS};
 use crossbeam_channel::bounded;
 
@@ -300,8 +301,21 @@ impl DirectoriesSpy
     // }
 }
 
+#[cfg(feature = "websocket")]
+impl websocket_service::PayloadType for NewPacketInfo
+{
+    fn get_type() -> String 
+    {
+        "NewPacketInfo".to_owned()
+    }
+}
 async fn send_new_document(packet: impl Into<NewPacketInfo>)
 {
     let lg = NEW_DOCS.get().unwrap().lock().await;
-    let _ = lg.send(packet.into());
+    let packet: NewPacketInfo = packet.into();
+    #[cfg(feature = "websocket")]
+    {
+        ServerSideMessage::from_struct(&packet).send_to_all().await;
+    }
+    let _ = lg.send(packet);
 }

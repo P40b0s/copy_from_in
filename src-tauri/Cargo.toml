@@ -24,6 +24,7 @@ serde = { version = "1.0.190", features = ["derive"] }
 tauri = { version = "1.5.2", features = ["app-all", "clipboard-all", "fs-all"] }
 #logger = {path = "../../../rust/universal_format/format_constructor/logger"}
 logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
+websocket_service = {git = "https://github.com/P40b0s/websocket_service.git", branch = "main", optional = true}
 once_cell="*"
 chrono="0.4.31"
 anyhow="1.0.79"
@@ -37,9 +38,11 @@ medo_parser = {path = "../libs/medo_parser"}
 crossbeam-channel="0.5.11"
 
 [features]
+
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
-default = [ "custom-protocol" ]
+default = [ "custom-protocol", "websocket" ]
 # this feature is used used for production builds where `devPath` points to the filesystem
 # DO NOT remove this
 custom-protocol = [ "tauri/custom-protocol" ]
+websocket = ["dep:websocket_service"]
