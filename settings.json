@@ -8,8 +8,8 @@
             "timer": 20000,
             "only_docs": false,
             "delete_after_copy": false,
-            "copy_modifier": "copy_all",
-            "rules": []
+            "copy_modifier": "copy_only",
+            "rules": ["source +[a-z0-9]+:uid=\"7c960fc6-2745-4655-80eb-fed1a7905325\""]
         },
         {
             "task_name": "from_in_to_backup",
@@ -17,7 +17,7 @@
             "target_dir":  "out",
             "timer": 15000,
             "only_docs": true,
-            "delete_after_copy": true,
+            "delete_after_copy": false,
             "copy_modifier": "copy_all"
         }
 

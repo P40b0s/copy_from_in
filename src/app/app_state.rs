@@ -6,7 +6,6 @@ use clap::Parser;
 use crate::settings::Settings;
 use super::Args;
 pub static STATE: OnceCell<Mutex<AppState>> = OnceCell::new();
-pub static LOG: OnceCell<Mutex<Vec<String>>> = OnceCell::new();
 pub struct AppState
 {
     pub settings : Settings,
@@ -17,12 +16,7 @@ impl AppState
 {
     pub fn initialize()
     {
-        let _= LOG.set(Mutex::new(vec![]));
-        logger::StructLogger::initialize_logger_with_callback(|log|
-        {
-            LOG.get().unwrap().lock().unwrap().push(log);
-        });
-
+        logger::StructLogger::initialize_logger();
         let settings = Settings::initialize();
         if settings.is_none()
         {
