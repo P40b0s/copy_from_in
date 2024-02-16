@@ -1,2 +1,6 @@
 *.sql
 logs
+*.task
+*.log
+
+test_data
