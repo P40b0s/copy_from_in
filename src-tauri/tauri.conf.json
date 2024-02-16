@@ -23,6 +23,9 @@
       },
       "window": {
         "all": false
+      },
+      "notification": {
+        "all": true
       }
     },
     "bundle": {
