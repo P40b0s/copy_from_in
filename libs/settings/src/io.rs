@@ -11,9 +11,9 @@ pub enum Serializer
 }
 ///Сериализация объекта в строковый формат
 ///если linux то 
-pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool, serializer: Serializer) -> Result<(), String> where T : Clone + Serialize 
+pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, path_as_absolute: bool, serializer: Serializer) -> Result<(), String> where T : Clone + Serialize 
 {
-    let path = if root_dir
+    let path = if !path_as_absolute
     {
         Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }
@@ -62,9 +62,9 @@ pub fn serialize<T, P: AsRef<Path>>(json : T, file_path : P, root_dir: bool, ser
 
 ///Читение файл в строку из чистого utf-8
 /// если false то файл не найден и был создан новый
-pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, root_dir: bool, serializer: Serializer) -> (bool, T) where T : Clone + DeserializeOwned + Default
+pub fn deserialize<'de, T, P: AsRef<Path>>(file_path: P, path_as_absolute: bool, serializer: Serializer) -> (bool, T) where T : Clone + DeserializeOwned + Default
 {
-    let path = if root_dir
+    let path = if !path_as_absolute
     {
         Path::new(&std::env::current_dir().unwrap()).join(file_path)
     }

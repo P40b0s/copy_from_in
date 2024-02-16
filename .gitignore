@@ -2,3 +2,4 @@
 node_modules
 test_data
 src-tauri/logs
+*.log
