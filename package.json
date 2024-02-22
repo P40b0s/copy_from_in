@@ -12,7 +12,7 @@
     "serve:tauri": "RUST_BACKTRACE=1 tauri build --debug",
     "serve:native": "RUST_BACKTRACE=1  tauri dev",
     "build:win": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --target x86_64-pc-windows-gnu",
-    "build:lin": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build"
+    "build:lin": "VITE_NETWORK_PROCESSOR=tauri vite build && tauri build"
   },
   "dependencies": {
     "@tauri-apps/api": "1.5.3",

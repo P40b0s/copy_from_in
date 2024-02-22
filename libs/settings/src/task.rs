@@ -1,6 +1,6 @@
 use std::{fmt::Display, path::PathBuf, time::Duration};
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 //#[serde(rename_all = "camelCase")]
@@ -102,7 +102,7 @@ impl Task
 }
 
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Deserialize, Clone, PartialEq, Debug)]
 pub enum CopyModifier
 {
     CopyAll,
@@ -134,5 +134,15 @@ where
         "copy_all" => Ok(CopyModifier::CopyAll),
         "copy_except" => Ok(CopyModifier::CopyExcept),
         _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
+    }
+}
+
+impl serde::Serialize for CopyModifier
+{
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+       self.to_string().serialize(s)
     }
 }
