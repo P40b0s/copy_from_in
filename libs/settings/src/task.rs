@@ -102,7 +102,7 @@ impl Task
 }
 
 
-#[derive(Deserialize, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum CopyModifier
 {
     CopyAll,
@@ -134,6 +134,22 @@ where
         "copy_all" => Ok(CopyModifier::CopyAll),
         "copy_except" => Ok(CopyModifier::CopyExcept),
         _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
+    }
+}
+impl<'de> serde::Deserialize<'de> for CopyModifier
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: serde::Deserializer<'de> 
+    {
+        let s: String = serde::de::Deserialize::deserialize(deserializer)?;
+        match s.as_str()
+        {
+            "copy_only" => Ok(CopyModifier::CopyOnly),
+            "copy_all" => Ok(CopyModifier::CopyAll),
+            "copy_except" => Ok(CopyModifier::CopyExcept),
+            _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
+        }
     }
 }
 

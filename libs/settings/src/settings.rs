@@ -23,7 +23,7 @@ impl Default for Settings
 }
 impl FileMethods for Settings
 {
-    const FILE_PATH: &'static str = "settings.toml";
+    const FILE_PATH: &'static str = "settings";
     const PATH_IS_ABSOLUTE: bool = false;
     fn validate(&self) -> Result<(), Vec<ValidationError>>
     {
@@ -74,7 +74,8 @@ impl FileMethods for Settings
     ///
     fn load(serializer: io::Serializer) -> Result<Self, Vec<ValidationError>> 
     {
-        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer);
+        let fp = Self::get_filename_with_extension(&serializer);
+        let des: (bool, Self) = crate::io::deserialize(&fp, Self::PATH_IS_ABSOLUTE, serializer);
         if !des.0
         {
             Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
