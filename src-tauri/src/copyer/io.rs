@@ -1,4 +1,4 @@
-use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}};
+use std::{fs::{DirEntry, File, OpenOptions}, io::{BufWriter, Read, Write}, path::{Path, PathBuf}, time::SystemTime};
 
 use logger::error;
 use serde_json::Value;
@@ -20,6 +20,31 @@ use serde_json::Value;
         else 
         {
             let dest = destination.as_ref().join(entry.file_name());
+            //TODO протестить этот цикл!
+            let mut cp_ok_flag = false;
+            while !cp_ok_flag
+            {
+                let mut size: Option<SystemTime> = None;
+                let metadata = std::fs::metadata(&dest)?;
+                if let Ok(md_size) = metadata.modified()
+                {
+                    if size.is_none()
+                    {
+                        size = Some(md_size);
+                    }
+                    else
+                    {
+                        if size.as_ref().unwrap() <  &md_size
+                        {
+                            size = Some(md_size);
+                        }
+                        else
+                        {
+                            cp_ok_flag = true;
+                        }
+                    }
+                }
+            }
             std::fs::copy(entry.path(), &dest)?;
         }
     }
