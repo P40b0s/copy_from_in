@@ -4,28 +4,29 @@ use logger::error;
 use serde_json::Value;
 
  
- /// Copy files from source to destination recursively.
- pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> std::io::Result<u64> 
+ /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
+ pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
  {
     let start = std::time::SystemTime::now();
     std::fs::create_dir_all(&destination)?;
-    for entry in std::fs::read_dir(source)? 
+    let mut files: Vec<(PathBuf, PathBuf)> = vec![];
+    let mut entry_count = 0;
+    for entry in std::fs::read_dir(source.as_ref())? 
     {
         let entry = entry?;
         let filetype = entry.file_type()?;
         if filetype.is_dir() 
         {
-            copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()))?;
+            copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()), check_duration)?;
         }
         else 
         {
+            entry_count += 1;
             let dest = destination.as_ref().join(entry.file_name());
-            //TODO протестить этот цикл!
-            let mut cp_ok_flag = false;
-            while !cp_ok_flag
+            let mut size: Option<SystemTime> = None;
+            loop
             {
-                let mut size: Option<SystemTime> = None;
-                let metadata = std::fs::metadata(&dest)?;
+                let metadata = std::fs::metadata(&entry.path())?;
                 if let Ok(md_size) = metadata.modified()
                 {
                     if size.is_none()
@@ -40,13 +41,25 @@ use serde_json::Value;
                         }
                         else
                         {
-                            cp_ok_flag = true;
+                            size = None;
+                            files.push((entry.path(), dest.clone()));
+                            break;
                         }
                     }
                 }
+                std::thread::sleep(std::time::Duration::from_millis(check_duration));
             }
-            std::fs::copy(entry.path(), &dest)?;
         }
+    }
+    //после проверки всех файлов проверяем не появились ли в директории новые файлы, если появились запускаем процедуру сначала
+    let new_count_check = std::fs::read_dir(source.as_ref())?;
+    if entry_count != new_count_check.count()
+    {
+        return copy_recursively(source, destination, check_duration);
+    }
+    for f in files
+    {
+        std::fs::copy(f.0, f.1)?;
     }
     let end = std::time::SystemTime::now();
     let duration = end.duration_since(start).unwrap();
@@ -197,5 +210,14 @@ pub fn path_is_exists<P: AsRef<Path>>(path: P ) -> bool
     else 
     {
         return false;
+    }
+}
+#[cfg(test)]
+mod tests
+{
+    #[test]
+    fn test_copy()
+    {
+        super::copy_recursively("/home/phobos/projects/rust/copy_from_in/test_data/in/38773995_1_1_unzip (копия)", "/home/phobos/projects/rust/copy_from_in/test_data/in/test_copy", 10000);
     }
 }

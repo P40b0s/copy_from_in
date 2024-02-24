@@ -164,7 +164,7 @@ impl DirectoriesSpy
         }
         else 
         {
-            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path)
+            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path, 3000)
             {
                 if task.delete_after_copy
                 {
