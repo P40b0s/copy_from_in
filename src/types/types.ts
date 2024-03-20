@@ -22,7 +22,7 @@ export type Task =
     target_dir: string,
     timer: number,
     delete_after_copy: boolean,
-    copy_modifier: 'copy_all' | 'copy_only' | 'copy_except',
+    copy_modifier: 'CopyAll' | 'CopyOnly' | 'CopyExcept',
     is_active: boolean,
     filters: Filter
 }

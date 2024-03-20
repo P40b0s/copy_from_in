@@ -94,7 +94,7 @@ impl DirectoriesSpy
     }
 
     ///Отработали ли правила из текущей задачи
-    ///`need_rule_accept` при ключе фильтра copy_only нужно поставить true а при ключе copy_except - false
+    ///`need_rule_accept` при ключе фильтра CopyOnly нужно поставить true а при ключе CopyExcept - false
     ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
     async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
     {
@@ -228,12 +228,12 @@ impl DirectoriesSpy
                             }
                         }
                         let delay = t.get_task_delay();
-                        let end = std::time::SystemTime::now();
-                        let duration = end.duration_since(start).unwrap();
-                        if is_change
-                        {
-                            logger::info!("Задача {} была завершена за {}c., перезапуск задачи через {}c.", std::thread::current().name().unwrap(), duration.as_secs(), &delay.as_secs());
-                        }
+                        //let end = std::time::SystemTime::now();
+                        //let duration = end.duration_since(start).unwrap();
+                        //if is_change
+                        //{
+                        //    logger::info!("Задача {} была завершена за {}c., перезапуск задачи через {}c.", std::thread::current().name().unwrap(), duration.as_secs(), &delay.as_secs());
+                        //}
                         std::thread::sleep(delay);
                     }
                 });

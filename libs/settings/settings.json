@@ -6,7 +6,7 @@
       "target_dir": "../../test_data/out",
       "timer": 15000,
       "delete_after_copy": false,
-      "copy_modifier": "copy_all",
+      "copy_modifier": "CopyAll",
       "is_active": true,
       "clean_types": [],
       "filters": {
@@ -23,7 +23,7 @@
       "target_dir": "../../test_data/out",
       "timer": 12000,
       "delete_after_copy": false,
-      "copy_modifier": "copy_all",
+      "copy_modifier": "CopyOnly",
       "is_active": true,
       "clean_types": [],
       "filters": {

@@ -15,8 +15,8 @@ pub struct Task
     pub timer: u64,
     #[serde(default="is_default")]
     pub delete_after_copy: bool,
-    #[serde(default="def_copy_mod")]
-    #[serde(deserialize_with="deserialize_copy_modifier")]
+    //#[serde(default="def_copy_mod")]
+    //#[serde(deserialize_with="deserialize_copy_modifier")]
     pub copy_modifier: CopyModifier,
     #[serde(default="is_default")]
     pub is_active: bool,
@@ -102,7 +102,7 @@ impl Task
 }
 
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum CopyModifier
 {
     CopyAll,
@@ -115,50 +115,84 @@ impl Display for CopyModifier
     {
         write!(f, "{}", match self 
         {
-            CopyModifier::CopyAll => "copy_all",
-            CopyModifier::CopyOnly => "copy_only",
-            CopyModifier::CopyExcept => "copy_except"
+            CopyModifier::CopyAll => "CopyAll",
+            CopyModifier::CopyOnly => "CopyOnly",
+            CopyModifier::CopyExcept => "CopyExcept"
         })
     }
 }
 
 
-fn deserialize_copy_modifier<'de, D>(deserializer: D) -> Result<CopyModifier, D::Error>
+fn deserialize_copy_modifier2<'de, D>(deserializer: D) -> Result<CopyModifier, D::Error>
 where
     D: serde::de::Deserializer<'de>,
 {
     let s: String = serde::de::Deserialize::deserialize(deserializer)?;
     match s.as_str()
     {
-        "copy_only" => Ok(CopyModifier::CopyOnly),
-        "copy_all" => Ok(CopyModifier::CopyAll),
-        "copy_except" => Ok(CopyModifier::CopyExcept),
-        _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
-    }
-}
-impl<'de> serde::Deserialize<'de> for CopyModifier
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: serde::Deserializer<'de> 
-    {
-        let s: String = serde::de::Deserialize::deserialize(deserializer)?;
-        match s.as_str()
-        {
-            "copy_only" => Ok(CopyModifier::CopyOnly),
-            "copy_all" => Ok(CopyModifier::CopyAll),
-            "copy_except" => Ok(CopyModifier::CopyExcept),
-            _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
-        }
+        "CopyOnly" => Ok(CopyModifier::CopyOnly),
+        "CopyAll" => Ok(CopyModifier::CopyAll),
+        "CopyExcept" => Ok(CopyModifier::CopyExcept),
+        _ => Err(serde::de::Error::custom("Модификатор может быть только: CopyOnly, CopyAll, CopyExcept"))
     }
 }
 
-impl serde::Serialize for CopyModifier
-{
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-       self.to_string().serialize(s)
-    }
-}
+// fn deserialize_copy_modifier<'de, D>(deserializer: D) -> Result<CopyModifier, D::Error>
+// where
+//     D: serde::de::Deserializer<'de>,
+// {
+//     struct CopyModiferVisitor;
+
+//     impl<'de> serde::de::Visitor<'de> for CopyModiferVisitor {
+//         type Value = CopyModifier;
+    
+//         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+//             formatter.write_str("Модификатор копирования может быть только: copy_only, copy_all, copy_except")
+//         }
+    
+//         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+//         where
+//             E: serde::de::Error,
+//         {
+//             // unfortunately we lose some typed information
+//             // from errors deserializing the json string
+//             match v
+//             {
+//                 "copy_only" => Ok(CopyModifier::CopyOnly),
+//                 "copy_all" => Ok(CopyModifier::CopyAll),
+//                 "copy_except" => Ok(CopyModifier::CopyExcept),
+//                 _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
+//             }
+//             //serde_json::from_str(v).map_err(E::custom)
+//         }
+//     }
+    
+//     // use our visitor to deserialize an `ActualValue`
+//     deserializer.deserialize_any(CopyModiferVisitor)
+// }
+// impl<'de> serde::Deserialize<'de> for CopyModifier
+// {
+//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+//         where
+//             D: serde::Deserializer<'de> 
+//     {
+//         let s: String = serde::de::Deserialize::deserialize(deserializer)?;
+//         match s.as_str()
+//         {
+//             "copy_only" => Ok(CopyModifier::CopyOnly),
+//             "copy_all" => Ok(CopyModifier::CopyAll),
+//             "copy_except" => Ok(CopyModifier::CopyExcept),
+//             _ => Err(serde::de::Error::custom("Модификатор может быть только: copy_only, copy_all, copy_except"))
+//         }
+//     }
+// }
+
+// impl serde::Serialize for CopyModifier
+// {
+//     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+//     where
+//         S: Serializer,
+//     {
+//        self.to_string().serialize(s)
+//     }
+// }

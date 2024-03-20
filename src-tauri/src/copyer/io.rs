@@ -1,47 +1,54 @@
 use std::{fs::{DirEntry, File, OpenOptions}, io::{BufWriter, Read, Write}, path::{Path, PathBuf}, time::SystemTime};
 
-use logger::error;
+use logger::{debug, error};
 use serde_json::Value;
 
  
  /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
+ /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
  pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
  {
+    if std::fs::read_dir(source.as_ref())?.count() == 0
+    {
+        return Ok(0);
+    }
     let start = std::time::SystemTime::now();
     std::fs::create_dir_all(&destination)?;
     let mut files: Vec<(PathBuf, PathBuf)> = vec![];
     let mut entry_count = 0;
+    //debug!("Копирование `{}` в `{}`...", source.as_ref().display(), destination.as_ref().display());
     for entry in std::fs::read_dir(source.as_ref())? 
     {
         let entry = entry?;
         let filetype = entry.file_type()?;
+        entry_count += 1;
         if filetype.is_dir() 
         {
             copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()), check_duration)?;
         }
         else 
         {
-            entry_count += 1;
             let dest = destination.as_ref().join(entry.file_name());
-            let mut size: Option<SystemTime> = None;
+            let mut modifed_time: Option<SystemTime> = None;
             loop
             {
+                //в цикле сверяем время изменения файла каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
                 let metadata = std::fs::metadata(&entry.path())?;
-                if let Ok(md_size) = metadata.modified()
+                if let Ok(md_time) = metadata.modified()
                 {
-                    if size.is_none()
+                    if modifed_time.is_none()
                     {
-                        size = Some(md_size);
+                        modifed_time = Some(md_time);
                     }
                     else
                     {
-                        if size.as_ref().unwrap() <  &md_size
+                        if modifed_time.as_ref().unwrap() <  &md_time
                         {
-                            size = Some(md_size);
+                            modifed_time = Some(md_time);
                         }
                         else
                         {
-                            size = None;
+                            modifed_time = None;
                             files.push((entry.path(), dest.clone()));
                             break;
                         }
@@ -53,12 +60,16 @@ use serde_json::Value;
     }
     //после проверки всех файлов проверяем не появились ли в директории новые файлы, если появились запускаем процедуру сначала
     let new_count_check = std::fs::read_dir(source.as_ref())?;
-    if entry_count != new_count_check.count()
+    let count = new_count_check.count();
+    //debug!("новое колчиество файлов `{}` старое количество файлов `{}`...", entry_count, count);
+    if entry_count != count
     {
         return copy_recursively(source, destination, check_duration);
     }
+    //копируем все файлы в списке
     for f in files
     {
+        debug!("Копирование `{}` в `{}`...", f.0.display(), f.1.display());
         std::fs::copy(f.0, f.1)?;
     }
     let end = std::time::SystemTime::now();
@@ -218,6 +229,10 @@ mod tests
     #[test]
     fn test_copy()
     {
-        super::copy_recursively("/home/phobos/projects/rust/copy_from_in/test_data/in/38773995_1_1_unzip (копия)", "/home/phobos/projects/rust/copy_from_in/test_data/in/test_copy", 10000);
+        logger::StructLogger::initialize_logger();
+        super::copy_recursively(
+        "/hard/xar/projects/rust/copy_from_in/test_data/in/38773995_1_1_unzip",
+        "/hard/xar/projects/rust/copy_from_in/test_data/in/test_copy",
+        1000);
     }
 }
