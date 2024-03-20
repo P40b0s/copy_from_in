@@ -1,0 +1,116 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "CodeLLDB",
+            "type": "lldb",
+            "request": "launch",
+            //"preLaunchTask": "Build",
+            "program": "${workspaceRoot}/out/${fileBasename}/target.exe",
+            "args": [],
+            "sourceLanguages": [
+                "rust"
+            ]
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=packets_copyist_tasker",
+                    "--package=packets_copyist_tasker"
+                ],
+                "filter": {
+                    "name": "packets_copyist_tasker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "sourceLanguages": [
+                "rust"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'packets_copyist_tasker'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=packets_copyist_tasker",
+                    "--package=packets_copyist_tasker"
+                ],
+                "filter": {
+                    "name": "packets_copyist_tasker",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'medo_parser'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=medo_parser"
+                ],
+                "filter": {
+                    "name": "medo_parser",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'settings'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=settings"
+                ],
+                "filter": {
+                    "name": "settings",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'packets_copyist_tasker_workspace'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=packets_copyist_tasker_workspace"
+                ],
+                "filter": {
+                    "name": "packets_copyist_tasker_workspace",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

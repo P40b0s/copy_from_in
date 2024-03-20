@@ -79,6 +79,13 @@ mod test
         settings.save(crate::io::Serializer::Json);
     }
     #[test]
+    fn test_from_json_to_toml()
+    {
+        logger::StructLogger::initialize_logger();
+        let settings = Settings::load(crate::io::Serializer::Json).unwrap();
+        settings.save(crate::io::Serializer::Toml);
+    }
+    #[test]
     fn test_serialize_settings_json()
     {
         let settings: Settings = Settings::default();
@@ -90,6 +97,15 @@ mod test
         logger::StructLogger::initialize_logger();
         let settings = Settings::load(crate::io::Serializer::Json).unwrap();
         assert_eq!(settings.tasks[0].copy_modifier, CopyModifier::CopyAll);
+        assert_eq!(settings.tasks[1].copy_modifier, CopyModifier::CopyOnly);
+    }
+    #[test]
+    fn test_deserialize_settings_toml()
+    {
+        logger::StructLogger::initialize_logger();
+        let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
+        assert_eq!(settings.tasks[0].copy_modifier, CopyModifier::CopyAll);
+        assert_eq!(settings.tasks[1].copy_modifier, CopyModifier::CopyOnly);
     }
 
     #[test]

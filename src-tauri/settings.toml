@@ -8,7 +8,7 @@ is_active = true
 clean_types = []
 [tasks.filters]
 document_types =  ["Транспортный контейнер","Документ"]
-copy_modifier = "copy_all"
+copy_modifier = "CopyAll"
 
 [[tasks]]
 name = "from_in_to_backup"
@@ -19,4 +19,4 @@ delete_after_copy = false
 is_active = true
 [tasks.filters]
 document_types =  ["Транспортный контейнер","Документ"]
-copy_modifier = "copy_only"
+copy_modifier = "CopyOnly"
