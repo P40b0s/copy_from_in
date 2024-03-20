@@ -6,9 +6,10 @@ timer = 15000
 delete_after_copy = false
 is_active = true
 clean_types = []
-[tasks.filters]
-document_types =  ["Транспортный контейнер","Документ"]
 copy_modifier = "CopyAll"
+[tasks.filters]
+document_types = ["Транспортный контейнер", "Документ"]
+document_uids = []
 
 [[tasks]]
 name = "from_in_to_backup"
@@ -17,6 +18,7 @@ target_dir = "../test_data/out"
 timer = 12000
 delete_after_copy = false
 is_active = true
-[tasks.filters]
-document_types =  ["Транспортный контейнер","Документ"]
 copy_modifier = "CopyOnly"
+[tasks.filters]
+document_types = ["Транспортный контейнер", "Документ"]
+document_uids = []

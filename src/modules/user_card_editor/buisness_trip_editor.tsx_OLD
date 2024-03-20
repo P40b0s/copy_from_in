@@ -1,0 +1,204 @@
+import { AddCircleOutline, Close, Home, RemoveOutline } from "@vicons/ionicons5";
+import { FormInst, FormItemRule, FormRules, NButton, NCard, NDatePicker, NDynamicInput, NForm, NFormItem, NInput, NInputGroup, NInputNumber, NScrollbar, NSelect, NSpin, NTooltip, SelectGroupOption, SelectOption } from "naive-ui";
+import { CSSProperties, PropType, VNode, defineAsyncComponent, defineComponent, defineModel, defineProps, defineEmits, defineSlots, h, ref, toRaw, Ref, watch } from "vue";
+import { ComponentType, Disease, Id, Ordered, Phones, User, Vacation } from "../../models/user.ts";
+import { diseases,  updateDiseases, updateUser, vacations, TypesBuilder, updateVacations, calcEndDate, ordered, updateOrdered, updateBuisnesTrip, buisnessTrip } from "../../services/data.ts";
+import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2 } from "../../services/date.ts";
+import { TauriCommands } from "../../services/tauri.ts";
+
+
+
+const localProps = 
+{
+    /**Человек */
+    user: 
+    {
+        type: Object as PropType<User>,
+        required: true
+    },
+    /**стили полей редактора */
+    styles: 
+    {
+        type: Object as PropType<CSSProperties>,
+        required: true
+    },
+} as const
+
+const rules = () : FormRules =>
+{
+    return {
+        name_1: 
+        {
+            type: 'string',
+            required: true,
+            trigger: ['change', 'focus'],
+            message: 'Необходимо ввести имя'
+        },
+        name_2: 
+        {
+            type: 'string',
+            required: true,
+            trigger: ['change', 'focus'],
+            message: 'Необходимо ввести отчество'
+        },
+        surname: 
+        {
+            type: 'string',
+            required: true,
+            trigger: ['change', 'focus'],
+            message: 'Необходимо ввести фамилию'
+        },
+        rank: 
+        {
+            type: 'string',
+            required: true,
+            trigger: ['change', 'focus'],
+            message: 'Необходимо выбрать звание'
+        },
+        livePlace: 
+        {
+            type: 'string',
+            required: true,
+            trigger: ['change', 'focus'],
+            message: 'Необходимо заполнить место постоянного проживания'
+        },
+        post:{
+            postId: 
+            {
+                type: 'number',
+                required: true,
+                validator (rule: FormItemRule, value: number) 
+                {
+                    return value > 0
+                },
+                trigger: ['change', 'focus'],
+                message: 'Необходимо выбрать должность'
+            },
+            departmentId: 
+            {
+                type: 'number',
+                validator (rule: FormItemRule, value: number) 
+                {
+                    return value > 0
+                },
+                required: true,
+                trigger: ['change', 'focus'],
+                message: 'Необходимо выбрать отдел'
+            },
+        }
+    }
+}
+
+export const BuisnessTripEditorAsync = defineAsyncComponent({
+    loader: () => import ('./buisness_trip_editor.tsx'),
+    loadingComponent: h(NSpin)
+})
+
+
+export const BuisnessTripEditor = defineComponent({
+props: localProps,
+setup(props, {slots}) 
+{
+    const ord_list = ref(structuredClone(toRaw(buisnessTrip.value)));
+    const formRef = ref<FormInst | null>(null)
+
+    async function save_form(): Promise<boolean>
+    {
+        const app_state = await TauriCommands.Statuses.update_diseases(diseases.value, props.user.id);
+        if (app_state)
+        {
+            app_state_store.set_app_state = app_state;
+            emitter.emit('userUpdated');
+            return true;
+        }
+        else
+        {
+            console.error("Ошибка при сохранении списка заболеваний для юзера  " + diseases.value[0].userId);
+            return false;
+        }
+    }
+    async function validate(): Promise<boolean>
+    {
+        return true;
+    }
+
+    const dynamic_editor = () =>
+    {
+        return h(NDynamicInput,
+            {
+                value: ord_list.value.filter(f=>f.id == props.user.id),
+                onRemove:(r) => ord_list.value.splice(r, 1),
+                onCreate:(c) => ord_list.value.splice(0, 0, TypesBuilder.build_vacation(props.user.id))
+            },
+            {
+                default:({ value }: {value: Ordered}) =>
+                h('div',
+                    {
+                        style: 
+                        {
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '2px',
+                            width: '100%'
+                        } as CSSProperties
+                    },
+                    [
+                        place_input(value),
+                        h('div',
+                        {
+                                style: 
+                                {
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: '2px',
+                                    width: '100%'
+                                } as CSSProperties
+                        },
+                        [
+                            h(NDatePicker,
+                            {
+                                type: 'date',
+                                placeholder: "начало",
+                                clearable: false,
+                                formattedValue: new DateTime(value.startDate).to_string(DateFormat.CalendarFormat),
+                                valueFormat: DateFormat.CalendarFormat.toString(),
+                                format: DateFormat.CalendarFormat.toString(),
+                                onUpdateFormattedValue:(val) => value.startDate = new DateTime(val).to_string(DateFormat.SerializedDateTime)
+                            }),
+                            h(NDatePicker,
+                            {
+                                type: 'date',
+                                placeholder: "окончание",
+                                clearable: false,
+                                formattedValue: new DateTime(value.endDate).to_string(DateFormat.CalendarFormat),
+                                valueFormat: DateFormat.CalendarFormat.toString(),
+                                format: DateFormat.CalendarFormat.toString(),
+                                onUpdateFormattedValue:(val) => value.endDate = new DateTime(val).to_string(DateFormat.SerializedDateTime)
+                            }),
+                        ])
+                       
+                    ])
+            })
+    }
+
+    const place_input = (value: Ordered) =>
+    {
+        return h(NInput,
+        {
+            value: value.place,
+            onUpdateValue:(v)=> value.place = v,
+            placeholder: "Введите место"
+        },
+        {
+            
+        })
+    }
+        return {dynamic_editor, save_form, validate};
+    },
+    render()
+    {
+        return this.dynamic_editor();
+    }
+});

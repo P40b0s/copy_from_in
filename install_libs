@@ -3,3 +3,4 @@ mingw64-winpthreads-static
 sudo dnf install  mingw64-gcc
 sudo dnf install  mingw32-gcc
 
+git remote set-url origin https://P40b0s:TOKEN@github.com/P40b0s/copy_from_in.git

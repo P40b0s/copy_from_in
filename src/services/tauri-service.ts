@@ -1,6 +1,6 @@
 import { event, invoke } from "@tauri-apps/api";
-import { IPacket, Task } from "../types/types"; 
-import { listen } from "@tauri-apps/api/event";
+import { IPacket, Task } from "../models/types"; 
+import { UnlistenFn, listen } from "@tauri-apps/api/event";
 import { InvokeArgs } from "@tauri-apps/api/tauri";
 
 function is_tauri() : boolean
@@ -14,10 +14,10 @@ function is_tauri() : boolean
 
 export class TauriEvents
 {
-    static async new_document_event(func: (arg: event.Event<IPacket>) => void)
+    static async new_document_event(func: (arg: event.Event<IPacket>) => void) : Promise<UnlistenFn|undefined>
     {
         if(is_tauri())
-            await listen<IPacket>('new_packet_found', (event) => 
+            return await listen<IPacket>('new_packet_found', (event) => 
             {
                 console.log(`Эвент new_packet_found обновлен ${event.windowLabel}, payload: ${event.payload.document?.parseTime}`);
                 func(event);
