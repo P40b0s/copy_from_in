@@ -3,14 +3,14 @@
   margin: 5px;
   padding: 5px;
   display: flex;
-  border-radius: 10px;
-  box-shadow: 0px 6px 10px rgba(138, 240, 235, 0.4);
+  border-radius: 1px;
+  //box-shadow: 0px 6px 10px rgba(138, 240, 235, 0.4);
   //transition: all 0.2s;
   background: var(--card-background);
 }
 
 .card:hover {
-  box-shadow: 0px 6px 10px var(--card-boxshadow);
+  box-shadow: 0px 1px 0px var(--card-boxshadow);
   //transform: scale(1.01);
 }
 

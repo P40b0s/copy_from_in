@@ -134,14 +134,16 @@ body {
   animation: fade 3s infinite alternate;
 }
 .neon-blue {
-  margin: 0 auto;
-  text-align: center;
   color: #ebffff;
   text-shadow: 2px 2px 1px rgba(0,0,0,0.3), 0 0px 15px #fff, 0 0 10px #38eeff, 0 0 50px #38eeff;
 }
 .neon-purple {
   color: #ccf;
   text-shadow: 2px 2px 1px rgba(0,0,0,0.5), 0 0 20px #fff, 0 0 10px #7d26cd, 0 0 50px #7d26cd;
+}
+.neon-red {
+  color: #e6624b;
+  text-shadow: 0px 0px 0px rgba(0,0,0,0.5), 0 0 1px #eb3528, 0 0 2px #f5341b;
 }
 @-moz-keyframes blink {
   70% {

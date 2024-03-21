@@ -43,9 +43,12 @@ class AppStateStore extends Store<IGlobalAppState>
     })
   }
 
+  /**Добавляем пакет в начало списка, если список больше 5000 то удаляем последний в списке */
   add_packet(packet: IPacket)
   {
-    this.state.current_log.push(packet);
+    this.state.current_log.splice(0,0, packet);
+    if(this.state.current_log.length > 5000)
+      this.state.current_log.pop();
   }
 }
 const store = new AppStateStore();

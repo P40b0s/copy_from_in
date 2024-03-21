@@ -3,30 +3,15 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    inject,
-    onMounted,
     CSSProperties,
-    PropType,
-    toRefs,
-    toRef,
-    ref,
-    VNode,
-    RendererNode,
-    RendererElement,
-    toRaw,
-    watch
   } from 'vue'
 
-import { NAvatar, NButton, NCard, NCheckbox, NConfigProvider, NDatePicker, NDynamicInput, NForm, NFormItem, NInput, NInputGroup, NInputNumber, NModal, NScrollbar, NSelect, NSpin, NTab, NTabPane, NTable, NTabs, NTooltip, SelectGroupOption, SelectOption } from 'naive-ui';
-import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, timeToString } from '../services/date.ts';
-import { AddCircleOutline, Close, Home, RemoveOutline } from '@vicons/ionicons5';
-import { match } from 'ts-pattern';
-import { ruRU, dateRuRU } from 'naive-ui'
-import { TauriEvents } from '../services/tauri-service.ts';
+import { NSpin, NVirtualList} from 'naive-ui';
+import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
-import { bell_ico } from '../services/svg.ts';
-import { IDocument, IPacket } from '../models/types.ts';
+import { bell_ico, envelope_ico, error_ico } from '../services/svg.ts';
+import { IPacket } from '../models/types.ts';
 export const LogViewerAsync = defineAsyncComponent({
     loader: () => import ('./log_viewer.tsx'),
     loadingComponent: h(NSpin)
@@ -35,40 +20,40 @@ export const LogViewerAsync = defineAsyncComponent({
 export const LogViewer =  defineComponent({
     setup () 
     {
-        const test_packet = () =>
-        {
-            const p : IPacket = {
-                document:
-                {
-                name: "название_директории",
-                organization: "Совет Федерации Федерального Собрания Российской Федерации",
-                docType: "Постановление Совета Федерации Федерального Собрания Российской Федерации",
-                number: "299-СФ",
-                signDate: "2023-06-21",
-                parseTime: "2024-03-20T16:52:51"
-                }
-            }
-            return p;
-        }
-        app_state_store.add_packet(test_packet());
-        // const log = ref<string[]>(["123 34 2234 234"]);
-        //  onMounted(async ()=> 
-        //     await TauriEvents.new_document_event((doc) => 
-        //     {
-        //         console.log("EVENT!");
-        //         const pl = doc.payload
-        //         if(pl.error)
+        //тестовые данные
+        // const test_packet = () =>
+        // {
+        //     const p : IPacket = {
+        //         document:
         //         {
-        //             log.value.push(pl.error);
+        //         name: "название_директории",
+        //         organization: "Совет Федерации Федерального Собрания Российской Федерации",
+        //         docType: "Постановление Совета Федерации Федерального Собрания Российской Федерации",
+        //         number: "299-СФ",
+        //         signDate: "2023-06-21",
+        //         parseTime: "2024-03-20T16:52:51"
         //         }
-        //         if(pl.document)
+        //     }
+        //     return p;
+        // }
+        // const test_error_packet = () =>
+        // {
+        //     const p : IPacket = {
+        //         document:
         //         {
-        //             log.value.push(pl.document.name);
-        //         }
-        //     })
-        // );
+        //             name: "ошибочное название директории",
+        //             parseTime: "2024-12-24T00:00:00"
+        //         },
+        //         error: "Ошибка распознавания пакета б!"
+        //     }
+        //     return p;
+        // }
+        // for (let index = 0; index < 100; index++) {
+        //     app_state_store.add_packet(test_packet());
+        //     app_state_store.add_packet(test_error_packet());
+        // }
        
-        console.log(app_state_store.getState().current_log);
+        //console.log(app_state_store.getState().current_log);
         const list = () =>
         {
             return h('div',
@@ -81,26 +66,34 @@ export const LogViewer =  defineComponent({
                     width: '100%'
                 }   as CSSProperties
             },
-                app_state_store.getState().current_log.map(p=>
-                {
-                    if (p.document)
-                        return doc_status(p.document);
-                    else if (p.error)
-                        return err_status(p.error);
-                })
+            virtual_list()
             );
         }
 
 
-        const doc_status = (doc: IDocument) =>
+        const doc_status = (packet: IPacket) =>
         {
-            const parse_date = new DateTime(doc.parseTime);
-            return h(StatusCard,
+            let sb_color =  'rgba(22, 227, 84, 0.6)';
+            let avatar = envelope_ico;
+            let text_class = 'neon-blue';
+            if(packet.document)
+            {
+                const parse_date = new DateTime(packet.document.parseTime);
+                const sign_date = packet.document.signDate ? new DateTime(packet.document.signDate) : undefined;
+                let description = (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
+                if(packet.error)
                 {
-                    key: doc.parseTime,
-                    avatar: bell_ico,
-                    shadowbox_color: 'rgba(22, 227, 84, 0.6)',
-                    tooltip: doc.name
+                    description = packet.error;
+                    sb_color = '#f6848487';
+                    avatar = error_ico;
+                    text_class = 'neon-red'
+                }
+                return h(StatusCard,
+                {
+                    key: packet.document.parseTime,
+                    avatar: avatar,
+                    shadowbox_color: sb_color,
+                    tooltip: packet.document.name
                 },
                 {
                     default:() =>
@@ -114,34 +107,54 @@ export const LogViewer =  defineComponent({
                         } as CSSProperties
                     },
                     [
-                        h('div', parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time) + " " + doc.name),
-                        h('div', (doc.organization ?? "") + " " + (doc.signDate ?? "") + " " + (doc.number ?? "")),
-                       
+                        h('div',
+                        {
+                            style:
+                            {
+                                fontWeight: '700',
+                            } as CSSProperties,
+                            class: text_class
+
+                        },
+                        parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time) + " " + packet.document?.name),
+                        h('div', description),
+                    
                     ])
                 })
+            }
+            else
+            {
+                if(packet.error)
+                {
+                    return h("span", "Получен неизвестный пакет! " + packet.error);
+                }
+                else
+                {
+                    return h("span", "Получен неизвестный пакет! " + packet.error);
+                }
+            }
         }
 
-        const err_status = (err: string) =>
+        const virtual_list = () =>
         {
-            return h(StatusCard,
+            return h(NVirtualList,
                 {
-                    key: err,
-                    avatar: bell_ico,
-                    shadowbox_color: 'rgba(22, 227, 84, 0.6)',
-                    tooltip: err
+                    style:
+                    {
+                        maxHeight: "600px",
+                        minHeight: "300px"
+                    } as CSSProperties,
+                    itemSize: 60,
+                    items: app_state_store.getState().current_log
                 },
                 {
-                    default:() =>
-                    h('div', 
+                    default:({ item }: {item: IPacket}) => 
                     {
-                        style: {
-                            width: '100%',
-                        } as CSSProperties
-                    },
-                    h('div', err),
-                    )
+                        
+                        return doc_status(item);
+                    }
                 })
-        }
+            }
 
         return {list}
     },

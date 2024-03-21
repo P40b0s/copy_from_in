@@ -11,5 +11,7 @@ import run_man_ico from '../assets/svg/runman.svg'
 import train_ico from '../assets/svg/train.svg'
 import journal_ico from '../assets/svg/journal.svg'
 import bell_ico from '../assets/svg/bell.svg'
+import error_ico from '../assets/svg/error.svg'
+import envelope_ico from '../assets/svg/envelope.svg'
 
-export {disease_ico, health_ico, palm_ico, user_ico, test_ico, vacc_ico, info_ico, add_user_ico, run_man_ico, train_ico, disease_red_ico, journal_ico, bell_ico}
+export {disease_ico, health_ico, palm_ico, error_ico, envelope_ico, user_ico, test_ico, vacc_ico, info_ico, add_user_ico, run_man_ico, train_ico, disease_red_ico, journal_ico, bell_ico}

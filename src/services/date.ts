@@ -90,6 +90,11 @@ class DateTime
                 this.split_date(date, ".", [2, 1, 0]);
                 this.date = new Date(this.year, this.mounth - 1, this.day, this.hour, this.minute);
             }
+            else if (date.split("-").length > 1)
+            {
+                this.split_date(date, "-", [0, 1, 2]);
+                this.date = new Date(this.year, this.mounth - 1, this.day, this.hour, this.minute);
+            }
         }
         else if (typeof date === "number")
         {
