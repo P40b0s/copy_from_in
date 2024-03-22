@@ -26,8 +26,43 @@ export type Task =
     is_active: boolean,
     filters: Filter
 }
+
 export type Filter = 
 {
     document_types: string[],
     document_uids: string[]
 }
+
+interface Clone<T>
+{
+    clone(source: T|undefined): T|undefined
+}
+
+class TaskClone implements Clone<Task>
+{
+    clone(source: Task|undefined): Task|undefined
+    {
+        if(source)
+        {
+            const f : Filter = 
+            {
+                document_types: source.filters.document_types,
+                document_uids: source.filters.document_uids
+            }
+            const t : Task =
+            {
+                name: source.name,
+                source_dir: source.source_dir,
+                target_dir: source.target_dir,
+                timer: source.timer,
+                delete_after_copy: source.delete_after_copy,
+                copy_modifier: source.copy_modifier,
+                is_active: source.is_active,
+                filters: f
+            } 
+            return t;
+        }
+        else return undefined;
+    }
+}
+export const taskClone = new TaskClone();
