@@ -8,15 +8,21 @@ import
     ref,
     Ref,
   } from 'vue'
-
-import { FormInst, FormItemRule, FormRules, NButton, NForm, NFormItem, NInput, NInputNumber, NSelect, NSpin, NSwitch, NVirtualList, SelectGroupOption, SelectOption} from 'naive-ui';
+import { open } from '@tauri-apps/api/dialog';
+import { relaunch } from '@tauri-apps/api/process';
+import { FormInst, FormItemRule, FormRules, NButton, NCard, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NSelect, NSpin, NSwitch, NTooltip, NVirtualList, SelectGroupOption, SelectOption} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { bell_ico, envelope_ico, error_ico } from '../services/svg.ts';
-import { IPacket, Task, taskClone} from '../models/types.ts';
+import { CopyModifer, IPacket, Task, VN, taskClone} from '../models/types.ts';
 import { settings } from '../services/tauri-service.ts';
 import { string } from 'ts-pattern/dist/patterns';
+import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
+import { HeaderWithDescription } from './header_with_description.tsx';
+import { Filter } from '../models/types';
+import { notify } from '../services/notification.ts';
+import { timer } from '../services/helpers.ts';
 export const SettingsEditorAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
@@ -92,6 +98,8 @@ export const SettingsEditor =  defineComponent({
     {
         const tasks = ref<Task[]>([]);
         const selected_task = ref<Task>();
+        const is_new_task = ref(false);
+        const save_error = ref<string|undefined>();
         onMounted(async ()=>
         {
             let s = await settings.load_settings()
@@ -121,7 +129,30 @@ export const SettingsEditor =  defineComponent({
                 }
             })
         }
-       
+
+        const copy_modifers = (): Array<SelectOption | SelectGroupOption> =>
+        {
+           
+                return [
+                {
+                    label: "Копировать все",
+                    value: 'CopyAll',
+                    disabled: false
+                },
+                {
+                    label: "Копировать только",
+                    value: 'CopyOnly',
+                    disabled: false
+                },
+                {
+                    label: "Копировать кроме",
+                    value: 'CopyExcept',
+                    disabled: false
+                },
+            ]
+            
+        }
+      
         const list = () =>
         {
             return h('div',
@@ -145,16 +176,31 @@ export const SettingsEditor =  defineComponent({
                 },
                 [
                     settings_selector(),
-                    settings_dashboard()
+                    error(),
+                    settings_dashboard(),
+                    
                 ]
                 
                 ),
             ]
             );
         }
+        const error = () =>
+        {
+            return h("span", {
+            style:
+                {
+                    color: 'red',
+                    visibility: save_error.value ? 'visible' : 'collapse'
+                } as CSSProperties
+            },
+            save_error.value
+            )
+        }
 
         const settings_selector = () =>
         {
+            const save_button_label = ref<string | VN>("СОХРАНИТЬ");
             return h("div",
             {
                 style:
@@ -167,8 +213,49 @@ export const SettingsEditor =  defineComponent({
                 } as CSSProperties
             },
             [
+                h(NTooltip,
+                {
+
+                },
+                {
+                    trigger:() =>  h(NButton,
+                    {
+                        type: 'primary',
+                        onClick: async () => 
+                        {
+                            const f : Filter = 
+                            {
+                                document_types: [],
+                                document_uids: []
+                            }
+                            const task: Task = {
+                                name: "новая задача",
+                                source_dir: "",
+                                target_dir: "",
+                                timer: 120000,
+                                delete_after_copy: false,
+                                copy_modifier: "CopyAll",
+                                is_active: true,
+                                filters: f
+                            }
+                            is_new_task.value = true;
+                            tasks.value.push(task);
+                            selected_task.value = tasks.value[tasks.value.length - 1];
+                        }
+                    },
+                    {
+                        icon:() => h(NIcon, {component: AddSharp})
+                    }),
+                    default:() => "Добавить новую задачу"
+                }),
                 h(NSelect,
                 {
+                    style:
+                    {
+                        marginLeft: '5px'
+                        
+                    }    as CSSProperties,
+                    disabled: is_new_task.value,
                     value: selected_task.value?.name,
                     options: settings_names(),
                     onUpdateValue:(v: string)=>
@@ -181,22 +268,34 @@ export const SettingsEditor =  defineComponent({
                     type: 'primary',
                     style:
                     {
-                        marginLeft: '5px'
-                    }    as CSSProperties
-                },
-                {
-                    default:() => "СОХРАНИТЬ"
-                }),
-                h(NButton,
-                {
-                    type: 'error',
-                    style:
+                        marginLeft: '5px',
+                        width: '100px'
+                    }    as CSSProperties,
+                    onClick: async () => 
                     {
-                        marginLeft: '5px'
-                    }    as CSSProperties
+                        const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
+                        tasks.value.splice(saved, 1, selected_task.value as Task);
+                        const result = await settings.save_settings(tasks.value);
+                        if (result === 'string')
+                        {
+                            console.error(result);
+                            save_error.value = result;
+                        }
+                        else
+                        {
+                            is_new_task.value = false;
+                            //await notify("Настройки успешно сохранены", "Настройки успешно сохранены")
+                            save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
+                            setTimeout(() => 
+                            {
+                                save_button_label.value = "СОХРАНИТЬ"
+                            }, 1000);
+                              
+                        }
+                    }
                 },
                 {
-                    default:() => "ОТМЕНА"
+                    default:() => save_button_label.value
                 }),
             ]
             )
@@ -206,87 +305,355 @@ export const SettingsEditor =  defineComponent({
         {
             if(selected_task.value != undefined)
             {
-                return h(NForm,
+                return h(NCard,{
+                    style:
                     {
-                        rules: form_validation_rules(),
-                        ref: formRef,
-                        labelPlacement: 'top',
-                        model: selected_task.value,
+                        marginTop:'5px'
+                    } as CSSProperties
+
+                },
+                h('div', 
+                {
+                    style:
+                    {
+                        display: 'flex',
+                        height: '100%',
+                        justifyContent: 'space-between',
+                        flexDirection: 'row',
+                    } as CSSProperties
+                },
+                [
+                    left_form(),
+                    right_form(),
+                    h(NPopconfirm,
+                    {
+                        positiveText: "Удалить",
+                        onPositiveClick()
+                        {
+                            const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
+                            tasks.value.splice(current_task, 1);
+                            selected_task.value = tasks.value[0];
+                            is_new_task.value = false;
+                        }
                     },
                     {
-                        default:() =>[   
-                        h(NFormItem,
+                        trigger:() =>  h(NTooltip,null,
                         {
-                            path: 'name',
-                            label: "Имя задачи",
-                            
-                        },
-                        {
-                            default:() =>
-                            h(NInput,
+                            trigger:() =>  h(NButton,
                             {
-                                value: selected_task.value?.name,
-                                onUpdateValue:(v)=> (selected_task.value as Task).name = v
-                            })
-                        }),
-                        h(NFormItem,
-                        {
-                            path: 'sourcedir',
-                            label: "Исходная директория",
-                        },
-                        {
-                            default:() =>
-                            h(NInput,
-                            {
-                                value: selected_task.value?.source_dir,
-                                onUpdateValue:(v)=> (selected_task.value as Task).source_dir = v
-                            })
-                        }),
-                        h(NFormItem,
-                        {
-                            path: 'targetdir',
-                            label: "Целевая директория",
-                        },
-                        {
-                            default:() =>
-                            h(NInput,
-                            {
-                                value: selected_task.value?.target_dir,
-                                onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
-                            })
-                        }),
-                        h(NFormItem,
-                        {
-                            path: 'timer',
-                            label: "Переодичность сканирования (мс.)",
-                        },
-                        {
-                            default:() =>
-                            h(NInputNumber,
-                            {
-                                value: selected_task.value?.timer,
-                                onUpdateValue:(v)=> (selected_task.value as Task).timer = v ?? 100000
-                            })
-                        }),
-                        h(NFormItem,
-                        {
-                            path: 'dac',
-                            label: "Удалять после копирования",
-                        },
-                        {
-                            default:() =>
-                            h(NSwitch,
-                            {
-                                value: selected_task.value?.delete_after_copy,
-                                onUpdateValue:(v: boolean)=>
+                                type: 'error',
+                                color: "#d90d0d",
+                                size: 'large',
+                                text: true,
+                                style:
                                 {
-                                    (selected_task.value as Task).delete_after_copy = v;
-                                } 
-                            })
+                                    position: 'absolute',
+                                    top: '15px',
+                                    right: '15px'
+                                }    as CSSProperties,
+                            },
+                            {
+                                icon:() => h(NIcon, {component: TrashBin})
+                            }),
+                            default:() => "Удалить задачу"
                         }),
-                    ]
-                    })
+                        default:() => "Вы хотите удалить задачу " + selected_task.value?.name + "?"
+                    }),
+                    
+                ]))
             } else return [];
+        }
+
+        const left_form = () =>
+        {
+            return h(NForm,
+                {
+                    rules: form_validation_rules(),
+                    ref: formRef,
+                    labelPlacement: 'top',
+                    model: selected_task.value,
+                    style:
+                    {
+                       // width: '600px',
+                        flexGrow: '3',
+                        marginTop:'5px'
+                    } as CSSProperties
+                },
+                {
+                    default:() =>[   
+                    h(NFormItem,
+                    {
+                        path: 'name',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Имя задачи",
+                            description: "Наименование тещуей задачи, изменяется только при создании новой задачи, потом не может быть изменено",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInput,
+                        {
+                            disabled: !is_new_task.value,
+                            value: selected_task.value?.name,
+                            onUpdateValue:(v)=> (selected_task.value as Task).name = v
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'sourcedir',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Исходная директория",
+                            description: "Директория в которой будут отслеживаться новые пакеты, и при необходимости копироваться в целевую директорию",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInput,
+                        {
+                            readonly: true,
+                            value: selected_task.value?.source_dir,
+                            onUpdateValue:(v)=> (selected_task.value as Task).source_dir = v,
+                        },
+                        {
+                            prefix: () =>
+                            h(NButton,
+                                {
+                                    color: "#8a2be2",
+                                    size: 'large',
+                                    text: true,
+                                    onClick: async ()=>
+                                    {
+                                        // Open a selection dialog for image files
+                                        const selected = await open({
+                                            multiple: false,
+                                            title: "Выбор исходной директории",
+                                            defaultPath: selected_task.value?.source_dir,
+                                            directory: true,
+                                            });
+                                            if(selected != null)
+                                            {
+                                                (selected_task.value as Task).source_dir = selected as string
+                                            }
+                                    }
+                                },
+                                {
+                                    icon:() => h(NIcon, {component:  FolderOpenOutline})
+                                })
+                        }),
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'targetdir',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Целевая директория",
+                            description: "Директория в которую будут копироваться пакеты",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInput,
+                        {
+                            readonly: true,
+                            value: selected_task.value?.target_dir,
+                            onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
+                        },
+                        {
+                            prefix: () =>
+                            h(NButton,
+                                {
+                                    color: "#8a2be2",
+                                    size: 'large',
+                                    text: true,
+                                    onClick: async ()=>
+                                    {
+                                        // Open a selection dialog for image files
+                                        const selected = await open({
+                                            multiple: false,
+                                            title: "Выбор целевой директории",
+                                            defaultPath: selected_task.value?.target_dir,
+                                            directory: true,
+                                            });
+                                            if(selected != null)
+                                            {
+                                                (selected_task.value as Task).target_dir = selected as string
+                                            }
+                                    }
+                                },
+                                {
+                                    icon:() => h(NIcon, {component:  FolderOpenOutline})
+                                })
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'mod',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Модификатор копирования",
+                            description: "Копирование всех пакетов, или копирование пакетов согласно правилам фильтрации",
+                            fontSize: '14px'
+                        }),
+                        default:() =>  h(NSelect,
+                        {
+                            value: selected_task.value?.copy_modifier,
+                            options: copy_modifers(),
+                            onUpdateValue:(v: CopyModifer)=>
+                            {
+                                (selected_task.value as Task).copy_modifier = v;
+                            }
+                        }),
+                    }
+                    ),
+                    h(NFormItem,
+                        {
+                            path: 'fil_tp',
+                            label: "Фильтрация по виду документа",
+                            style:{
+                                visibility: (selected_task.value as Task).copy_modifier == 'CopyAll' ? 'collapse' : 'visible' 
+                            } as CSSProperties
+                        },
+                        {
+                            label:() => h(HeaderWithDescription,{
+                                name: "Фильтрация по виду документа",
+                                description: "Вид документа который указан в xml файле пакета в тегах `<xdms:header xdms:type=\"Транспортный контейнер\"...`",
+                                fontSize: '14px'
+                            }),
+                            default:() =>  h(NDynamicInput,
+                            {
+                                value: selected_task.value?.filters.document_types,
+                                onCreate(index)
+                                {
+                                    selected_task.value?.filters.document_types.splice(index, 0, "")
+                                },
+                                onRemove(index) 
+                                {
+                                    selected_task.value?.filters.document_types.splice(index, 1);
+                                },
+                            }),
+                        }
+
+                       
+                    ),
+                    h(NFormItem,
+                        {
+                            path: 'fil_uid',
+                            style:{
+                                visibility: (selected_task.value as Task).copy_modifier == 'CopyAll' ? 'collapse' : 'visible' 
+                            } as CSSProperties
+                        },
+                        {
+                            label:() => h(HeaderWithDescription,{
+                                name: "Фильтрация по UID отправителя",
+                                description: "UID отправителя который указан в xml файле пакета в тегах ` <xdms:source xdms:uid=\"db617a7c-bd8f-4159-afda-aabdbbcdba18\">`",
+                                fontSize: '14px'
+                            }),
+                            default:() => h(NDynamicInput,
+                            {
+                                value: selected_task.value?.filters.document_uids,
+                                onCreate(index)
+                                {
+                                    selected_task.value?.filters.document_uids.splice(index, 0, "")
+                                },
+                                onRemove(index) 
+                                {
+                                    selected_task.value?.filters.document_uids.splice(index, 1);
+                                },
+                            }),
+                        }
+                        
+                    )
+                ]
+                })
+        }
+        const right_form = () =>
+        {
+            return h(NForm,
+                {
+                    rules: form_validation_rules(),
+                    ref: formRef,
+                    labelPlacement: 'top',
+                    model: selected_task.value,
+                    style:
+                    {
+                        marginTop:'5px',
+                        marginLeft: '5px'
+                    } as CSSProperties
+                },
+                {
+                    default:() =>[   
+                    h(NFormItem,
+                    {
+                        path: 'isactive',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Задача активна",
+                            description: "Работают только активные задачи, неактивные задачи не выполняются",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NSwitch,
+                        {
+                            value: selected_task.value?.is_active,
+                            onUpdateValue:(v: boolean)=>
+                            {
+                                (selected_task.value as Task).is_active = v;
+                            } 
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'dac',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Удалять после копирования",
+                            description: "После копирования пакета из исходной директории в целевую директорию, пакет удаляется из исходной директории",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NSwitch,
+                        {
+                            value: selected_task.value?.delete_after_copy,
+                            onUpdateValue:(v: boolean)=>
+                            {
+                                (selected_task.value as Task).delete_after_copy = v;
+                            } 
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'timer',
+                        label: "Переодичность сканирования (с.)",
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Переодичность сканирования (с.)",
+                            description: "Интервал сканирования исходной директории при поиске новых пакетов",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInputNumber,
+                        {
+                            value: ((selected_task.value as Task).timer / 1000),
+                            onUpdateValue:(v)=> 
+                            {
+                                if (v)
+                                {
+                                    (selected_task.value as Task).timer = v* 1000;
+                                }
+                                else
+                                {
+                                    (selected_task.value as Task).timer = 1000;
+                                }
+                            }
+                        })
+                    }),
+            ]})
         }
         return {list}
     },

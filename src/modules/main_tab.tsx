@@ -13,6 +13,7 @@ import { NAvatar, NBadge, NButton, NCard, NSpin, NTab, NTabPane, NTabs, NTooltip
 import { disease_ico, palm_ico } from '../services/svg.ts';
 import { LogViewer } from './log_viewer.tsx';
 import { SettingsEditor } from './settings_editor.tsx';
+import { Services } from './services.tsx';
 
 export const MainTabAsync = defineAsyncComponent({
     loader: () => import ('./main_tab.tsx'),
@@ -82,7 +83,7 @@ export const MainTab =  defineComponent({
                 name: 'serv'
             },
             {
-                //default:() => h(LogViewer)
+                default:() => h(Services)
             }
         )
     }

@@ -1,3 +1,5 @@
+import { RendererElement, RendererNode, VNode } from "vue";
+
 export interface IDocument
 {
     organization?: string,
@@ -22,11 +24,11 @@ export type Task =
     target_dir: string,
     timer: number,
     delete_after_copy: boolean,
-    copy_modifier: 'CopyAll' | 'CopyOnly' | 'CopyExcept',
+    copy_modifier: CopyModifer,
     is_active: boolean,
     filters: Filter
 }
-
+export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
 export type Filter = 
 {
     document_types: string[],
@@ -65,4 +67,8 @@ class TaskClone implements Clone<Task>
         else return undefined;
     }
 }
+
+export type VN = VNode<RendererNode, RendererElement, {
+    [key: string]: any;
+}>
 export const taskClone = new TaskClone();

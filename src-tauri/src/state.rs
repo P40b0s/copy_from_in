@@ -4,7 +4,7 @@ use settings::{FileMethods, Settings};
 
 pub struct AppState
 {
-    settings: Mutex<Settings>,
+    pub settings: Mutex<Settings>,
 }
 impl Default for AppState
 {
