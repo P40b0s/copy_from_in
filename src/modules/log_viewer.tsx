@@ -6,12 +6,13 @@ import
     CSSProperties,
   } from 'vue'
 
-import { NSpin, NVirtualList} from 'naive-ui';
+import { NIcon, NSpin, NVirtualList} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
-import { bell_ico, envelope_ico, error_ico } from '../services/svg.ts';
+import { envelope_ico, error_ico } from '../services/svg.ts';
 import { IPacket } from '../models/types.ts';
+import { FolderOpen, TimeOutline } from '@vicons/ionicons5';
 export const LogViewerAsync = defineAsyncComponent({
     loader: () => import ('./log_viewer.tsx'),
     loadingComponent: h(NSpin)
@@ -48,12 +49,19 @@ export const LogViewer =  defineComponent({
         //     }
         //     return p;
         // }
+        // const test_error_packet2 = () =>
+        // {
+        //     const p : IPacket = {
+        //         error: "Ошибка распознавания пакета!"
+        //     }
+        //     return p;
+        // }
         // for (let index = 0; index < 100; index++) {
         //     app_state_store.add_packet(test_packet());
         //     app_state_store.add_packet(test_error_packet());
+        //     app_state_store.add_packet(test_error_packet2());
         // }
-       
-        //console.log(app_state_store.getState().current_log);
+
         const list = () =>
         {
             return h('div',
@@ -73,27 +81,21 @@ export const LogViewer =  defineComponent({
 
         const doc_status = (packet: IPacket) =>
         {
-            let sb_color =  'rgba(22, 227, 84, 0.6)';
-            let avatar = envelope_ico;
-            let text_class = 'neon-blue';
+            let description = "";
+            let parse_time = new DateTime().to_string(DateFormat.DotDate) + " " + new DateTime().to_string(DateFormat.Time)
             if(packet.document)
             {
                 const parse_date = new DateTime(packet.document.parseTime);
+                parse_time = parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time)
                 const sign_date = packet.document.signDate ? new DateTime(packet.document.signDate) : undefined;
-                let description = (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
-                if(packet.error)
+                description = (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
+            }
+            return h(StatusCard,
                 {
-                    description = packet.error;
-                    sb_color = '#f6848487';
-                    avatar = error_ico;
-                    text_class = 'neon-red'
-                }
-                return h(StatusCard,
-                {
-                    key: packet.document.parseTime,
-                    avatar: avatar,
-                    shadowbox_color: sb_color,
-                    tooltip: packet.document.name
+                    key: packet.document?.parseTime ?? parse_time,
+                    avatar: packet.error ? error_ico : envelope_ico,
+                    shadowbox_color: packet.error ? '#f6848487' : 'rgb(100, 165, 9)',
+                    tooltip: packet.document?.name || packet.error || "Неизвестный пакет"
                 },
                 {
                     default:() =>
@@ -113,26 +115,48 @@ export const LogViewer =  defineComponent({
                             {
                                 fontWeight: '700',
                             } as CSSProperties,
-                            class: text_class
+                            class: packet.error ? 'standart-red' : 'standart-green'
 
                         },
-                        parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time) + " " + packet.document?.name),
-                        h('div', description),
-                    
+                        [
+                            h('div',
+                            {
+                                style:
+                                {
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    justifyItems: 'center',
+                                    alignItems: 'center'
+                                } as CSSProperties,
+                            },
+                            [
+                                h(NIcon, 
+                                {
+                                    component: TimeOutline,
+                                    color: 'rgb(100, 165, 9)',
+                                    style:
+                                    {
+                                        marginRight: '5px'
+                                    } as CSSProperties,
+                                }),
+                                parse_time,
+                                packet.document ? h(NIcon, 
+                                {
+                                    component: FolderOpen,
+                                    color: 'rgb(241, 229, 95)',
+                                    style:
+                                    {
+                                        marginLeft: '5px',
+                                        marginRight: '5px'
+                                    } as CSSProperties,
+                                }) : [],
+                                packet.document?.name,
+                            ]),
+                            packet.document ? h('div', description) : [],
+                            packet.error ? h('div', packet.error) : [],
+                        ])
                     ])
                 })
-            }
-            else
-            {
-                if(packet.error)
-                {
-                    return h("span", "Получен неизвестный пакет! " + packet.error);
-                }
-                else
-                {
-                    return h("span", "Получен неизвестный пакет! " + packet.error);
-                }
-            }
         }
 
         const virtual_list = () =>
@@ -150,7 +174,6 @@ export const LogViewer =  defineComponent({
                 {
                     default:({ item }: {item: IPacket}) => 
                     {
-                        
                         return doc_status(item);
                     }
                 })
