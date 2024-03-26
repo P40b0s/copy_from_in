@@ -1,36 +1,75 @@
-use std::{self, path::{Path, PathBuf}, sync::{Arc, Mutex}, collections::HashMap};
+use std::{self, path::{Path, PathBuf}, sync::{Arc}, collections::HashMap};
 use logger::{debug, error, info, warn, LevelFilter};
 use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
 use settings::{CopyModifier, Settings, Task};
+use tokio::sync::Mutex;
 use tauri::Manager;
 use crate::{ new_packet_found, state::AppState, NEW_DOCS};
 use crossbeam_channel::bounded;
 
 use super::{NewDocument, NewPacketInfo};
-//pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
+static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
 pub struct DirectoriesSpy;
+
 impl DirectoriesSpy
 {
-    ///Возвырат сообщений из канала реализован в главном потоке, управление в main не возвращается, 
-    ///так как главный поток больше ни для чего не используется, оставлю так
+    pub async fn initialize(settings: &Settings)
+    {
+        for t in &settings.tasks
+        {
+            Settings::load_exclude(t)
+        }
+    }
+    ///Будет вызываться каждые 15 секунда пока что, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
     pub async fn process_tasks<R: tauri::Runtime>(manager: Arc<impl Manager<R>>) -> anyhow::Result<()>
     {
         let state = manager.state::<AppState>().inner();
-        let (s, r) = bounded::<(Task, String)>(10);
         let settings = state.get_settings();
-        DirectoriesSpy::start_tasks(settings, s).await;
-        loop 
+        Self::process_timers(&settings).await;
+        Ok(())
+    }
+
+    async fn process_timers(settings: &Settings)
+    {
+        for t in &settings.tasks
         {
-            while let Ok(rec) = r.recv() 
+            let mut guard = TIMERS.lock().await;
+            if guard.contains_key(&t.name)
             {
-                Self::copy_files_process(rec.0, rec.1).await;
+                let countdown = guard.get(&t.name).unwrap() - 15000;
+                debug!("{}", countdown);
+                if countdown > 0
+                {
+                    *guard.get_mut(&t.name).unwrap() = countdown;
+                    drop(guard);
+                }
+                else 
+                {
+                    *guard.get_mut(&t.name).unwrap() = t.timer;
+                    drop(guard);
+                    //таск 1 а вот пакетов может быть несколько
+                    let tsk = Arc::new(t.clone());
+                    tokio::spawn(async move
+                    {
+                        let ready_tasks = Self::scan_dir(tsk).await;
+                        for ready_task in ready_tasks
+                        {
+                            Self::copy_files_process(ready_task.0, ready_task.1).await;
+                        }
+                    });
+                }
+            }
+            else
+            {
+                guard.insert(t.name.clone(), t.timer);
+                drop(guard);
             }
         }
     }
 
-    async fn copy_files_process(task: Task, founded_packet_name : String)
+    async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
         let task_name = task.get_task_name();
         let source_dir = task.get_source_dir();
@@ -77,6 +116,37 @@ impl DirectoriesSpy
                 }
                 
             },
+        }
+    }
+    fn copy_process(target_path: &PathBuf,
+        source_path: &PathBuf,
+        packet_dir_name: &str, 
+        task : &Task) -> bool
+    {
+        if super::io::path_is_exists(&target_path)
+        {
+            warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",packet_dir_name, target_path.display());
+            return false;
+        }
+        else 
+        {
+            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path, 3000)
+            {
+                if task.delete_after_copy
+                {
+                    if let Err(e) = std::fs::remove_dir_all(source_path)
+                    {
+                        error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                    }
+                }
+                info!("Задачей `{}` c модификатором {} пакет {} скопирован в {} за {}с.",task.name, task.copy_modifier, packet_dir_name, &target_path.display(), copy_time);
+                return true;
+            }
+            else
+            {
+                error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+                return false;
+            }
         }
     }
 
@@ -152,37 +222,7 @@ impl DirectoriesSpy
     }
 
 
-    fn copy_process(target_path: &PathBuf,
-        source_path: &PathBuf,
-        packet_dir_name: &str, 
-        task : &Task) -> bool
-    {
-        if super::io::path_is_exists(&target_path)
-        {
-            warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",packet_dir_name, target_path.display());
-            return false;
-        }
-        else 
-        {
-            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path, 3000)
-            {
-                if task.delete_after_copy
-                {
-                    if let Err(e) = std::fs::remove_dir_all(source_path)
-                    {
-                        error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-                    }
-                }
-                info!("Задачей `{}` c модификатором {} пакет {} скопирован в {} за {}с.",task.name, task.copy_modifier, packet_dir_name, &target_path.display(), copy_time);
-                return true;
-            }
-            else
-            {
-                error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
-                return false;
-            }
-        }
-    }
+   
 
     ///Каждый таск обрабатывается в отдельном потоке
     async fn start_tasks(settings: Settings, sender : crossbeam_channel::Sender<(Task, String)>)
@@ -240,64 +280,34 @@ impl DirectoriesSpy
             }
         }
     }
-    //Добавить к задаче имя директории, чтобы больше ее не копировать
-    // если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
-    // fn add(task_name: &str, dir: &String) -> bool
-    // {
-    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if !guard.contains_key(task_name)
-    //     {
-    //         guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
-    //         return true;
-    //     }
-    //     else 
-    //     {
-    //         if let Some(ex) = guard.get_mut(task_name)
-    //         {
-    //             let d = dir.to_owned();
-    //             if !ex.contains(&d)
-    //             {
-    //                 ex.push(dir.to_owned());
-    //                 return true;
-    //             }
-    //             else 
-    //             {
-    //                 return false;
-    //             }
-    //         }
-    //     }
-    //     return false;
-    // }
-    // fn delete(task_name: &str, dir: &String)
-    // {
-    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if let Some(v) = guard.get_mut(task_name)
-    //     {
-    //         v.retain(|r| r != dir);
-    //     }
-    // }
-    // fn serialize_exclude(task_name: &str,)
-    // {
-    //     let concat_path = [task_name, ".task"].concat();
-    //     let file_name = Path::new(&concat_path);
-    //     let guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if let Some(vec) = guard.get(task_name)
-    //     {
-    //         super::serialize::serialize(vec, file_name, None);
-    //     }  
-    // }
-    // pub fn deserialize_exclude(task: &Task)
-    // {
-    //     let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
-    //     let mut guard = excl.lock().unwrap();
-    //     if !guard.contains_key(task.name.as_str())
-    //     {
-    //         let file = [&task.name, ".task"].concat();
-    //         let path = Path::new(&file);
-    //         let ex = super::serialize::deserialize::<Vec<String>>(&path);
-    //         guard.insert(task.name.clone(), ex.1);
-    //     }
-    // }
+
+    ///проверяем новые пакеты у тасков с вышедшим таймером, получаем список тасков у которых найдены новые пакеты
+    async fn scan_dir(task: Arc<Task>) -> Vec<(Arc<Task>, String)>
+    {
+        let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
+        if task.is_active
+        {
+            let paths = super::io::get_dirs(&task.source_dir);
+            if let Some(reader) = paths.as_ref()
+            {
+                let mut exclude_is_changed = false;
+                for d in reader
+                {
+                    let cloned_task = Arc::clone(&task);
+                    if Settings::add_to_exclude(&cloned_task.name, d)
+                    {
+                        exclude_is_changed = true;
+                        prepared_tasks.push((cloned_task, d.to_owned()));
+                    }    
+                }
+                if exclude_is_changed
+                {
+                    Settings::save_exclude(&task.name);
+                }
+            }
+        }
+        prepared_tasks
+    }
 }
 
 async fn send_new_document(packet: impl Into<NewPacketInfo>)

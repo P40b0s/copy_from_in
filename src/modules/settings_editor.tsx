@@ -628,18 +628,19 @@ export const SettingsEditor =  defineComponent({
                     h(NFormItem,
                     {
                         path: 'timer',
-                        label: "Переодичность сканирования (с.)",
                     },
                     {
                         label:() => h(HeaderWithDescription,{
-                            name: "Переодичность сканирования (с.)",
-                            description: "Интервал сканирования исходной директории при поиске новых пакетов",
+                            name: "Переодичность сканирования",
+                            description: "Интервал сканирования исходной директории при поиске новых пакетов, устанавливается кратным 15с.",
                             fontSize: '14px'
                         }),
                         default:() =>
                         h(NInputNumber,
                         {
                             value: ((selected_task.value as Task).timer / 1000),
+                            min: 15,
+                            step: 15,
                             onUpdateValue:(v)=> 
                             {
                                 if (v)
