@@ -23,6 +23,8 @@ pub struct Task
     ///Типы пакетов которые будут очищаться
     #[serde(default="empty_doc_types")]
     pub clean_types: Vec<String>,
+    #[serde(default="is_default")]
+    pub generate_exclude_file: bool,
     pub filters: Filter
     
 }
@@ -71,6 +73,7 @@ impl Default for Task
             delete_after_copy: false,
             is_active: false,
             clean_types: vec![],
+            generate_exclude_file: false,
             filters: Filter
             {
                 document_types: vec![],

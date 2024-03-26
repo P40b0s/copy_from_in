@@ -236,6 +236,7 @@ export const SettingsEditor =  defineComponent({
                                 delete_after_copy: false,
                                 copy_modifier: "CopyAll",
                                 is_active: true,
+                                generate_exclude_file: false,
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -254,7 +255,7 @@ export const SettingsEditor =  defineComponent({
                     {
                         marginLeft: '5px'
                         
-                    }    as CSSProperties,
+                    } as CSSProperties,
                     disabled: is_new_task.value,
                     value: selected_task.value?.name,
                     options: settings_names(),
@@ -652,6 +653,26 @@ export const SettingsEditor =  defineComponent({
                                     (selected_task.value as Task).timer = 1000;
                                 }
                             }
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'exclud',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Сгенерировать файл исключений",
+                            description: "При сохранении настроек будет дополнительно сгенерирован файл исключений, в нем будут присутсвовать все имена пакетов из целевой директории, для исключения копирования уже существующих в системе пакетов",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NSwitch,
+                        {
+                            value: selected_task.value?.generate_exclude_file,
+                            onUpdateValue:(v: boolean)=>
+                            {
+                                (selected_task.value as Task).generate_exclude_file = v;
+                            } 
                         })
                     }),
             ]})

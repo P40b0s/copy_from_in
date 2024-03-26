@@ -2,7 +2,7 @@ use std::{self, path::{Path, PathBuf}, sync::{Arc}, collections::HashMap};
 use logger::{debug, error, info, warn, LevelFilter};
 use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
-use settings::{CopyModifier, Settings, Task};
+use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::sync::Mutex;
 use tauri::Manager;
 use crate::{ new_packet_found, state::AppState, NEW_DOCS};
@@ -22,7 +22,7 @@ impl DirectoriesSpy
             Settings::load_exclude(t)
         }
     }
-    ///Будет вызываться каждые 15 секунда пока что, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
+    ///Будет вызываться каждые 15 секунда, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
     pub async fn process_tasks<R: tauri::Runtime>(manager: Arc<impl Manager<R>>) -> anyhow::Result<()>
     {
         let state = manager.state::<AppState>().inner();

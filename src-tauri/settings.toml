@@ -14,7 +14,7 @@ document_uids = []
 
 [[tasks]]
 name = "from_in_to_backup"
-source_dir = "../test_data/in2"
+source_dir = "../test_data/in22"
 target_dir = "../test_data/out"
 timer = 30000
 delete_after_copy = false
