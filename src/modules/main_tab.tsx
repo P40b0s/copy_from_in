@@ -55,10 +55,11 @@ export const MainTab =  defineComponent({
             {
                 justifyContent: 'space-evenly',
                 type: 'line',
+                size: 'large',
                 defaultValue: "log"
             },
             {
-                default:() => [log_tab(), service_tab(), settings_tab()]
+                default:() => [log_tab(), settings_tab()]
             }
         )
     }
@@ -67,8 +68,9 @@ export const MainTab =  defineComponent({
     {
         return h(NTabPane,
             {
-                tab: 'Лог',
-                name: 'log'
+                tab: 'Логирование',
+                name: 'log',
+
             },
             {
                 default:() => h(LogViewer)

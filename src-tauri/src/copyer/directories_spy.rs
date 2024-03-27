@@ -1,4 +1,4 @@
-use std::{self, path::{Path, PathBuf}, sync::{Arc}, collections::HashMap};
+use std::{self, collections::HashMap, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info, warn, LevelFilter};
 use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
@@ -10,23 +10,24 @@ use crossbeam_channel::bounded;
 
 use super::{NewDocument, NewPacketInfo};
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
-
+static INIT: AtomicBool = AtomicBool::new(false);
 pub struct DirectoriesSpy;
 
 impl DirectoriesSpy
 {
-    pub async fn initialize(settings: &Settings)
-    {
-        for t in &settings.tasks
-        {
-            Settings::load_exclude(t)
-        }
-    }
     ///Будет вызываться каждые 15 секунда, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
     pub async fn process_tasks<R: tauri::Runtime>(manager: Arc<impl Manager<R>>) -> anyhow::Result<()>
     {
         let state = manager.state::<AppState>().inner();
-        let settings = state.get_settings();
+        let settings = state.get_settings().await;
+        if !INIT.load(std::sync::atomic::Ordering::SeqCst)
+        {
+            for t in &settings.tasks
+            {
+                Settings::load_exclude(t)
+            }
+            INIT.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
         Self::process_timers(&settings).await;
         Ok(())
     }
@@ -82,7 +83,7 @@ impl DirectoriesSpy
         {
             CopyModifier::CopyAll =>
             {
-                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task)
+                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
                     send_new_document(NewDocument::new(&founded_packet_name)).await;
                 }
@@ -118,7 +119,7 @@ impl DirectoriesSpy
             },
         }
     }
-    fn copy_process(target_path: &PathBuf,
+    async fn copy_process(target_path: &PathBuf,
         source_path: &PathBuf,
         packet_dir_name: &str, 
         task : &Task) -> bool
@@ -130,7 +131,7 @@ impl DirectoriesSpy
         }
         else 
         {
-            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path, 3000)
+            if let Ok(copy_time) = super::io::copy_recursively_async(&source_path, &target_path, 3000).await
             {
                 if task.delete_after_copy
                 {
@@ -172,17 +173,17 @@ impl DirectoriesSpy
         && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
         && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
         {
-            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
+            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
         }
         else
         {
             if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
             {
-                return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
+                return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
             }
             if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
             {
-                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
+                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task).await;
             }
         }
         return false;
@@ -219,66 +220,6 @@ impl DirectoriesSpy
             return true;
         }    
         false 
-    }
-
-
-   
-
-    ///Каждый таск обрабатывается в отдельном потоке
-    async fn start_tasks(settings: Settings, sender : crossbeam_channel::Sender<(Task, String)>)
-    {
-        let tasks = settings.tasks;
-        for t in tasks
-        {
-            if !t.is_active
-            {
-                let wrn = format!("Задач {} -> не активна и не будет запущена (флаг is_active)", t.get_task_name());
-                warn!("{}", &wrn);
-                continue;
-            }
-            else
-            {
-                Settings::load_exclude(&t);
-                let builder = std::thread::Builder::new().name(t.name.clone());
-                let sender = sender.clone();
-                let _ = builder.spawn(move ||
-                {
-                    loop 
-                    {
-                        let start = std::time::SystemTime::now();
-                        let paths = super::io::get_dirs(&t.source_dir);
-                        if paths.is_none()
-                        {
-                            continue;
-                        }
-                        let mut is_change = false;
-                        if let Some(reader) = paths.as_ref()
-                        {
-                            for d in reader
-                            {
-                                if Settings::add_to_exclude(&t.name, d)
-                                {
-                                    is_change = true;
-                                    let _ = sender.send((t.clone(), d.to_owned())).unwrap();
-                                }    
-                            }
-                            if is_change
-                            {
-                                Settings::save_exclude(&t.name);
-                            }
-                        }
-                        let delay = t.get_task_delay();
-                        //let end = std::time::SystemTime::now();
-                        //let duration = end.duration_since(start).unwrap();
-                        //if is_change
-                        //{
-                        //    logger::info!("Задача {} была завершена за {}c., перезапуск задачи через {}c.", std::thread::current().name().unwrap(), duration.as_secs(), &delay.as_secs());
-                        //}
-                        std::thread::sleep(delay);
-                    }
-                });
-            }
-        }
     }
 
     ///проверяем новые пакеты у тасков с вышедшим таймером, получаем список тасков у которых найдены новые пакеты

@@ -18,6 +18,7 @@ import { match } from 'ts-pattern';
 //import {Modals} from './modules/modals.tsx'
 //import { TimeWarningsViewer } from './modules/time_warnings/time_warnings_viewer.tsx';
 import { darkTheme } from 'naive-ui';
+import { Services } from './modules/services.tsx';
 
 export const AppAsync = defineAsyncComponent({
     loader: () => import ('./app.tsx'),
@@ -55,7 +56,7 @@ export const App = defineComponent({
                         class: 'main-container'
                     },
                     [
-                        //h(NavMenu, {class: 'menu'}),
+                        h(Services, {class: 'menu'}),
                         h(MainTab),
                         //h(Modals),
                         //h(TimeWarningsViewer, {items: time_warnings.value, class: 'footer'}),

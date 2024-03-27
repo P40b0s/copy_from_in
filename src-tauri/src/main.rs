@@ -43,14 +43,14 @@ fn main()
   .setup(|app| 
     {
       let app_handle = Arc::new(app.handle());
-      let st = app_handle.state::<AppState>().inner();
-      let settings = st.get_settings();
+      //let st = app_handle.state::<AppState>().inner();
       //новая арка на каждый асинхронный рантайм
       let handle_1 = Arc::clone(&app_handle);
       let handle_2 = Arc::clone(&app_handle);
       tauri::async_runtime::spawn(async move
       {
-        DirectoriesSpy::initialize(&settings).await;
+        //let settings = Arc::clone(&handle_1).state::<AppState>().inner().get_settings().await;
+        //DirectoriesSpy::initialize(&settings).await;
         loop 
         {
           let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;

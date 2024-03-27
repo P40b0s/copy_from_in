@@ -12,14 +12,14 @@ use crate::Error;
 #[tauri::command]
 pub async fn clear_dirs(state: tauri::State<'_, AppState>) -> Result<u32, Error>
 {
-  let settings = state.get_settings();
+  let settings = state.get_settings().await;
   let r = Settings::clear_packets(&settings)?;
   Ok(r)
 }
 #[tauri::command]
 pub async fn truncate_tasks_excepts(state: tauri::State<'_, AppState>) -> Result<u32, Error>
 {
-    let settings = state.get_settings();
+    let settings = state.get_settings().await;
     let r = settings.truncate_excludes();
     Ok(r)
 }

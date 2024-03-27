@@ -1,5 +1,5 @@
 use std::process::exit;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
 use settings::{FileMethods, Settings};
 
 pub struct AppState
@@ -30,9 +30,9 @@ impl Default for AppState
 
 impl AppState
 {
-    pub fn get_settings(&self) -> Settings
+    pub async fn get_settings(&self) -> Settings
     {
-        let guard = self.settings.lock().unwrap();
+        let guard = self.settings.lock().await;
         guard.clone()
     }
 }

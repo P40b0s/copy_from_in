@@ -236,7 +236,7 @@ export const SettingsEditor =  defineComponent({
                                 delete_after_copy: false,
                                 copy_modifier: "CopyAll",
                                 is_active: true,
-                                generate_exclude_file: false,
+                                generate_exclude_file: true,
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -276,7 +276,7 @@ export const SettingsEditor =  defineComponent({
                     {
                         const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
                         tasks.value.splice(saved, 1, selected_task.value as Task);
-                        const result = await settings.save_settings(tasks.value);
+                        const result = await settings.save_task(tasks.value[saved]);
                         if (result === 'string')
                         {
                             console.error(result);
@@ -286,6 +286,8 @@ export const SettingsEditor =  defineComponent({
                         {
                             is_new_task.value = false;
                             //await notify("Настройки успешно сохранены", "Настройки успешно сохранены")
+                            (selected_task.value as Task).generate_exclude_file = false;
+                            tasks.value[saved].generate_exclude_file = false;
                             save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
                             setTimeout(() => 
                             {
@@ -326,43 +328,49 @@ export const SettingsEditor =  defineComponent({
                 [
                     left_form(),
                     right_form(),
-                    h(NPopconfirm,
-                    {
-                        positiveText: "Удалить",
-                        onPositiveClick()
-                        {
-                            const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
-                            tasks.value.splice(current_task, 1);
-                            selected_task.value = tasks.value[0];
-                            is_new_task.value = false;
-                        }
-                    },
-                    {
-                        trigger:() =>  h(NTooltip,null,
-                        {
-                            trigger:() =>  h(NButton,
-                            {
-                                type: 'error',
-                                color: "#d90d0d",
-                                size: 'large',
-                                text: true,
-                                style:
-                                {
-                                    position: 'absolute',
-                                    top: '15px',
-                                    right: '15px'
-                                }    as CSSProperties,
-                            },
-                            {
-                                icon:() => h(NIcon, {component: TrashBin})
-                            }),
-                            default:() => "Удалить задачу"
-                        }),
-                        default:() => "Вы хотите удалить задачу " + selected_task.value?.name + "?"
-                    }),
-                    
+                    del_button()
                 ]))
             } else return [];
+        }
+
+        const del_button =() =>
+        {
+            return h(NPopconfirm,
+            {
+                positiveText: "Удалить",
+                onPositiveClick: async () => 
+                {
+                    const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
+                    tasks.value.splice(current_task, 1);
+                    let dl = await settings.delete_task(selected_task.value as Task)
+                    console.log(dl);
+                    selected_task.value = tasks.value[0];
+                    is_new_task.value = false;
+                }
+            },
+            {
+                trigger:() =>  h(NTooltip,null,
+                {
+                    trigger:() =>  h(NButton,
+                    {
+                        type: 'error',
+                        color: "#d90d0d",
+                        size: 'large',
+                        text: true,
+                        style:
+                        {
+                            position: 'absolute',
+                            top: '15px',
+                            right: '15px'
+                        }    as CSSProperties,
+                    },
+                    {
+                        icon:() => h(NIcon, {component: TrashBin})
+                    }),
+                    default:() => "Удалить задачу"
+                }),
+                default:() => "Вы хотите удалить задачу " + selected_task.value?.name + "?"
+            })
         }
 
         const left_form = () =>
@@ -526,6 +534,10 @@ export const SettingsEditor =  defineComponent({
                             default:() =>  h(NDynamicInput,
                             {
                                 value: selected_task.value?.filters.document_types,
+                                onUpdateValue(v)
+                                {
+                                    (selected_task.value as Task).filters.document_types = v as string[];
+                                },
                                 onCreate(index)
                                 {
                                     selected_task.value?.filters.document_types.splice(index, 0, "")
@@ -555,6 +567,10 @@ export const SettingsEditor =  defineComponent({
                             default:() => h(NDynamicInput,
                             {
                                 value: selected_task.value?.filters.document_uids,
+                                onUpdateValue(v)
+                                {
+                                    (selected_task.value as Task).filters.document_uids = v as string[];
+                                },
                                 onCreate(index)
                                 {
                                     selected_task.value?.filters.document_uids.splice(index, 0, "")

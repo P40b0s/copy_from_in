@@ -28,19 +28,16 @@ import "./loader.scss";
 export const Loader =  defineComponent({
     setup () 
     {
-        const arr = (len: number) : VN[] =>
-        {
-            let array: VN[] = [];
-            for (let index = 0; index < len; index++) 
-            {
-                array.push(h("i"));
-            }
-            return array;
-        }
         const list = () =>
         {
-            return h("div", {class:"loader"},
-            arr(72))
+            return h("div", 
+            {
+                class:"spinner",
+                style:
+                {
+                    
+                } as CSSProperties
+            })
         }          
         return {list}
     },
