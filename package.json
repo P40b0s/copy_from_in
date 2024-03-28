@@ -5,11 +5,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "tauri:icon": "tauri icon tasker.png",
     "serve": "vite dev",
     "serve:tauri": "RUST_BACKTRACE=1 tauri build --debug",
     "serve:native": "RUST_BACKTRACE=1  tauri dev",
     "build:win": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --target x86_64-pc-windows-gnu",
     "build:lin": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build",
+    "build:windev": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --debug --target x86_64-pc-windows-gnu",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -30,6 +30,7 @@ export type Task =
     is_active: boolean,
     generate_exclude_file: boolean,
     color: string,
+    clean_types: string[],
     filters: Filter
 }
 export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
@@ -66,6 +67,7 @@ class TaskClone implements Clone<Task>
                 copy_modifier: source.copy_modifier,
                 is_active: source.is_active,
                 color: source.color,
+                clean_types: source.clean_types,
                 generate_exclude_file: source.generate_exclude_file,
                 filters: f
             } 

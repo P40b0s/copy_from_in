@@ -32,6 +32,7 @@ const task_1 = (): Task =>
         copy_modifier: "CopyAll",
         is_active: true,
         generate_exclude_file: true,
+        clean_types: ["Квитанция"],
         color: '#4f46',
         filters: f
     }
@@ -54,6 +55,7 @@ const task_2 = (): Task =>
         copy_modifier: "CopyAll",
         is_active: true,
         generate_exclude_file: true,
+        clean_types: ["Квитанция"],
         color: '#0a8bb2',
         filters: f
     }

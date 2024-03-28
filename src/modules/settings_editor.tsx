@@ -228,6 +228,7 @@ export const SettingsEditor =  defineComponent({
                                 copy_modifier: "CopyAll",
                                 is_active: true,
                                 generate_exclude_file: true,
+                                clean_types: [],
                                 color: '#4f46',
                                 filters: f
                             }
@@ -519,6 +520,33 @@ export const SettingsEditor =  defineComponent({
                     }),
                     h(NFormItem,
                     {
+                        path: 'cl_p',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Типы пакетов для операции очистки",
+                            description: "При нажатии кнопки с кисточкой начнется очистка исходных директорий от пакетов которые введены в этом поле",
+                            fontSize: '14px'
+                        }),
+                        default:() =>  h(NDynamicInput,
+                        {
+                            value: selected_task.value?.clean_types,
+                            onUpdateValue(v)
+                            {
+                                (selected_task.value as Task).clean_types = v as string[];
+                            },
+                            onCreate(index)
+                            {
+                                selected_task.value?.clean_types.splice(index, 0, "")
+                            },
+                            onRemove(index) 
+                            {
+                                selected_task.value?.clean_types.splice(index, 1);
+                            },
+                        }),
+                    }),
+                    h(NFormItem,
+                    {
                         path: 'mod',
                     },
                     {
@@ -726,6 +754,7 @@ export const SettingsEditor =  defineComponent({
                         h(NColorPicker,
                         {
                             value: selected_task.value?.color,
+                            showAlpha: false,
                             onUpdateValue:(v: string)=>
                             {
                                 (selected_task.value as Task).color = v;
