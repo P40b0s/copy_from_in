@@ -80,8 +80,8 @@ impl FileMethods for Settings
         if !des.0
         {
             let _ = crate::io::serialize(Settings::default(), &fp, Self::PATH_IS_ABSOLUTE, serializer);
-            warn!("{} Файл настроек не найден, создан новый файл, необходимо его правильно настроить");
-            //Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
+            warn!("Файл настроек не найден, создан новый файл {}, для работы программы необходимо его настроить", &fp);
+            Ok(Settings::default())
         }
         else 
         {
@@ -125,7 +125,8 @@ impl Settings
 
     pub fn clear_exclude(task_name: &str)
     {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = excl.lock().unwrap();
         if guard.contains_key(task_name)
         {
             guard.remove(task_name);
@@ -178,7 +179,8 @@ impl Settings
     ///удалить исключение из файла *.task
     pub fn del_exclude(t: &Task, packet_name: &str)
     {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = excl.lock().unwrap();
         let excludes = guard.get_mut(t.get_task_name()).unwrap();
         excludes.retain(|r| r != packet_name);
         drop(guard);

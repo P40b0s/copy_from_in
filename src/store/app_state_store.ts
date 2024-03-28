@@ -32,14 +32,6 @@ class AppStateStore extends Store<IGlobalAppState>
       console.log(doc);
       const pl = doc.payload
       this.add_packet(doc.payload);
-      // if(pl.error)
-      // {
-      //   this.state.current_log.push(pl.error);
-      // }
-      // if(pl.document)
-      // {
-      //   this.state.current_log.push(pl.document.name);
-      // }
     })
   }
 

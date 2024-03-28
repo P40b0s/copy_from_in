@@ -6,28 +6,18 @@ import
     CSSProperties,
     onMounted,
     ref,
-    Ref,
   } from 'vue'
 import { open } from '@tauri-apps/api/dialog';
-import { relaunch } from '@tauri-apps/api/process';
-import { FormInst, FormItemRule, FormRules, NButton, NCard, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NSelect, NSpin, NSwitch, NTooltip, NVirtualList, SelectGroupOption, SelectOption} from 'naive-ui';
-import { DateFormat, DateTime} from '../services/date.ts';
-import { app_state_store } from '../store/index.ts';
-import { StatusCard } from './status_card.tsx';
-import { bell_ico, envelope_ico, error_ico } from '../services/svg.ts';
-import { CopyModifer, IPacket, Task, VN, taskClone} from '../models/types.ts';
+import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption} from 'naive-ui';
+import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
 import { settings } from '../services/tauri-service.ts';
-import { string } from 'ts-pattern/dist/patterns';
 import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
-import { notify } from '../services/notification.ts';
-import { timer } from '../services/helpers.ts';
 export const SettingsEditorAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
 })
-
 
 const form_validation_rules = () : FormRules =>
 {
@@ -230,6 +220,7 @@ export const SettingsEditor =  defineComponent({
                             }
                             const task: Task = {
                                 name: "новая задача",
+                                description: "",
                                 source_dir: "",
                                 target_dir: "",
                                 timer: 120000,
@@ -237,6 +228,7 @@ export const SettingsEditor =  defineComponent({
                                 copy_modifier: "CopyAll",
                                 is_active: true,
                                 generate_exclude_file: true,
+                                color: '#4f46',
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -315,21 +307,33 @@ export const SettingsEditor =  defineComponent({
                     } as CSSProperties
 
                 },
-                h('div', 
+                h(NScrollbar,
                 {
+                    trigger: 'hover',
                     style:
                     {
-                        display: 'flex',
-                        height: '100%',
-                        justifyContent: 'space-between',
-                        flexDirection: 'row',
+                        maxHeight: '570px',
+                        padding: '10px'
                     } as CSSProperties
                 },
-                [
-                    left_form(),
-                    right_form(),
-                    del_button()
-                ]))
+                {
+                    default:() =>  h('div', 
+                    {
+                        style:
+                        {
+                            display: 'flex',
+                            height: '100%',
+                            justifyContent: 'space-between',
+                            flexDirection: 'row',
+                            
+                        } as CSSProperties
+                    },
+                    [
+                        left_form(),
+                        right_form(),
+                        del_button()
+                    ])
+                }))
             } else return [];
         }
 
@@ -406,6 +410,23 @@ export const SettingsEditor =  defineComponent({
                             disabled: !is_new_task.value,
                             value: selected_task.value?.name,
                             onUpdateValue:(v)=> (selected_task.value as Task).name = v
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'descr',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Описание",
+                            description: "Краткое описание для чего создана задача",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInput,
+                        {
+                            value: selected_task.value?.description,
+                            onUpdateValue:(v)=> (selected_task.value as Task).description = v
                         })
                     }),
                     h(NFormItem,
@@ -688,6 +709,26 @@ export const SettingsEditor =  defineComponent({
                             onUpdateValue:(v: boolean)=>
                             {
                                 (selected_task.value as Task).generate_exclude_file = v;
+                            } 
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'clr',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Цвет уведомления",
+                            description: "У данного уведомления будет такой цвет при отображении в логе задач",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NColorPicker,
+                        {
+                            value: selected_task.value?.color,
+                            onUpdateValue:(v: string)=>
+                            {
+                                (selected_task.value as Task).color = v;
                             } 
                         })
                     }),

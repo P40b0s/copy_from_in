@@ -49,8 +49,6 @@ fn main()
       let handle_2 = Arc::clone(&app_handle);
       tauri::async_runtime::spawn(async move
       {
-        //let settings = Arc::clone(&handle_1).state::<AppState>().inner().get_settings().await;
-        //DirectoriesSpy::initialize(&settings).await;
         loop 
         {
           let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;

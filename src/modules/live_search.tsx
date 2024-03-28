@@ -57,6 +57,6 @@ emits:
     },
     render ()
     {
-        return h(this.element)
+        return this.element()
     }
 })

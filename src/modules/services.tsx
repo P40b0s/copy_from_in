@@ -4,25 +4,12 @@ import
     defineComponent,
     defineAsyncComponent,
     CSSProperties,
-    onMounted,
     ref,
-    Ref,
   } from 'vue'
-import { open } from '@tauri-apps/api/dialog';
-import { relaunch } from '@tauri-apps/api/process';
-import { FormInst, FormItemRule, FormRules, NAvatar, NButton, NCard, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NSelect, NSpin, NSwitch, NTooltip, NVirtualList, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
-import { DateFormat, DateTime} from '../services/date.ts';
-import { app_state_store } from '../store/index.ts';
-import { StatusCard } from './status_card.tsx';
-import { bell_ico, clean_ico, envelope_ico, error_ico, palm_ico } from '../services/svg.ts';
-import { CopyModifer, IPacket, Task, VN, taskClone} from '../models/types.ts';
-import { service, settings } from '../services/tauri-service.ts';
-import { number, string } from 'ts-pattern/dist/patterns';
-import { AddSharp, CheckmarkCircleOutline, Cut, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
-import { HeaderWithDescription } from './header_with_description.tsx';
-import { Filter } from '../models/types.ts';
-import { naive_notify, notify } from '../services/notification.ts';
-import { timer } from '../services/helpers.ts';
+import { NAvatar, NButton, NSpin, NTooltip, useNotification} from 'naive-ui';
+import { clean_ico, cut_ico} from '../services/svg.ts';
+import { service } from '../services/tauri-service.ts';
+import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
 export const ServicesAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
@@ -66,7 +53,9 @@ export const Services =  defineComponent({
                         } as CSSProperties
                     },
                     [
-                        clean_button()
+                        clean_button(),
+                        truncate_button()
+
                     ])
                 ]),
             ]
@@ -125,6 +114,59 @@ export const Services =  defineComponent({
             default:() => in_work.value ? "Очитска запущена, ожидайте" : "Начать очистку",
         })
     }            
+
+    const truncate_button = () => 
+    {
+       return h(NTooltip,{placement: 'bottom'},
+        {
+            trigger:() =>
+            h(NButton,
+            {
+                round: true,
+                text: true,
+                size: 'small',
+                disabled: in_work.value,
+                onClick: async (c) =>
+                {
+                    
+                    in_work.value = true;
+                    const result = await service.truncate_tasks_excepts();
+                    console.log(result)
+                    if (result != undefined)
+                    {
+                        if(result === 'string')
+                        {
+                            naive_notify(notify_inj, 'error', "Ошибка обрезки файла задачи", result);
+                        }
+                        else
+                            naive_notify(notify_inj, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result + " несовпадающих записей");
+                    }
+                    in_work.value = false;
+                },
+                style:
+                {
+                    backgroundColor: 'transparent'
+                }
+            },
+            {
+                default:() => in_work.value ? h(Loader) : h(NAvatar,
+                {
+                    size: 40,
+                    src: cut_ico,
+                    class: 'hover-button',
+                    style:
+                    {
+                        backgroundColor: 'transparent',
+                        marginRight: '5px',
+                        minWidth: '50px'
+                    }   as CSSProperties
+                    
+                }),
+            }),
+            default:() => in_work.value ? "Обрезка файлов задач запущена, ожидайте" : "Начать обрезку файлов задач",
+        })
+    }            
+
     return {list}
     },
     render ()

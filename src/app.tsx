@@ -3,20 +3,11 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    inject,
-    onMounted,
-    ref
   } from 'vue'
 
-import { NAvatar, NButton, NConfigProvider, NNotificationProvider, NSpin, dateRuRU, ruRU } from 'naive-ui';
-import { invoke } from '@tauri-apps/api/tauri';
+import { NConfigProvider, NNotificationProvider, NSpin, dateRuRU, ruRU } from 'naive-ui';
 import {MainTab} from './modules/main_tab.tsx';
 import './main_grid.scss'
-//import  {NavMenu}  from './modules/nav.tsx';
-//import emitter from './services/emit.ts';
-import { match } from 'ts-pattern';
-//import {Modals} from './modules/modals.tsx'
-//import { TimeWarningsViewer } from './modules/time_warnings/time_warnings_viewer.tsx';
 import { darkTheme } from 'naive-ui';
 import { Services } from './modules/services.tsx';
 
@@ -26,17 +17,8 @@ export const AppAsync = defineAsyncComponent({
 })
 
 export const App = defineComponent({
-    setup (props) 
+    setup () 
     {
-        //const deps_editor = ref(false);
-        //const posts_editor = ref(false);
-        async function backendAdd() 
-        {
-            console.log("кнопка нажата");
-            await invoke('my_custom_command', {  invokeMessage: 'Hello!' })
-        }
-
-
         const main_div = () =>
         {
            return h(NNotificationProvider,{},
@@ -47,7 +29,6 @@ export const App = defineComponent({
                     dateLocale: dateRuRU,
                     theme: darkTheme,
                     class: 'main-body'
-        
                 },
                 {
                     default:() => 
@@ -64,21 +45,6 @@ export const App = defineComponent({
                 }),
             }) 
         }
-       
-        const configuration = () =>
-        {
-            return h(NConfigProvider,
-                {
-                    locale: ruRU,
-                    dateLocale: dateRuRU
-        
-                },
-                {
-                    default:() => h(MainTab),
-                        
-                })
-        }
-        //const tab = () => h(main_tab)
         return {main_div}
     },
     render ()

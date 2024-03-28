@@ -3,14 +3,10 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    inject,
-    onMounted,
     CSSProperties
   } from 'vue'
 
-import { NAvatar, NBadge, NButton, NCard, NSpin, NTab, NTabPane, NTabs, NTooltip } from 'naive-ui';
-//import { global_store } from '../store/index.ts';
-import { disease_ico, palm_ico } from '../services/svg.ts';
+import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { LogViewer } from './log_viewer.tsx';
 import { SettingsEditor } from './settings_editor.tsx';
 import { Services } from './services.tsx';

@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize, Serializer};
 pub struct Task
 {
     pub name: String,
+    #[serde(default="def_str")]
+    pub description: String,
     #[serde(default="def_dirs")]
     pub source_dir: PathBuf,
     #[serde(default="def_dirs")]
@@ -25,6 +27,8 @@ pub struct Task
     pub clean_types: Vec<String>,
     #[serde(default="is_default")]
     pub generate_exclude_file: bool,
+    #[serde(default="def_col")]
+    pub color: String,
     pub filters: Filter
     
 }
@@ -58,6 +62,14 @@ fn def_dirs() -> PathBuf
 {
     PathBuf::from("---")
 }
+fn def_str() -> String
+{
+    "".to_owned()
+}
+fn def_col() -> String
+{
+    "#4f46".to_owned()
+}
 
 impl Default for Task
 {
@@ -69,11 +81,13 @@ impl Default for Task
             target_dir: PathBuf::from("out"),
             timer: 20000,
             name: "default_task".to_owned(),
+            description: "".to_owned(),
             copy_modifier: CopyModifier::CopyAll,
             delete_after_copy: false,
             is_active: false,
             clean_types: vec![],
             generate_exclude_file: false,
+            color: def_col(),
             filters: Filter
             {
                 document_types: vec![],

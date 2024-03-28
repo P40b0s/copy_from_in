@@ -3,7 +3,7 @@ mod service;
 pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, ExcludesCreator}};
 use medo_parser::Packet;
 use serde::{Deserialize, Serialize};
-use settings::{DateTimeFormat, ValidationError};
+use settings::{DateTimeFormat, Task, ValidationError};
 mod io;
 mod serialize;
 
@@ -59,7 +59,8 @@ impl From<&Packet> for NewDocument
 pub struct NewPacketInfo
 {
     document: Option<NewDocument>,
-    error: Option<String>
+    error: Option<String>,
+    task: Option<Task>
 }
 impl NewPacketInfo
 {
@@ -90,7 +91,8 @@ impl From<&Vec<ValidationError>> for NewPacketInfo
         Self
         {
             document: None,
-            error: Some(error.clone())
+            error: Some(error.clone()),
+            task: None
         }
     }
 }
@@ -102,7 +104,8 @@ impl From<&Packet> for NewPacketInfo
         Self
         {
             document: Some(value.into()),
-            error: None
+            error: None,
+            task: None
         }
     }
 }
@@ -113,7 +116,8 @@ impl From<NewDocument> for NewPacketInfo
         Self
         {
             document: Some(value),
-            error: None
+            error: None,
+            task: None
         }
     }
 }
@@ -125,7 +129,8 @@ impl From<&NewDocument> for NewPacketInfo
         Self
         {
             document: Some(value.to_owned()),
-            error: None
+            error: None,
+            task: None
         }
     }
 }
@@ -137,7 +142,8 @@ impl From<String> for NewPacketInfo
         Self
         {
             document: None,
-            error: Some(value)
+            error: Some(value),
+            task: None
         }
     }
 }

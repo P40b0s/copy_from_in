@@ -63,7 +63,6 @@ pub trait PacketsCleaner
                 }
             }
         }
-        settings.truncate_excludes();
         if !errors.is_empty()
         {
             return Err(Error::ServiceErrors(errors));

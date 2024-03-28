@@ -1,4 +1,4 @@
-use std::{self, collections::HashMap, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
+use std::{self, collections::HashMap, ops::Deref, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info, warn, LevelFilter};
 use medo_parser::Packet;
 use once_cell::sync::{OnceCell, Lazy};
@@ -85,16 +85,16 @@ impl DirectoriesSpy
             {
                 if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
-                    send_new_document(NewDocument::new(&founded_packet_name)).await;
+                    send_new_document(NewDocument::new(&founded_packet_name), &task).await;
                 }
             },
             CopyModifier::CopyOnly =>
             {
-                if let Some(packet) = Self::get_packet(&source_path).await
+                if let Some(packet) = Self::get_packet(&source_path, &task).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
-                        send_new_document(&packet).await;
+                        send_new_document(&packet, &task).await;
                     }
                 }
                 else
@@ -104,11 +104,11 @@ impl DirectoriesSpy
             },
             CopyModifier::CopyExcept =>
             {
-                if let Some(packet) = Self::get_packet(&source_path).await
+                if let Some(packet) = Self::get_packet(&source_path, &task).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
-                        send_new_document(&packet).await;
+                        send_new_document(&packet, &task).await;
                     }
                 }
                 else
@@ -151,14 +151,14 @@ impl DirectoriesSpy
         }
     }
 
-    async fn get_packet(source_path: &PathBuf) -> Option<Packet>
+    async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
     {
         let packet = medo_parser::Packet::parse(&source_path);
         if let Some(errors) = packet.get_error()
         {
             let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
             error!("{}", &err);
-            send_new_document(err).await;
+            send_new_document(err, &task).await;
             return None;
         }
         return Some(packet)
@@ -196,7 +196,7 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
             error!("{}", &err);
-            send_new_document(err).await;
+            send_new_document(err, &task).await;
             return false;
         }
         if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
@@ -212,7 +212,7 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
             error!("{}", &err);
-            send_new_document(err).await;
+            send_new_document(err, &task).await;
             return false;
         }
         if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
@@ -251,8 +251,10 @@ impl DirectoriesSpy
     }
 }
 
-async fn send_new_document(packet: impl Into<NewPacketInfo>)
+async fn send_new_document(packet: impl Into<NewPacketInfo>, task: &Task)
 {
     let lg = NEW_DOCS.get().unwrap().lock().await;
-    let _ = lg.send(packet.into());
+    let mut np: NewPacketInfo = packet.into();
+    np.task = Some(task.clone());
+    let _ = lg.send(np);
 }

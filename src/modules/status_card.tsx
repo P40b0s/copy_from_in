@@ -3,20 +3,10 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    inject,
-    onMounted,
     CSSProperties,
-    PropType,
-    RendererNode,
-    VNode,
-    RendererElement,
-    ref,
-    toRef
   } from 'vue'
 
-import { NAvatar, NButton, NCard, NIcon, NSpin, NTab, NTabPane, NTable, NTabs, NTooltip } from 'naive-ui';
-import { parseDate } from '../services/date.ts';
-import { disease_ico, test_ico, vacc_ico } from '../services/svg.ts';
+import { NAvatar, NSpin, NTooltip } from 'naive-ui';
 
 import '../assets/styles/status_card.scss'
 
@@ -33,6 +23,11 @@ const localProps =
         required: true
     },
     shadowbox_color:
+    {
+        type: String,
+        default: 'rgba(100, 243, 18, 0.4)'
+    },
+    task_color:
     {
         type: String,
         default: 'rgba(100, 243, 18, 0.4)'
@@ -82,6 +77,14 @@ props: localProps,
                     }   as CSSProperties
                 },
                 [
+                    h('div',{
+                        style:
+                        {
+                            background: 'linear-gradient(0.25turn, #ebf8e100, '+ props.task_color +', #ebf8e100)',
+                            width: '5px',
+                            height: '100%',
+                        } as CSSProperties
+                    }),
                     h(NTooltip,{placement: 'left'},
                     {
                         trigger:() =>

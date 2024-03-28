@@ -14,12 +14,14 @@ export interface IDocument
 export interface IPacket
 {
     document?: IDocument,
-    error?: string
+    error?: string,
+    task?: Task 
 }
 
 export type Task = 
 {
     name: string,
+    description: string,
     source_dir: string,
     target_dir: string,
     timer: number,
@@ -27,6 +29,7 @@ export type Task =
     copy_modifier: CopyModifer,
     is_active: boolean,
     generate_exclude_file: boolean,
+    color: string,
     filters: Filter
 }
 export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
@@ -55,12 +58,14 @@ class TaskClone implements Clone<Task>
             const t : Task =
             {
                 name: source.name,
+                description: source.description,
                 source_dir: source.source_dir,
                 target_dir: source.target_dir,
                 timer: source.timer,
                 delete_after_copy: source.delete_after_copy,
                 copy_modifier: source.copy_modifier,
                 is_active: source.is_active,
+                color: source.color,
                 generate_exclude_file: source.generate_exclude_file,
                 filters: f
             } 
