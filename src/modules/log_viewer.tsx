@@ -92,7 +92,7 @@ const test_packet2 = () =>
         document:
         {
             organization: "Правительство Российской Федерации",
-            docType: "Правительство",
+            docType: "Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство",
             organizationUid: '92834908230948209348209384',
             docUid: '123234r2342342342342',
             sourceMedoAddressee: '123@123.MEDO',
@@ -123,7 +123,7 @@ const test_error_packet2 = () =>
         name: "err_packet",
         parseTime: "2024-12-24T00:00:00",
         report_sended: false,
-        error: "Ошибка распознавания пакета!",
+        error: "Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета!",
         task: task_2()
     }
     return p;
@@ -194,6 +194,7 @@ export const LogViewer =  defineComponent({
                         style:
                         {
                             fontWeight: '700',
+                            fontSize: '16px'
                         } as CSSProperties,
                         //class: packet.error ? 'standart-red' : 'standart-green'
                     },
@@ -216,7 +217,9 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task.color,
+                                    paddingRight: '3px',
+                                    borderBottom: '2px solid ' + packet.task.color,
+                                    borderRight: '2px solid ' + packet.task.color,
                                 } as CSSProperties
                             },
                             [
@@ -227,6 +230,7 @@ export const LogViewer =  defineComponent({
                                     {
                                         component: TimeOutline,
                                         color: 'rgb(100, 165, 9)',
+                                        size:'large',
                                         style:
                                         {
                                             marginRight: '2px',
@@ -243,7 +247,9 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task.color,
+                                    borderBottom: '2px solid ' + packet.task.color,
+                                    paddingRight: '3px',
+                                    borderRight: '2px solid ' + packet.task.color,
                                 } as CSSProperties
                             },
                             [
@@ -264,7 +270,6 @@ export const LogViewer =  defineComponent({
                                 }),
                                 packet.task?.name,
                             ]),
-                            packet.document ? 
                             h('div',
                             {
                                 style:
@@ -272,7 +277,8 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task.color,
+                                    borderBottom: '2px solid ' + packet.task.color,
+                                   
                                 } as CSSProperties
                             },
                             [
@@ -292,7 +298,7 @@ export const LogViewer =  defineComponent({
                                     default:() => "Наименование директории пакета"
                                 }),
                                 packet.name,
-                            ]): [],
+                            ]),
                             report_icon(packet),
                         ]),
                         requisites_or_error(packet)
@@ -368,10 +374,10 @@ export const LogViewer =  defineComponent({
                     h(NTooltip, null,
                     {
                         trigger:() =>
-                        h(NIcon, 
+                        h(NIcon,
                         {
                             component: MailSharp,
-                            color: (packet.task.color ?? 'rgb(100, 165, 9)'),
+                            color: packet.task.color,
                             style:
                             {
                                 marginRight: '2px'
