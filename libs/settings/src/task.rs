@@ -30,7 +30,6 @@ pub struct Task
     #[serde(default="def_col")]
     pub color: String,
     pub filters: Filter
-    
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 //#[serde(rename_all = "camelCase")]

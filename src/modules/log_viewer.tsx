@@ -261,7 +261,7 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task?.color ?? 'rgb(100, 165, 9)',
+                                    borderBottom: '1px solid ' + (packet.task?.color ?? 'rgb(100, 165, 9)'),
                                 } as CSSProperties
                             },
                             [
@@ -354,7 +354,6 @@ export const LogViewer =  defineComponent({
                 ])
             }
         }
-
         const virtual_list = () =>
         {
             return h(NVirtualList,
@@ -376,7 +375,6 @@ export const LogViewer =  defineComponent({
                     }
                 })
             }
-
         return {list}
     },
     render ()
