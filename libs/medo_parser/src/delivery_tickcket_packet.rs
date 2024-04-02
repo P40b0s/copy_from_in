@@ -12,6 +12,10 @@ pub struct DeliveryTicketPacket
 }
 impl DeliveryTicketPacket
 {
+    /// __ack_uid__ - UID документа который к нам пришел  
+    /// __destination_organ_uid__ - UID органа в который будет отправлятся уведомление  
+    /// __destination_organ_name__ - наименование органа в который будет отправлятся уведомление  
+    /// __medo_addr__ - адрс МЭДО
     pub fn create_packet(ack_uid: &str, destination_organ_uid :&str, destination_organ_name: &str, medo_addr: &str) -> Self
     {
         let xml = create_ticket(ack_uid, destination_organ_uid, destination_organ_name);

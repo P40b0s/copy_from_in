@@ -223,6 +223,7 @@ export const SettingsEditor =  defineComponent({
                                 description: "",
                                 source_dir: "",
                                 target_dir: "",
+                                report_dir: "",
                                 timer: 120000,
                                 delete_after_copy: false,
                                 copy_modifier: "CopyAll",
@@ -308,33 +309,34 @@ export const SettingsEditor =  defineComponent({
                     } as CSSProperties
 
                 },
-                h(NScrollbar,
-                {
-                    trigger: 'hover',
-                    style:
+                    h(NScrollbar,
                     {
-                        maxHeight: '570px',
-                        padding: '10px'
-                    } as CSSProperties
-                },
-                {
-                    default:() =>  h('div', 
-                    {
+                        trigger: 'hover',
                         style:
                         {
-                            display: 'flex',
-                            height: '100%',
-                            justifyContent: 'space-between',
-                            flexDirection: 'row',
-                            
+                            maxHeight: '570px',
+                            padding: '10px'
                         } as CSSProperties
                     },
-                    [
-                        left_form(),
-                        right_form(),
-                        del_button()
-                    ])
-                }))
+                    {
+                        default:() =>  h('div', 
+                        {
+                            style:
+                            {
+                                display: 'flex',
+                                height: '100%',
+                                justifyContent: 'space-between',
+                                flexDirection: 'row',
+                                
+                            } as CSSProperties
+                        },
+                        [
+                            left_form(),
+                            right_form(),
+                            del_button(),
+                            
+                        ])
+                    }))
             } else return [];
         }
 
@@ -348,7 +350,6 @@ export const SettingsEditor =  defineComponent({
                     const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
                     tasks.value.splice(current_task, 1);
                     let dl = await settings.delete_task(selected_task.value as Task)
-                    console.log(dl);
                     selected_task.value = tasks.value[0];
                     is_new_task.value = false;
                 }
@@ -510,6 +511,50 @@ export const SettingsEditor =  defineComponent({
                                             if(selected != null)
                                             {
                                                 (selected_task.value as Task).target_dir = selected as string
+                                            }
+                                    }
+                                },
+                                {
+                                    icon:() => h(NIcon, {component:  FolderOpenOutline})
+                                })
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'reportdir',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Директория для отправки уведомлений",
+                            description: "Если указана директория то по пакетам поступившим по этой задаче будут автоматически формироваться уведомления о доставке и отправлятся оправившему пакет органу",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NInput,
+                        {
+                            readonly: true,
+                            value: selected_task.value?.report_dir,
+                            onUpdateValue:(v)=> (selected_task.value as Task).report_dir = v
+                        },
+                        {
+                            prefix: () =>
+                            h(NButton,
+                                {
+                                    color: "#8a2be2",
+                                    size: 'large',
+                                    text: true,
+                                    onClick: async ()=>
+                                    {
+                                        // Open a selection dialog for image files
+                                        const selected = await open({
+                                            multiple: false,
+                                            title: "Выбор директории отправки уведомлений",
+                                            defaultPath: selected_task.value?.report_dir,
+                                            directory: true,
+                                            });
+                                            if(selected != null)
+                                            {
+                                                (selected_task.value as Task).report_dir = selected as string
                                             }
                                     }
                                 },

@@ -7,6 +7,7 @@ mod traits;
 mod modules;
 mod helpers;
 mod delivery_tickcket_packet;
+pub use delivery_tickcket_packet::DeliveryTicketPacket;
 mod medo_model;
 use helpers::*;
 mod converters;

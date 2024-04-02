@@ -1,6 +1,6 @@
 use std::{self, collections::HashMap, ops::Deref, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info, warn, LevelFilter};
-use medo_parser::Packet;
+use medo_parser::{DeliveryTicketPacket, Packet};
 use once_cell::sync::{OnceCell, Lazy};
 use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::sync::Mutex;
@@ -85,7 +85,8 @@ impl DirectoriesSpy
             {
                 if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
-                    send_new_document(NewDocument::new(&founded_packet_name), &task).await;
+                    let new_packet = NewPacketInfo::not_packet(&founded_packet_name, &task);
+                    send_new_document(new_packet).await;
                 }
             },
             CopyModifier::CopyOnly =>
@@ -94,7 +95,8 @@ impl DirectoriesSpy
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
-                        send_new_document(&packet, &task).await;
+                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
+                        send_new_document(new_packet).await;
                     }
                 }
                 else
@@ -108,7 +110,8 @@ impl DirectoriesSpy
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
-                        send_new_document(&packet, &task).await;
+                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
+                        send_new_document(new_packet).await;
                     }
                 }
                 else
@@ -158,7 +161,8 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
             error!("{}", &err);
-            send_new_document(err, &task).await;
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
             return None;
         }
         return Some(packet)
@@ -196,7 +200,8 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
             error!("{}", &err);
-            send_new_document(err, &task).await;
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
             return false;
         }
         if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
@@ -212,7 +217,8 @@ impl DirectoriesSpy
         {
             let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
             error!("{}", &err);
-            send_new_document(err, &task).await;
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
             return false;
         }
         if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
@@ -251,10 +257,53 @@ impl DirectoriesSpy
     }
 }
 
-async fn send_new_document(packet: impl Into<NewPacketInfo>, task: &Task)
+// async fn send_new_document(packet: impl Into<NewPacketInfo>, task: &Task)
+// {
+//     let lg = NEW_DOCS.get().unwrap().lock().await;
+//     let mut np: NewPacketInfo = packet.into();
+//     //send_report(np.document.as_ref(), task).await;
+//     np.task = Some(task.clone());
+//     let _ = lg.send(np);
+// }
+
+async fn send_new_document(mut packet: NewPacketInfo)
 {
     let lg = NEW_DOCS.get().unwrap().lock().await;
-    let mut np: NewPacketInfo = packet.into();
-    np.task = Some(task.clone());
-    let _ = lg.send(np);
+    let sended = send_report(packet.document.as_ref(), &packet.name, &packet.task).await;
+    packet.report_sended = sended;
+    let _ = lg.send(packet);
+}
+
+async fn send_report(new_doc: Option<&NewDocument>, packet_name: &str, task: &Task) -> bool
+{
+    if let Some(r_dir) = task.get_report_dir()
+    {
+        if let Some(doc) = new_doc
+        {
+            if doc.doc_uid.is_none()
+            || doc.organization_uid.is_none()
+            || doc.organization.is_none()
+            || doc.source_medo_addressee.is_none()
+            {
+                logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
+                return false;
+            } 
+            else
+            {
+                DeliveryTicketPacket::create_packet(
+                    doc.doc_uid.as_ref().unwrap(),
+                    doc.organization_uid.as_ref().unwrap(),
+                    doc.organization.as_ref().unwrap(),
+                    doc.source_medo_addressee.as_ref().unwrap()
+                ).send(r_dir);
+                return true;
+            }
+        }
+        else 
+        {
+            logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
+            return false;
+        }
+    }
+    return false;
 }

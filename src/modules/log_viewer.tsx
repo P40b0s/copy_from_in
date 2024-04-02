@@ -12,7 +12,7 @@ import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
-import { AlertOutline, FolderOpen, MailSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
+import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
 
 
 const task_1 = (): Task => 
@@ -27,6 +27,7 @@ const task_1 = (): Task =>
         description: "",
         source_dir: "",
         target_dir: "",
+        report_dir: "",
         timer: 120000,
         delete_after_copy: false,
         copy_modifier: "CopyAll",
@@ -50,6 +51,7 @@ const task_2 = (): Task =>
         description: "",
         source_dir: "",
         target_dir: "",
+        report_dir: "/sds",
         timer: 120000,
         delete_after_copy: false,
         copy_modifier: "CopyAll",
@@ -68,13 +70,17 @@ const test_packet1 = () =>
     const p : IPacket = {
         document:
         {
-            name: "название_директории",
             organization: "Совет Федерации Федерального Собрания Российской Федерации",
+            organizationUid: '92834908230948209348209384',
+            docUid: '123234r2342342342342',
+            sourceMedoAddressee: '123@123.MEDO',
             docType: "Постановление Совета Федерации Федерального Собрания Российской Федерации",
             number: "299-СФ",
             signDate: "2023-06-21",
-            parseTime: "2024-03-20T16:52:51"
         },
+        report_sended: false,
+        name: "ошибочное название директории",
+        parseTime: "2024-12-24T00:00:00",
         task: task_1()
     }
     return p;
@@ -85,13 +91,17 @@ const test_packet2 = () =>
     const p : IPacket = {
         document:
         {
-            name: "название_директории2",
             organization: "Правительство Российской Федерации",
             docType: "Правительство",
+            organizationUid: '92834908230948209348209384',
+            docUid: '123234r2342342342342',
+            sourceMedoAddressee: '123@123.MEDO',
             number: "299-РП",
             signDate: "2023-06-21",
-            parseTime: "2024-03-20T16:52:51"
         },
+        report_sended: true,
+        name: "ошибочное название директории",
+        parseTime: "2024-12-24T00:00:00",
         task: task_2()
     }
     return p;
@@ -99,12 +109,10 @@ const test_packet2 = () =>
 const test_error_packet = () =>
 {
     const p : IPacket = {
-        document:
-        {
-            name: "ошибочное название директории",
-            parseTime: "2024-12-24T00:00:00"
-        },
+        name: "123error_packet",
+        parseTime: "2024-12-24T00:00:00",
         error: "Ошибка распознавания пакета йв3242342!",
+        report_sended: false,
         task: task_1()
     }
     return p;
@@ -112,6 +120,9 @@ const test_error_packet = () =>
 const test_error_packet2 = () =>
 {
     const p : IPacket = {
+        name: "err_packet",
+        parseTime: "2024-12-24T00:00:00",
+        report_sended: false,
         error: "Ошибка распознавания пакета!",
         task: task_2()
     }
@@ -130,12 +141,12 @@ export const LogViewer =  defineComponent({
     setup () 
     {
         //для тестирования
-        // for (let index = 0; index < 100; index++) {
-        //     app_state_store.add_packet(test_packet1());
-        //     app_state_store.add_packet(test_error_packet());
-        //     app_state_store.add_packet(test_error_packet2());
-        //     app_state_store.add_packet(test_packet2());
-        // }
+        for (let index = 0; index < 100; index++) {
+            app_state_store.add_packet(test_packet1());
+            app_state_store.add_packet(test_error_packet());
+            app_state_store.add_packet(test_error_packet2());
+            app_state_store.add_packet(test_packet2());
+        }
 
         const list = () =>
         {
@@ -154,15 +165,15 @@ export const LogViewer =  defineComponent({
         }
         const doc_status = (packet: IPacket) =>
         {
-            const parse_date = new DateTime(packet.document?.parseTime);
+            const parse_date = new DateTime(packet.parseTime);
             const parse_time = parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time)
             return h(StatusCard,
             {
-                key: packet.document?.parseTime ?? parse_date.to_string(DateFormat.SerializedDateTime),
+                key: parse_date.to_string(DateFormat.SerializedDateTime),
                 avatar: packet.error ? error_ico : envelope_ico,
-                task_color: packet.task?.color,
+                task_color: packet.task.color,
                 shadowbox_color: packet.error ? '#f6848487' : 'rgb(100, 165, 9)',
-                tooltip: packet.document?.name || packet.error || "Неизвестный пакет"
+                tooltip: packet.name
             },
             {
                 default:() =>
@@ -173,7 +184,7 @@ export const LogViewer =  defineComponent({
                         display: 'flex',
                         flexDirection: 'column',
                         textAlign: 'left',
-                        background: 'linear-gradient(0.25turn, #00000033, 90%, '+ packet.task?.color + ', #ebf8e100)',
+                        background: 'linear-gradient(0.25turn, #0000002b, 90%, '+ packet.task.color + ', #ebf8e100)',
                         //background: '#00000033',
                     } as CSSProperties
                 },
@@ -205,7 +216,7 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task?.color ?? 'rgb(100, 165, 9)',
+                                    borderBottom: '1px solid ' + packet.task.color,
                                 } as CSSProperties
                             },
                             [
@@ -232,7 +243,7 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + packet.task?.color ?? 'rgb(100, 165, 9)',
+                                    borderBottom: '1px solid ' + packet.task.color,
                                 } as CSSProperties
                             },
                             [
@@ -242,7 +253,7 @@ export const LogViewer =  defineComponent({
                                     h(NIcon, 
                                     {
                                         component: SettingsSharp,
-                                        color: packet.task?.color ?? 'rgb(100, 165, 9)',
+                                        color: packet.task.color,
                                         style:
                                         {
                                             marginLeft: '5px',
@@ -261,7 +272,7 @@ export const LogViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '1px solid ' + (packet.task?.color ?? 'rgb(100, 165, 9)'),
+                                    borderBottom: '1px solid ' + packet.task.color,
                                 } as CSSProperties
                             },
                             [
@@ -280,13 +291,60 @@ export const LogViewer =  defineComponent({
                                     }),
                                     default:() => "Наименование директории пакета"
                                 }),
-                                packet.document?.name,
-                            ]): []
+                                packet.name,
+                            ]): [],
+                            report_icon(packet),
                         ]),
                         requisites_or_error(packet)
                     ])
                 ])
             })
+        }
+
+
+        const report_icon = (packet: IPacket) =>
+        {
+            return packet.task.report_dir != "" ?
+            h('div',
+            {
+                style:
+                {
+                    position: 'absolute',
+                    left: '15px'
+                } as CSSProperties
+            },
+                packet.report_sended ?
+                h(NTooltip, null,
+                {
+                    trigger:() =>
+                    h(NIcon, 
+                    {
+                        component: CheckmarkDoneCircle,
+                        color: 'rgb(100, 165, 9)',
+                        size:'large',
+                        style:
+                        {
+                            marginRight: '2px',
+                        } as CSSProperties,
+                    }),
+                    default:() => "Уведомление успешно отправлено"
+                }) :
+                h(NTooltip, null,
+                {
+                    trigger:() =>
+                    h(NIcon, 
+                    {
+                        component: FlashOff,
+                        color: 'rgb(165, 11, 9)',
+                        size:'large',
+                        style:
+                        {
+                            marginRight: '2px',
+                        } as CSSProperties,
+                    }),
+                    default:() => "Ошибка отправки уведомления"
+                }),
+            ) : []
         }
 
         const requisites_or_error = (packet: IPacket) =>
@@ -313,7 +371,7 @@ export const LogViewer =  defineComponent({
                         h(NIcon, 
                         {
                             component: MailSharp,
-                            color: packet.task?.color ?? 'rgb(100, 165, 9)',
+                            color: (packet.task.color ?? 'rgb(100, 165, 9)'),
                             style:
                             {
                                 marginRight: '2px'

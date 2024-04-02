@@ -13,6 +13,8 @@ pub struct Task
     pub source_dir: PathBuf,
     #[serde(default="def_dirs")]
     pub target_dir: PathBuf,
+    #[serde(default="def_dirs")]
+    pub report_dir: PathBuf,
     #[serde(default="def_timer")]
     pub timer: u64,
     #[serde(default="is_default")]
@@ -78,6 +80,7 @@ impl Default for Task
         {
             source_dir: PathBuf::from("in"),
             target_dir: PathBuf::from("out"),
+            report_dir: PathBuf::from(""),
             timer: 20000,
             name: "default_task".to_owned(),
             description: "".to_owned(),
@@ -114,6 +117,21 @@ impl Task
     pub fn get_task_delay(&self) -> Duration
     {
         std::time::Duration::from_millis(self.timer)
+    }
+    fn have_report_dir(&self) -> bool
+    {
+        self.report_dir.to_str().is_some_and(|r| r != "")
+    }
+    pub fn get_report_dir(&self) -> Option<&PathBuf>
+    {
+        if self.have_report_dir()
+        {
+            Some(&self.report_dir)
+        }
+        else
+        {
+            None
+        }
     }
 }
 

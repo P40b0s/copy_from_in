@@ -50,6 +50,18 @@ impl FileMethods for Settings
                         errors.push(ValidationError::new(Some("target_directory".to_owned()), err));
                     }
                 }
+                if task.report_dir.to_str().is_some_and(|r| r != "")
+                {
+                    if let Ok(e) = task.report_dir.try_exists()
+                    {
+                        if !e
+                        {
+                            let err = ["Директория ", &task.target_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
+                            errors.push(ValidationError::new(Some("report_directory".to_owned()), err));
+                        }
+                    }
+                }
+                
                 if task.copy_modifier != CopyModifier::CopyAll
                 && task.filters.document_types.len() == 0
                 && task.filters.document_uids.len() == 0

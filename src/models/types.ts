@@ -3,19 +3,24 @@ import { RendererElement, RendererNode, VNode } from "vue";
 export interface IDocument
 {
     organization?: string,
+    organizationUid: string,
     docType?: string,
+    sourceMedoAddressee?: string
+    docUid?: string
     number?: string,
     signDate?: string,
-    name: string,
-    parseTime: string
+   
 }
 // для всех
 // parseTime, name, organization, docType, number, signDate
 export interface IPacket
 {
+    name: string,
+    parseTime: string,
     document?: IDocument,
     error?: string,
-    task?: Task 
+    task: Task,
+    report_sended: boolean,
 }
 
 export type Task = 
@@ -24,6 +29,7 @@ export type Task =
     description: string,
     source_dir: string,
     target_dir: string,
+    report_dir: string,
     timer: number,
     delete_after_copy: boolean,
     copy_modifier: CopyModifer,
@@ -62,6 +68,7 @@ class TaskClone implements Clone<Task>
                 description: source.description,
                 source_dir: source.source_dir,
                 target_dir: source.target_dir,
+                report_dir: source.report_dir,
                 timer: source.timer,
                 delete_after_copy: source.delete_after_copy,
                 copy_modifier: source.copy_modifier,

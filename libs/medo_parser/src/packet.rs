@@ -97,6 +97,17 @@ impl Packet
         let org2 = self.get_container().and_then(|c| Some(c.requisites.document_kind.clone()));
         org.or(org2)
     }
+    ///получение уникального идентификатора документа
+    pub fn get_document_uid(&self) -> Option<String>
+    {
+        let org = self.get_xml().and_then(|x| x.get_document().and_then(|d| Some(d.get_uid().into_owned())));
+        let org2 = self.get_container().and_then(|c| Some(c.get_uid().into_owned()));
+        org.or(org2)
+    }
+    pub fn get_source_addressee(&self) -> Option<String>
+    {
+        self.get_xml().and_then(|a| a.get_medo_addressee().and_then(|m| Some(m.into_owned())))
+    }
     pub fn get_packet_date_time(&self) -> Option<Cow<str>>
     {
         let dt = self.packet_date_time.as_ref();
