@@ -3,7 +3,7 @@ mod service;
 pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, ExcludesCreator}};
 use medo_parser::Packet;
 use serde::{Deserialize, Serialize};
-use settings::{DateTimeFormat, Task, ValidationError};
+use settings::{DateTimeFormat, Task};
 mod io;
 mod serialize;
 
@@ -19,24 +19,6 @@ pub struct NewDocument
     pub sign_date: Option<String>,
     pub source_medo_addressee: Option<String>,
 }
-// impl NewDocument
-// {
-//     pub fn new(packet_name: &str) -> Self
-//     {
-//         Self
-//         {
-//             organization: None,
-//             organization_uid: None,
-//             doc_type: None,
-//             doc_uid: None,
-//             number: None,
-//             sign_date: None,
-//             source_medo_addressee: None,
-//             //name: packet_name.to_owned(),
-//             //parse_time: settings::Date::now().as_serialized()
-//         }
-//     }
-// }
 
 impl From<&Packet> for NewDocument
 {
@@ -58,8 +40,6 @@ impl From<&Packet> for NewDocument
             number,
             sign_date: date,
             source_medo_addressee,
-            //name: value.get_packet_name().to_owned(),
-            //parse_time: settings::Date::now().as_serialized()
         }
     }
 }
@@ -118,78 +98,3 @@ impl NewPacketInfo
         }
     }
 }
-
-// impl From<&Vec<ValidationError>> for NewPacketInfo
-// {
-//     fn from(value: &Vec<ValidationError>) -> Self 
-//     {
-//         let mut errors = String::new();
-//         let error = value.iter().fold(&mut errors, |acc, val|
-//         {
-//             let str = [val.to_string(), "\\n".to_owned()].concat();
-//             acc.push_str(&str);
-//             acc
-//         });
-//         Self
-//         {
-//             document: None,
-//             error: Some(error.clone()),
-//             task: None
-//         }
-//     }
-// }
-
-// impl From<&Packet> for NewPacketInfo
-// {
-//     fn from(value: &Packet) -> Self 
-//     {
-//         Self
-//         {
-//             name: value.get_packet_name().to_owned(),
-//             parse_time: settings::Date::now().as_serialized(),
-//             document: Some(value.into()),
-//             error: None,
-//             task: None
-//         }
-//     }
-// }
-// impl From<NewDocument> for NewPacketInfo
-// {
-//     fn from(value: NewDocument) -> Self 
-//     {
-//         Self
-//         {
-//             name: value.get_packet_name().to_owned(),
-//             parse_time: settings::Date::now().as_serialized(),
-//             document: Some(value),
-//             error: None,
-//             task: None
-//         }
-//     }
-// }
-
-// impl From<&NewDocument> for NewPacketInfo
-// {
-//     fn from(value: &NewDocument) -> Self 
-//     {
-//         Self
-//         {
-//             document: Some(value.to_owned()),
-//             error: None,
-//             task: None
-//         }
-//     }
-// }
-
-// impl From<String> for NewPacketInfo
-// {
-//     fn from(value: String) -> Self 
-//     {
-//         Self
-//         {
-//             document: None,
-//             error: Some(value),
-//             task: None
-//         }
-//     }
-// }

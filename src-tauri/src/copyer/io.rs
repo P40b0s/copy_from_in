@@ -1,8 +1,7 @@
-use std::{collections::HashMap, ffi::OsStr, fs::{DirEntry, File, OpenOptions}, future::IntoFuture, io::{BufWriter, Read, Write}, path::{Path, PathBuf}, time::SystemTime};
+use std::{fs::{DirEntry, File, OpenOptions},  io::{BufWriter, Read, Write}, path::{Path, PathBuf}, time::SystemTime};
 
 use logger::{debug, error};
 use serde_json::Value;
-use tauri::api::file::Move;
 use tokio::{task::JoinHandle, try_join};
 
  

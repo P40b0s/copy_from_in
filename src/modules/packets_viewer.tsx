@@ -10,7 +10,7 @@ import { NIcon, NSpin, NTooltip, NVirtualList} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
-import { envelope_ico, error_ico } from '../services/svg.ts';
+import { background, envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
 import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
 
@@ -130,14 +130,14 @@ const test_error_packet2 = () =>
 }
 
 
-export const LogViewerAsync = defineAsyncComponent({
-    loader: () => import ('./log_viewer.tsx'),
+export const PacketsViewerAsync = defineAsyncComponent({
+    loader: () => import ('./packets_viewer.tsx'),
     loadingComponent: h(NSpin)
 })
 
 
 
-export const LogViewer =  defineComponent({
+export const PacketsViewer =  defineComponent({
     setup () 
     {
         //для тестирования
@@ -147,7 +147,14 @@ export const LogViewer =  defineComponent({
             app_state_store.add_packet(test_error_packet2());
             app_state_store.add_packet(test_packet2());
         }
-
+        // --s: 150px; /* control the size */
+  
+        // --_g: #0000 90deg,#046D8B 0;
+        // background:
+        //   conic-gradient(from 116.56deg at calc(100%/3) 0   ,var(--_g)),
+        //   conic-gradient(from -63.44deg at calc(200%/3) 100%,var(--_g))
+        //   #2FB8AC;
+        // background-size: var(--s) var(--s);
         const list = () =>
         {
             return h('div',
@@ -157,7 +164,10 @@ export const LogViewer =  defineComponent({
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'left',
-                    width: '100%'
+                    width: '100%',
+                    //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
+                    //backgroundSize: '50px 50px'
+                    backgroundImage: 'url(src/assets/svg/back.svg)'
                 }   as CSSProperties
             },
             virtual_list()
@@ -184,7 +194,7 @@ export const LogViewer =  defineComponent({
                         display: 'flex',
                         flexDirection: 'column',
                         textAlign: 'left',
-                        background: 'linear-gradient(0.25turn, #0000002b, 90%, '+ packet.task.color + ', #ebf8e100)',
+                        //background: 'linear-gradient(0.25turn, #0000004a, 90%, '+ packet.task.color + ', #ebf8e100)',
                         //background: '#00000033',
                     } as CSSProperties
                 },

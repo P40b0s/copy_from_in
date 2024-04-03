@@ -7,7 +7,7 @@ import
   } from 'vue'
 
 import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
-import { LogViewer } from './log_viewer.tsx';
+import { PacketsViewer } from './packets_viewer.tsx';
 import { SettingsEditor } from './settings_editor.tsx';
 import { Services } from './services.tsx';
 
@@ -64,12 +64,12 @@ export const MainTab =  defineComponent({
     {
         return h(NTabPane,
             {
-                tab: 'Логирование',
+                tab: 'Пакеты',
                 name: 'log',
 
             },
             {
-                default:() => h(LogViewer)
+                default:() => h(PacketsViewer)
             }
         )
     }

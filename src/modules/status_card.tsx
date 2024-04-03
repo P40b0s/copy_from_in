@@ -63,7 +63,10 @@ props: localProps,
                     class: 'card',
                     style:
                     {
-                       width: '95%'
+                       width: '95%',
+                       borderRadius: '3px',
+                       //background: 'linear-gradient(0.25turn, #000000cf, 90%, '+ props.task_color + ', #ebf8e100)',
+                       background: 'linear-gradient(0.25turn, '+ props.task_color + ',2%, #000000cf, 90% , #240921)',
                     } as CSSProperties
                 },
                 h('div',
@@ -77,14 +80,6 @@ props: localProps,
                     }   as CSSProperties
                 },
                 [
-                    h('div',{
-                        style:
-                        {
-                            background: 'linear-gradient(0.25turn, #ebf8e100, '+ props.task_color +', #ebf8e100)',
-                            width: '5px',
-                            height: '100%',
-                        } as CSSProperties
-                    }),
                     h(NTooltip,{placement: 'left'},
                     {
                         trigger:() =>

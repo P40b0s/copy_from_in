@@ -15,5 +15,6 @@ import error_ico from '../assets/svg/error.svg'
 import envelope_ico from '../assets/svg/envelope.svg'
 import clean_ico from '../assets/svg/clean.svg'
 import cut_ico from '../assets/svg/cut.svg'
+import background from '../assets/svg/back.svg'
 
-export {disease_ico, health_ico, cut_ico, palm_ico, clean_ico, error_ico, envelope_ico, user_ico, test_ico, vacc_ico, info_ico, add_user_ico, run_man_ico, train_ico, disease_red_ico, journal_ico, bell_ico}
+export {disease_ico, background, health_ico, cut_ico, palm_ico, clean_ico, error_ico, envelope_ico, user_ico, test_ico, vacc_ico, info_ico, add_user_ico, run_man_ico, train_ico, disease_red_ico, journal_ico, bell_ico}

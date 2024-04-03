@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     port: 8080,
     strictPort: true,
+    watch: {
+      ignored: ['**/node_modules/**'],
+    }
   },
+ 
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
     target: ['es2021', 'chrome97', 'safari13'],
