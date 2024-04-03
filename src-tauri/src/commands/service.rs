@@ -4,7 +4,6 @@ use settings::{FileMethods, Settings, Task};
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
 use uuid::Uuid;
-use crate::copyer::PacketsCleaner;
 use crate::helpers::{Date, DateTimeFormat, DateFormat};
 use crate::state::AppState;
 use crate::Error;

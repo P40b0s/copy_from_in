@@ -61,7 +61,7 @@ fn empty_doc_types() -> Vec<String>
 }
 fn def_dirs() -> PathBuf
 {
-    PathBuf::from("---")
+    PathBuf::from("")
 }
 fn def_str() -> String
 {
@@ -78,8 +78,8 @@ impl Default for Task
     {
         Task
         {
-            source_dir: PathBuf::from("in"),
-            target_dir: PathBuf::from("out"),
+            source_dir: PathBuf::from(""),
+            target_dir: PathBuf::from(""),
             report_dir: PathBuf::from(""),
             timer: 20000,
             name: "default_task".to_owned(),

@@ -6,27 +6,6 @@ pub struct AppState
 {
     pub settings: Mutex<Settings>,
 }
-impl Default for AppState
-{
-    fn default() -> Self 
-    {
-        let settings = Settings::load(settings::Serializer::Toml);
-        if settings.is_err()
-        {
-            for e in settings.err().unwrap()
-            {
-                logger::error!("{}", e.to_string());
-            }
-            logger::error!("Ошибка десериализации файла настроек, выход из программы...");
-            exit(01);
-        }
-        Self
-        {
-            settings: Mutex::new(settings.unwrap()),
-        }
-    }
-}
-
 
 impl AppState
 {

@@ -56,10 +56,15 @@ impl FileMethods for Settings
                     {
                         if !e
                         {
-                            let err = ["Директория ", &task.target_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
+                            let err = ["Директория ", &task.report_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
                             errors.push(ValidationError::new(Some("report_directory".to_owned()), err));
                         }
                     }
+                }
+                if task.timer < 15000
+                {
+                    let err = ["Таймер для задачи ", &task.name, " установлен на ", &(task.timer/1000).to_string(), "c. таймер не может быть меньше 15с."].concat();
+                    errors.push(ValidationError::new(Some("timer".to_owned()), err));
                 }
                 
                 if task.copy_modifier != CopyModifier::CopyAll

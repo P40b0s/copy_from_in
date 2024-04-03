@@ -24,6 +24,7 @@ serde = { version = "1.0.190", features = ["derive"] }
 tauri = { version = "1.6.1", features = ["app-all", "clipboard-all", "fs-all", "notification-all", "dialog-all"] }
 #logger = {path = "../../../rust/universal_format/format_constructor/logger"}
 logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
+websocket_service = {git = "https://github.com/P40b0s/websocket_service.git", features = ["client"]}
 once_cell="*"
 chrono="0.4.31"
 anyhow="1.0.79"
@@ -35,6 +36,8 @@ const_format = "0.2.32"
 settings = {path = "../libs/settings"}
 medo_parser = {path = "../libs/medo_parser"}
 crossbeam-channel="0.5.11"
+clap= {version = "4.5.4", features = ["derive"]}
+clap_derive="4.5.4"
 
 [features]
 # by default Tauri runs in production mode
