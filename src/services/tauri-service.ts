@@ -1,6 +1,6 @@
 import { event, invoke } from "@tauri-apps/api";
-import { IPacket, Task } from "../types/types"; 
-import { listen } from "@tauri-apps/api/event";
+import { IPacket, Task } from "../models/types"; 
+import { UnlistenFn, listen } from "@tauri-apps/api/event";
 import { InvokeArgs } from "@tauri-apps/api/tauri";
 
 function is_tauri() : boolean
@@ -14,10 +14,10 @@ function is_tauri() : boolean
 
 export class TauriEvents
 {
-    static async new_document_event(func: (arg: event.Event<IPacket>) => void)
+    static async new_document_event(func: (arg: event.Event<IPacket>) => void) : Promise<UnlistenFn|undefined>
     {
         if(is_tauri())
-            await listen<IPacket>('new_packet_found', (event) => 
+            return await listen<IPacket>('new_packet_found', (event) => 
             {
                 console.log(`Эвент new_packet_found обновлен ${event.windowLabel}, payload: ${event.payload.document?.parseTime}`);
                 func(event);
@@ -31,8 +31,8 @@ export class TauriEvents
 
 abstract class Plugin  
 {
-    abstract plugin: string;
-    abstract cmd_names: string[];
+    protected abstract plugin: string;
+    protected abstract cmd_names: string[];
     /** Запуск команды таури, если таури не заинжекчен то undefined если тип string то значит пришла ошибка*/
     async save<I, O>(cmd: string, saved_obj: I) : Promise<O|undefined|string>
     {
@@ -98,16 +98,34 @@ abstract class Plugin
 class Settings extends Plugin
 {
     plugin = "plugin:settings|";
-    cmd_names = ['update', 'get'];
-    public async save_settings(types: Task[]): Promise<void|undefined|string>
+    cmd_names = ['update', 'get', 'delete'];
+    public async save_task(types: Task): Promise<void|undefined|string>
     {
-        return await this.save<Task[], void>(this.plugin + this.cmd_names[0], types);
+        return await this.save<Task, void>(this.plugin + this.cmd_names[0], types);
     }
     public async load_settings(): Promise<Task[]|undefined|string>
     {
         return await this.get<Task[]>(this.plugin + this.cmd_names[1]);
     }
+    public async delete_task(types: Task): Promise<void|undefined|string>
+    {
+        return await this.save<Task, void>(this.plugin + this.cmd_names[2], types);
+    }
 }
 
-const settings = new Settings();
-export {settings}
+class Service extends Plugin
+{
+    plugin = "plugin:service|";
+    cmd_names = ['truncate_tasks_excepts', 'clear_dirs'];
+    public async truncate_tasks_excepts<R extends number>(): Promise<R|undefined|string>
+    {
+        return await this.get<R>(this.plugin + this.cmd_names[0]);
+    }
+    public async clean_dirs<R extends number>(): Promise<R|undefined|string>
+    {
+        return await this.get<R>(this.plugin + this.cmd_names[1]);
+    }
+}
+const service = new Service();
+const settings = new Settings(); 
+export {settings, service}

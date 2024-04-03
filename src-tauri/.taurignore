@@ -2,3 +2,5 @@
 logs
 *.task
 *.log
+settings.toml
+test_data

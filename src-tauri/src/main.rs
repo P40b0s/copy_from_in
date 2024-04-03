@@ -8,7 +8,7 @@ mod copyer;
 use copyer::{DirectoriesSpy, NewPacketInfo};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
-use std::{sync::Arc, fmt::Display};
+use std::{fmt::Display, sync::Arc, time::Duration};
 pub use logger;
 mod commands;
 use commands::*;
@@ -43,12 +43,17 @@ fn main()
   .setup(|app| 
     {
       let app_handle = Arc::new(app.handle());
+      //let st = app_handle.state::<AppState>().inner();
       //новая арка на каждый асинхронный рантайм
       let handle_1 = Arc::clone(&app_handle);
       let handle_2 = Arc::clone(&app_handle);
-      tauri::async_runtime::spawn(async move 
+      tauri::async_runtime::spawn(async move
       {
-        let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;
+        loop 
+        {
+          let _ = DirectoriesSpy::process_tasks(Arc::clone(&handle_1)).await;
+          tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
+        }
       });
       tauri::async_runtime::spawn(async move
       {
@@ -64,6 +69,7 @@ fn main()
     })
     .plugin(commands::date_plugin())
     .plugin(commands::settings_plugin())
+    .plugin(commands::service_plugin())
     // .invoke_handler(tauri::generate_handler![
     //   //initialize_app_state,
     // ])

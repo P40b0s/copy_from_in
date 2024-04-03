@@ -3,7 +3,7 @@ use logger::{error, warn};
 use serde::{Serialize, Deserialize, de::DeserializeOwned};
 use toml::de::Error;
 
-
+#[derive(Clone)]
 pub enum Serializer
 {
     Json,

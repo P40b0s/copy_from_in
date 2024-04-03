@@ -1,4 +1,5 @@
 use std::path::Path;
+use logger::error;
 use serde::{Serialize, de::DeserializeOwned};
 use crate::ValidationError;
 
@@ -7,12 +8,20 @@ pub trait FileMethods where Self : Clone + Serialize + Default + DeserializeOwne
 {
     const FILE_PATH: &'static str;
     const PATH_IS_ABSOLUTE: bool;
-
+    fn get_filename_with_extension(serializer: &super::io::Serializer) -> String
+    {
+        match serializer
+        {
+            super::io::Serializer::Json => [Self::FILE_PATH , ".json"].concat(),
+            super::io::Serializer::Toml => [Self::FILE_PATH , ".toml"].concat()
+        }
+    }
     fn validate(&self) -> Result<(), Vec<ValidationError>>;
     fn save(&self, serializer: super::io::Serializer) -> Result<(), Vec<ValidationError>>
     {
         let _val_ok = self.validate()?;
-        if let Err(e) = crate::io::serialize(self, Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer)
+        let fp = Self::get_filename_with_extension(&serializer);
+        if let Err(e) = crate::io::serialize(self, &fp, Self::PATH_IS_ABSOLUTE, serializer)
         {
             Err(vec![ValidationError::new(None, e); 1])
         }

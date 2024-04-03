@@ -1,36 +1,76 @@
-use std::{self, path::{Path, PathBuf}, sync::{Arc, Mutex}, collections::HashMap};
+use std::{self, collections::HashMap, ops::Deref, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info, warn, LevelFilter};
-use medo_parser::Packet;
+use medo_parser::{DeliveryTicketPacket, Packet};
 use once_cell::sync::{OnceCell, Lazy};
-use settings::{CopyModifier, Settings, Task};
+use settings::{CopyModifier, FileMethods, Settings, Task};
+use tokio::sync::Mutex;
 use tauri::Manager;
 use crate::{ new_packet_found, state::AppState, NEW_DOCS};
 use crossbeam_channel::bounded;
 
 use super::{NewDocument, NewPacketInfo};
-//pub static EXCLUDES: OnceCell<Mutex<HashMap<String, Vec<String>>>> = OnceCell::new();
-
+static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+static INIT: AtomicBool = AtomicBool::new(false);
 pub struct DirectoriesSpy;
+
 impl DirectoriesSpy
 {
-    ///Возвырат сообщений из канала реализован в главном потоке, управление в main не возвращается, 
-    ///так как главный поток больше ни для чего не используется, оставлю так
+    ///Будет вызываться каждые 15 секунда, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
     pub async fn process_tasks<R: tauri::Runtime>(manager: Arc<impl Manager<R>>) -> anyhow::Result<()>
     {
         let state = manager.state::<AppState>().inner();
-        let (s, r) = bounded::<(Task, String)>(10);
-        let settings = state.get_settings();
-        DirectoriesSpy::start_tasks(settings, s).await;
-        loop 
+        let settings = state.get_settings().await;
+        if !INIT.load(std::sync::atomic::Ordering::SeqCst)
         {
-            while let Ok(rec) = r.recv() 
+            for t in &settings.tasks
             {
-                Self::copy_files_process(rec.0, rec.1).await;
+                Settings::load_exclude(t)
+            }
+            INIT.store(true, std::sync::atomic::Ordering::Relaxed);
+        }
+        Self::process_timers(&settings).await;
+        Ok(())
+    }
+
+    async fn process_timers(settings: &Settings)
+    {
+        for t in &settings.tasks
+        {
+            let mut guard = TIMERS.lock().await;
+            if guard.contains_key(&t.name)
+            {
+                let countdown = guard.get(&t.name).unwrap() - 15000;
+                debug!("{}", countdown);
+                if countdown > 0
+                {
+                    *guard.get_mut(&t.name).unwrap() = countdown;
+                    drop(guard);
+                }
+                else 
+                {
+                    *guard.get_mut(&t.name).unwrap() = t.timer;
+                    drop(guard);
+                    //таск 1 а вот пакетов может быть несколько
+                    let tsk = Arc::new(t.clone());
+                    tokio::spawn(async move
+                    {
+                        let ready_tasks = Self::scan_dir(tsk).await;
+                        for ready_task in ready_tasks
+                        {
+                            Self::copy_files_process(ready_task.0, ready_task.1).await;
+                        }
+                    });
+                }
+            }
+            else
+            {
+                guard.insert(t.name.clone(), t.timer);
+                drop(guard);
             }
         }
     }
 
-    async fn copy_files_process(task: Task, founded_packet_name : String)
+    async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
         let task_name = task.get_task_name();
         let source_dir = task.get_source_dir();
@@ -43,18 +83,20 @@ impl DirectoriesSpy
         {
             CopyModifier::CopyAll =>
             {
-                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task)
+                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
-                    send_new_document(NewDocument::new(&founded_packet_name)).await;
+                    let new_packet = NewPacketInfo::not_packet(&founded_packet_name, &task);
+                    send_new_document(new_packet).await;
                 }
             },
             CopyModifier::CopyOnly =>
             {
-                if let Some(packet) = Self::get_packet(&source_path).await
+                if let Some(packet) = Self::get_packet(&source_path, &task).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
-                        send_new_document(&packet).await;
+                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
+                        send_new_document(new_packet).await;
                     }
                 }
                 else
@@ -64,11 +106,12 @@ impl DirectoriesSpy
             },
             CopyModifier::CopyExcept =>
             {
-                if let Some(packet) = Self::get_packet(&source_path).await
+                if let Some(packet) = Self::get_packet(&source_path, &task).await
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
-                        send_new_document(&packet).await;
+                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
+                        send_new_document(new_packet).await;
                     }
                 }
                 else
@@ -79,80 +122,7 @@ impl DirectoriesSpy
             },
         }
     }
-
-    async fn get_packet(source_path: &PathBuf) -> Option<Packet>
-    {
-        let packet = medo_parser::Packet::parse(&source_path);
-        if let Some(errors) = packet.get_error()
-        {
-            let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
-            error!("{}", &err);
-            send_new_document(err).await;
-            return None;
-        }
-        return Some(packet)
-    }
-
-    ///Отработали ли правила из текущей задачи
-    ///`need_rule_accept` при ключе фильтра copy_only нужно поставить true а при ключе copy_except - false
-    ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
-    async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
-    {
-        if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
-        && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-        && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-        {
-            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
-        }
-        else
-        {
-            if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-            {
-                return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task);
-            }
-            if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-            {
-                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task);
-            }
-        }
-        return false;
-    }
-
-    async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
-    {
-        let packet_type = packet.get_packet_type();
-        if packet_type.is_none()
-        {
-            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
-            error!("{}", &err);
-            send_new_document(err).await;
-            return false;
-        }
-        if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
-        {
-            return true;
-        }
-        false 
-    }
-    async fn source_uid_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
-    {
-        let source_uid = packet.get_source_uid();
-        if source_uid.is_none()
-        {
-            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
-            error!("{}", &err);
-            send_new_document(err).await;
-            return false;
-        }
-        if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
-        {
-            return true;
-        }    
-        false 
-    }
-
-
-    fn copy_process(target_path: &PathBuf,
+    async fn copy_process(target_path: &PathBuf,
         source_path: &PathBuf,
         packet_dir_name: &str, 
         task : &Task) -> bool
@@ -164,7 +134,7 @@ impl DirectoriesSpy
         }
         else 
         {
-            if let Ok(copy_time) = super::io::copy_recursively(&source_path, &target_path)
+            if let Ok(copy_time) = super::io::copy_recursively_async(&source_path, &target_path, 3000).await
             {
                 if task.delete_after_copy
                 {
@@ -184,124 +154,156 @@ impl DirectoriesSpy
         }
     }
 
-    ///Каждый таск обрабатывается в отдельном потоке
-    async fn start_tasks(settings: Settings, sender : crossbeam_channel::Sender<(Task, String)>)
+    async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
     {
-        let tasks = settings.tasks;
-        for t in tasks
+        let packet = medo_parser::Packet::parse(&source_path);
+        if let Some(errors) = packet.get_error()
         {
-            if !t.is_active
+            let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
+            error!("{}", &err);
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
+            return None;
+        }
+        return Some(packet)
+    }
+
+    ///Отработали ли правила из текущей задачи
+    ///`need_rule_accept` при ключе фильтра CopyOnly нужно поставить true а при ключе CopyExcept - false
+    ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
+    async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
+    {
+        if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
+        && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
+        && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
+        {
+            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
+        }
+        else
+        {
+            if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
             {
-                let wrn = format!("Задач {} -> не активна и не будет запущена (флаг is_active)", t.get_task_name());
-                warn!("{}", &wrn);
-                continue;
+                return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
             }
-            else
+            if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
             {
-                Settings::load_exclude(&t);
-                let builder = std::thread::Builder::new().name(t.name.clone());
-                let sender = sender.clone();
-                let _ = builder.spawn(move ||
-                {
-                    loop 
-                    {
-                        let start = std::time::SystemTime::now();
-                        let paths = super::io::get_dirs(&t.source_dir);
-                        if paths.is_none()
-                        {
-                            continue;
-                        }
-                        let mut is_change = false;
-                        if let Some(reader) = paths.as_ref()
-                        {
-                            for d in reader
-                            {
-                                if Settings::add_to_exclude(&t.name, d)
-                                {
-                                    is_change = true;
-                                    let _ = sender.send((t.clone(), d.to_owned())).unwrap();
-                                }    
-                            }
-                            if is_change
-                            {
-                                Settings::save_exclude(&t.name);
-                            }
-                        }
-                        let delay = t.get_task_delay();
-                        let end = std::time::SystemTime::now();
-                        let duration = end.duration_since(start).unwrap();
-                        if is_change
-                        {
-                            logger::info!("Задача {} была завершена за {}c., перезапуск задачи через {}c.", std::thread::current().name().unwrap(), duration.as_secs(), &delay.as_secs());
-                        }
-                        std::thread::sleep(delay);
-                    }
-                });
+                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task).await;
             }
         }
+        return false;
     }
-    //Добавить к задаче имя директории, чтобы больше ее не копировать
-    // если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
-    // fn add(task_name: &str, dir: &String) -> bool
-    // {
-    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if !guard.contains_key(task_name)
-    //     {
-    //         guard.insert(task_name.to_owned(), vec![dir.to_owned()]);
-    //         return true;
-    //     }
-    //     else 
-    //     {
-    //         if let Some(ex) = guard.get_mut(task_name)
-    //         {
-    //             let d = dir.to_owned();
-    //             if !ex.contains(&d)
-    //             {
-    //                 ex.push(dir.to_owned());
-    //                 return true;
-    //             }
-    //             else 
-    //             {
-    //                 return false;
-    //             }
-    //         }
-    //     }
-    //     return false;
-    // }
-    // fn delete(task_name: &str, dir: &String)
-    // {
-    //     let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if let Some(v) = guard.get_mut(task_name)
-    //     {
-    //         v.retain(|r| r != dir);
-    //     }
-    // }
-    // fn serialize_exclude(task_name: &str,)
-    // {
-    //     let concat_path = [task_name, ".task"].concat();
-    //     let file_name = Path::new(&concat_path);
-    //     let guard = EXCLUDES.get().unwrap().lock().unwrap();
-    //     if let Some(vec) = guard.get(task_name)
-    //     {
-    //         super::serialize::serialize(vec, file_name, None);
-    //     }  
-    // }
-    // pub fn deserialize_exclude(task: &Task)
-    // {
-    //     let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
-    //     let mut guard = excl.lock().unwrap();
-    //     if !guard.contains_key(task.name.as_str())
-    //     {
-    //         let file = [&task.name, ".task"].concat();
-    //         let path = Path::new(&file);
-    //         let ex = super::serialize::deserialize::<Vec<String>>(&path);
-    //         guard.insert(task.name.clone(), ex.1);
-    //     }
-    // }
+
+    async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
+    {
+        let packet_type = packet.get_packet_type();
+        if packet_type.is_none()
+        {
+            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
+            error!("{}", &err);
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
+            return false;
+        }
+        if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
+        {
+            return true;
+        }
+        false 
+    }
+    async fn source_uid_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
+    {
+        let source_uid = packet.get_source_uid();
+        if source_uid.is_none()
+        {
+            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
+            error!("{}", &err);
+            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            send_new_document(pi).await;
+            return false;
+        }
+        if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
+        {
+            return true;
+        }    
+        false 
+    }
+
+    ///проверяем новые пакеты у тасков с вышедшим таймером, получаем список тасков у которых найдены новые пакеты
+    async fn scan_dir(task: Arc<Task>) -> Vec<(Arc<Task>, String)>
+    {
+        let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
+        if task.is_active
+        {
+            let paths = super::io::get_dirs(&task.source_dir);
+            if let Some(reader) = paths.as_ref()
+            {
+                let mut exclude_is_changed = false;
+                for d in reader
+                {
+                    let cloned_task = Arc::clone(&task);
+                    if Settings::add_to_exclude(&cloned_task.name, d)
+                    {
+                        exclude_is_changed = true;
+                        prepared_tasks.push((cloned_task, d.to_owned()));
+                    }    
+                }
+                if exclude_is_changed
+                {
+                    Settings::save_exclude(&task.name);
+                }
+            }
+        }
+        prepared_tasks
+    }
 }
 
-async fn send_new_document(packet: impl Into<NewPacketInfo>)
+// async fn send_new_document(packet: impl Into<NewPacketInfo>, task: &Task)
+// {
+//     let lg = NEW_DOCS.get().unwrap().lock().await;
+//     let mut np: NewPacketInfo = packet.into();
+//     //send_report(np.document.as_ref(), task).await;
+//     np.task = Some(task.clone());
+//     let _ = lg.send(np);
+// }
+
+async fn send_new_document(mut packet: NewPacketInfo)
 {
     let lg = NEW_DOCS.get().unwrap().lock().await;
-    let _ = lg.send(packet.into());
+    let sended = send_report(packet.document.as_ref(), &packet.name, &packet.task).await;
+    packet.report_sended = sended;
+    let _ = lg.send(packet);
+}
+
+async fn send_report(new_doc: Option<&NewDocument>, packet_name: &str, task: &Task) -> bool
+{
+    if let Some(r_dir) = task.get_report_dir()
+    {
+        if let Some(doc) = new_doc
+        {
+            if doc.doc_uid.is_none()
+            || doc.organization_uid.is_none()
+            || doc.organization.is_none()
+            || doc.source_medo_addressee.is_none()
+            {
+                logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
+                return false;
+            } 
+            else
+            {
+                DeliveryTicketPacket::create_packet(
+                    doc.doc_uid.as_ref().unwrap(),
+                    doc.organization_uid.as_ref().unwrap(),
+                    doc.organization.as_ref().unwrap(),
+                    doc.source_medo_addressee.as_ref().unwrap()
+                ).send(r_dir);
+                return true;
+            }
+        }
+        else 
+        {
+            logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
+            return false;
+        }
+    }
+    return false;
 }

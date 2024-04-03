@@ -1,0 +1,123 @@
+// :root 
+// {
+//     --height-height: 650px;
+//     /* cell width has to reserve some space for scrolling. Hence the sum < 100% */
+//     --cell-width: 246px;
+// }
+  
+// .header-fixed 
+// {
+//     width: 100%;
+// }
+
+// /* Treat all as divs */
+// .header-fixed > thead,
+// .header-fixed > tbody,
+// .header-fixed > thead > tr,
+// .header-fixed > tbody > tr,
+// .header-fixed > thead > tr > th,
+// .header-fixed > tbody > tr > td 
+// {
+//     display: block;
+// }
+
+// /* Prevent header to wrap */
+// .header-fixed > thead > tr > th 
+// {
+//     white-space: nowrap;
+//     background-color: rgb(169, 232, 248);
+// }
+
+// .header-fixed > tbody > tr:after,
+// .header-fixed > thead > tr:after 
+// {
+//     content: ' ';
+//     display: block;
+//     visibility: hidden;
+//     clear: both;
+// }
+
+// .header-fixed > tbody 
+// {
+//     overflow-y: auto;
+//     height: var(--height-height);
+// }
+
+// .header-fixed > tbody > tr > td,
+// .header-fixed > thead > tr > th 
+// {
+//     width: var(--cell-width);
+//     border: thin solid rgba(212, 28, 28, 0);
+//     float: left;
+// }
+
+
+
+.responsive-table {
+    li {
+      border-radius: 3px;
+      padding: 10px 10px;
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    .table-header {
+      background-color: #313636;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .table-row {
+      background-color: #313636;
+      border-left: 0.5rem solid transparent;
+      box-shadow: 0px 0px 9px 0px rgba(0,0,0,0.2);
+    }
+    .table-row:hover {
+      box-shadow: 3px 3px 10px rgba(93, 233, 37, 0.5);
+      //transform: scale(1.01);
+      border-left: 0.4rem solid rgba(93, 233, 37, 0.5);
+    }
+    .col-1 {
+      flex-basis: 25%;
+    }
+    .col-2 {
+      flex-basis: 15%;
+    }
+    .col-3 {
+      flex-basis: 10%;
+    }
+    .col-4 {
+      flex-basis: 25%;
+    }
+    .col-5 {
+      flex-basis: 25%;
+    }
+    
+    @media all and (max-width: 767px) {
+      .table-header {
+        display: none;
+      }
+      .table-row{
+        
+      }
+      li {
+        display: block;
+      }
+      .col {
+        
+        flex-basis: 100%;
+        
+      }
+      .col {
+        display: flex;
+        padding: 10px 0;
+        &:before {
+          color: #6C7A89;
+          padding-right: 10px;
+          content: attr(data-label);
+          flex-basis: 50%;
+          text-align: right;
+        }
+      }
+    }
+  }

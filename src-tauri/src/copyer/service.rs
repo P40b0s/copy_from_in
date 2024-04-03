@@ -1,9 +1,11 @@
 use std::path::Path;
 
 use medo_parser::Packet;
-use settings::{Settings, Task};
+use settings::{FileMethods, Settings, Task};
 
 use crate::{copyer::io::get_files, Error};
+
+use super::io::get_dirs;
 
 pub trait PacketsCleaner
 {
@@ -41,7 +43,7 @@ pub trait PacketsCleaner
                             if let Some(pt) = packet.get_packet_type()
                             {
                                 let pt = pt.into_owned();
-                                logger::info!("{} {:?}", &pt, t.clean_types);
+                                //logger::info!("{} {:?}", &pt, t.clean_types);
                                 if t.clean_types.contains(&pt)
                                 {
                                     let _ = std::fs::remove_dir_all(&source_path);
@@ -61,7 +63,6 @@ pub trait PacketsCleaner
                 }
             }
         }
-        settings.truncate_excludes();
         if !errors.is_empty()
         {
             return Err(Error::ServiceErrors(errors));
@@ -73,6 +74,24 @@ pub trait PacketsCleaner
 }
 
 impl PacketsCleaner for Settings{}
+
+pub trait ExcludesCreator
+{
+    ///Создание нового стоп листа имен директорий если лист уже есть, он будет пересканирован и сохранен заново
+    async fn create_stoplist_file(task: &Task)
+    {
+        Settings::clear_exclude(task.get_task_name());
+        if let Some(dirs) = get_dirs(&task.source_dir)
+        {
+            for d in dirs
+            {
+                Settings::add_to_exclude(task.get_task_name(), &d);
+            }
+        }
+        Settings::save_exclude(task.get_task_name());
+    }
+}
+impl ExcludesCreator for Task{}
 
 #[cfg(test)]
 mod tests

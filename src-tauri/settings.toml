@@ -1,25 +1,17 @@
 [[tasks]]
-name = "from_backup_to_architector"
-source_dir = "../test_data/in"
-target_dir = "../test_data/out"
-timer = 15000
+name = "test_task_!"
+description = "для тестирования системы копирования"
+source_dir = "/hard/xar/medo_testdata/0"
+target_dir = "/hard/xar/medo_testdata/out1"
+report_dir = "/hard/xar/medo_testdata/sending_dir"
+timer = 60000
 delete_after_copy = false
+copy_modifier = "CopyOnly"
 is_active = true
 clean_types = ["Квитанция"]
-copy_modifier = "copy_all"
-[tasks.filters]
-document_types =  ["Транспортный контейнер","Документ"]
-document_uids =  []
+generate_exclude_file = false
+color = "#0C660C"
 
-
-[[tasks]]
-name = "from_in_to_backup"
-source_dir = "../test_data/in2"
-target_dir = "../test_data/out"
-timer = 12000
-delete_after_copy = false
-is_active = true
-copy_modifier = "copy_only"
 [tasks.filters]
-document_types =  ["Транспортный контейнер","Документ"]
-document_uids =  []
+document_types = ["Транспортный пакет", "Документ"]
+document_uids = []

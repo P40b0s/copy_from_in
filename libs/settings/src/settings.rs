@@ -1,6 +1,7 @@
 use std::{path::Path, sync::Mutex};
 
 use hashbrown::HashMap;
+use logger::warn;
 use serde::{Deserialize, Serialize};
 
 use crate::{io, CopyModifier, FileMethods, Task, ValidationError, EXCLUDES};
@@ -16,14 +17,14 @@ impl Default for Settings
     {
         Settings 
         { 
-            tasks: vec![Task::default()],
+            tasks: vec![],
         }
     }
     
 }
 impl FileMethods for Settings
 {
-    const FILE_PATH: &'static str = "settings.toml";
+    const FILE_PATH: &'static str = "settings";
     const PATH_IS_ABSOLUTE: bool = false;
     fn validate(&self) -> Result<(), Vec<ValidationError>>
     {
@@ -49,6 +50,18 @@ impl FileMethods for Settings
                         errors.push(ValidationError::new(Some("target_directory".to_owned()), err));
                     }
                 }
+                if task.report_dir.to_str().is_some_and(|r| r != "")
+                {
+                    if let Ok(e) = task.report_dir.try_exists()
+                    {
+                        if !e
+                        {
+                            let err = ["Директория ", &task.target_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
+                            errors.push(ValidationError::new(Some("report_directory".to_owned()), err));
+                        }
+                    }
+                }
+                
                 if task.copy_modifier != CopyModifier::CopyAll
                 && task.filters.document_types.len() == 0
                 && task.filters.document_uids.len() == 0
@@ -74,10 +87,13 @@ impl FileMethods for Settings
     ///
     fn load(serializer: io::Serializer) -> Result<Self, Vec<ValidationError>> 
     {
-        let des: (bool, Self) = crate::io::deserialize(Self::FILE_PATH, Self::PATH_IS_ABSOLUTE, serializer);
+        let fp = Self::get_filename_with_extension(&serializer);
+        let des: (bool, Self) = crate::io::deserialize(&fp, Self::PATH_IS_ABSOLUTE, serializer.clone());
         if !des.0
         {
-            Err(vec![ValidationError::new_from_str(None, "Файл настроек не найден, создан новый файл, необходимо его правильно настроить до старта программы"); 1])
+            let _ = crate::io::serialize(Settings::default(), &fp, Self::PATH_IS_ABSOLUTE, serializer);
+            warn!("Файл настроек не найден, создан новый файл {}, для работы программы необходимо его настроить", &fp);
+            Ok(Settings::default())
         }
         else 
         {
@@ -118,6 +134,16 @@ impl Settings
         }
         return false;
     }
+
+    pub fn clear_exclude(task_name: &str)
+    {
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = excl.lock().unwrap();
+        if guard.contains_key(task_name)
+        {
+            guard.remove(task_name);
+        }
+    }
     fn delete_from_exclude(task_name: &str, dir: &String)
     {
         let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
@@ -127,7 +153,7 @@ impl Settings
         }
     }
     ///Сохранить исключения текущей задачи в файл
-    pub fn save_exclude(task_name: &str,)
+    pub fn save_exclude(task_name: &str)
     {
         let concat_path = [task_name, ".task"].concat();
         let file_name = Path::new(&concat_path);
@@ -165,7 +191,8 @@ impl Settings
     ///удалить исключение из файла *.task
     pub fn del_exclude(t: &Task, packet_name: &str)
     {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        let excl = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = excl.lock().unwrap();
         let excludes = guard.get_mut(t.get_task_name()).unwrap();
         excludes.retain(|r| r != packet_name);
         drop(guard);

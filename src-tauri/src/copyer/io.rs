@@ -1,32 +1,167 @@
-use std::{path::{Path, PathBuf}, fs::{OpenOptions, DirEntry, File}, io::{BufWriter, Write, Read}};
+use std::{fs::{DirEntry, File, OpenOptions},  io::{BufWriter, Read, Write}, path::{Path, PathBuf}, time::SystemTime};
 
-use logger::error;
+use logger::{debug, error};
 use serde_json::Value;
+use tokio::{task::JoinHandle, try_join};
 
  
- /// Copy files from source to destination recursively.
- pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>) -> std::io::Result<u64> 
+ /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
+ /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
+ pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
  {
+    if std::fs::read_dir(source.as_ref())?.count() == 0
+    {
+        return Ok(0);
+    }
     let start = std::time::SystemTime::now();
     std::fs::create_dir_all(&destination)?;
-    for entry in std::fs::read_dir(source)? 
+    let mut files: Vec<(PathBuf, PathBuf)> = vec![];
+    let mut entry_count = 0;
+    //debug!("Копирование `{}` в `{}`...", source.as_ref().display(), destination.as_ref().display());
+    for entry in std::fs::read_dir(source.as_ref())? 
     {
         let entry = entry?;
         let filetype = entry.file_type()?;
+        entry_count += 1;
         if filetype.is_dir() 
         {
-            copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()))?;
+            copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()), check_duration)?;
         }
         else 
         {
             let dest = destination.as_ref().join(entry.file_name());
-            std::fs::copy(entry.path(), &dest)?;
+            let mut modifed_time: Option<SystemTime> = None;
+            loop
+            {
+                //в цикле сверяем время изменения файла каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
+                let metadata = std::fs::metadata(&entry.path())?;
+                if let Ok(md_time) = metadata.modified()
+                {
+                    if modifed_time.is_none()
+                    {
+                        modifed_time = Some(md_time);
+                    }
+                    else
+                    {
+                        if modifed_time.as_ref().unwrap() <  &md_time
+                        {
+                            modifed_time = Some(md_time);
+                        }
+                        else
+                        {
+                            modifed_time = None;
+                            files.push((entry.path(), dest.clone()));
+                            break;
+                        }
+                    }
+                }
+                std::thread::sleep(std::time::Duration::from_millis(check_duration));
+            }
         }
+    }
+    //после проверки всех файлов проверяем не появились ли в директории новые файлы, если появились запускаем процедуру сначала
+    let new_count_check = std::fs::read_dir(source.as_ref())?;
+    let count = new_count_check.count();
+    //debug!("новое колчиество файлов `{}` старое количество файлов `{}`...", entry_count, count);
+    if entry_count != count
+    {
+        return copy_recursively(source, destination, check_duration);
+    }
+    //копируем все файлы в списке
+    for f in files
+    {
+        debug!("Копирование `{}` в `{}`...", f.0.display(), f.1.display());
+        std::fs::copy(f.0, f.1)?;
     }
     let end = std::time::SystemTime::now();
     let duration = end.duration_since(start).unwrap();
     Ok(duration.as_secs())
  }
+
+ /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
+ /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
+ pub async fn copy_recursively_async(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
+ {
+    if std::fs::read_dir(source.as_ref())?.count() == 0
+    {
+        return Ok(0);
+    }
+    let start = std::time::SystemTime::now();
+    std::fs::create_dir_all(&destination)?;
+    let mut files: Vec<(PathBuf, PathBuf)> = vec![];
+    let mut entry_count = 0;
+    let mut handles : Vec<JoinHandle<std::io::Result<(PathBuf, PathBuf)>>> = Vec::new();
+    for entry in std::fs::read_dir(source.as_ref())? 
+    {
+        let entry = entry?;
+        let filetype = entry.file_type()?;
+        let path = entry.path();
+        entry_count +=1;
+        if filetype.is_dir() 
+        {
+            copy_recursively(entry.path(), destination.as_ref().join(entry.file_name()), check_duration)?;
+        }
+        else 
+        {
+            let dest = destination.as_ref().join(entry.file_name());
+            handles.push(tokio::spawn(async move
+            {
+                let mut modifed_time: Option<SystemTime> = None;
+                loop 
+                {
+                    //в цикле сверяем время изменения файла каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
+                    let metadata = std::fs::metadata(&path)?;
+                    if let Ok(md_time) = metadata.modified()
+                    {
+                        if modifed_time.is_none()
+                        {
+                            modifed_time = Some(md_time);
+                        }
+                        else
+                        {
+                            if modifed_time.as_ref().unwrap() <  &md_time
+                            {
+                                modifed_time = Some(md_time);
+                            }
+                            else
+                            {
+                                modifed_time = None;
+                                return Ok((path, dest.clone()));
+                            }
+                        }
+                    }
+                tokio::time::sleep(tokio::time::Duration::from_millis(check_duration)).await;
+               }
+            }));
+        }
+    }
+    for h in handles
+    {
+        if let Ok(join_result) = h.await
+        {
+            files.push(join_result?);
+        }
+    }
+    //после проверки всех файлов проверяем не появились ли в директории новые файлы, если появились запускаем процедуру сначала
+    let new_count_check = std::fs::read_dir(source.as_ref())?;
+    let count = new_count_check.count();
+    //debug!("новое колчиество файлов `{}` старое количество файлов `{}`...", entry_count, count);
+    if entry_count != count
+    {
+        return copy_recursively(source, destination, check_duration);
+    }
+    //копируем все файлы в списке
+    for f in files
+    {
+        debug!("Копирование `{}` в `{}`...", f.0.display(), f.1.display());
+        std::fs::copy(f.0, f.1)?;
+    }
+    let end = std::time::SystemTime::now();
+    let duration = end.duration_since(start).unwrap();
+    Ok(duration.as_secs())
+ }
+
+
 
 pub fn extension_is(f: &DirEntry, ext:&str) -> bool
 {
@@ -64,6 +199,7 @@ pub fn get_files<P: AsRef<Path>>(path: P) -> Option<Vec<DirEntry>>
     }
     return Some(entry);
 }
+
 pub fn get_dirs(path: &PathBuf) -> Option<Vec<String>>
 {
     let paths = std::fs::read_dir(path);
@@ -172,5 +308,18 @@ pub fn path_is_exists<P: AsRef<Path>>(path: P ) -> bool
     else 
     {
         return false;
+    }
+}
+#[cfg(test)]
+mod tests
+{
+    #[test]
+    fn test_copy()
+    {
+        logger::StructLogger::initialize_logger();
+        super::copy_recursively(
+        "/hard/xar/projects/rust/copy_from_in/test_data/in/38773995_1_1_unzip",
+        "/hard/xar/projects/rust/copy_from_in/test_data/in/test_copy",
+        1000);
     }
 }
