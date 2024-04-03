@@ -141,20 +141,13 @@ export const PacketsViewer =  defineComponent({
     setup () 
     {
         //для тестирования
-        for (let index = 0; index < 100; index++) {
-            app_state_store.add_packet(test_packet1());
-            app_state_store.add_packet(test_error_packet());
-            app_state_store.add_packet(test_error_packet2());
-            app_state_store.add_packet(test_packet2());
-        }
-        // --s: 150px; /* control the size */
-  
-        // --_g: #0000 90deg,#046D8B 0;
-        // background:
-        //   conic-gradient(from 116.56deg at calc(100%/3) 0   ,var(--_g)),
-        //   conic-gradient(from -63.44deg at calc(200%/3) 100%,var(--_g))
-        //   #2FB8AC;
-        // background-size: var(--s) var(--s);
+        // for (let index = 0; index < 100; index++) {
+        //     app_state_store.add_packet(test_packet1());
+        //     app_state_store.add_packet(test_error_packet());
+        //     app_state_store.add_packet(test_error_packet2());
+        //     app_state_store.add_packet(test_packet2());
+        // }
+       
         const list = () =>
         {
             return h('div',
