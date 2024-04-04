@@ -1,50 +1,55 @@
 mod error;
-mod messages_processor;
+mod ws;
+mod api;
+use api::start_http_server;
 pub use error::Error;
+use ws::{start_ws_server, start_new_packets_handler};
 mod helpers;
 mod copyer;
 mod state;
 mod commands;
-use std::{default, future, sync::Arc};
+use std::{default, future, net::SocketAddr, sync::Arc};
 use anyhow::Result;
 use copyer::{DirectoriesSpy, NewPacketInfo};
-use logger::{debug, StructLogger};
+use logger::{debug, warn, StructLogger};
 use state::AppState;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 use crossbeam_channel::{Receiver, bounded};
 use websocket_service::{Server, WebsocketMessage};
-
+use clap::{arg, command, Parser};
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+#[command(next_line_help = true)]
+struct Cli 
+{
+  #[arg(long)]
+  ws_port: usize,
+  #[arg(long)]
+  http_port: usize,
+}
+
 
 #[tokio::main]
 async fn main()
 {
     StructLogger::initialize_logger();
-    Server::start_server("127.0.0.1:3010").await;
-    let receiver = DirectoriesSpy::subscribe_new_packet_event().await;
-    Server::on_receive_msg(|addr, msg|
+    let (ws_port, http_port) =
     {
-        debug!("Сервером полчено сообщение от {} через канал {}", addr, &msg.command.target);
-        async 
+        if let Ok(cli) = Cli::try_parse()
         {
-            messages_processor::process_messages(addr, msg, Arc::clone(&APP_STATE)).await;
-        };
-    }).await;
-    //в цикле получаем сообщение от копировальщика
-    tokio::spawn(async move
-    {
-        let receiver = Arc::new(receiver);
-        loop 
-        {
-            if let Ok(r) = receiver.recv()
-            {
-                debug!("main получено сообщение о парсинге нового пакета");
-                let wsmsg = WebsocketMessage::new_with_flex_serialize("packet", "new", Some(&r));
-                Server::broadcast_message_to_all(&wsmsg).await;
-            }
+            (cli.ws_port, cli.http_port)
         }
-    });
+        else
+        {
+            warn!("При запуске программы не обнаружены аргументы --ws_port и --http_port, будут использоваться агрументы для локального сервера (3010, 3009)");
+            (3010, 3009)
+        }
+    };
+    start_http_server(http_port).await;
+    start_ws_server(ws_port).await;
+    start_new_packets_handler().await;
     loop
     {
         let settings = Arc::clone(&APP_STATE);
