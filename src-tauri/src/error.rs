@@ -9,6 +9,9 @@ pub enum Error
   Other(#[from] anyhow::Error),
   SettingsValidation(Vec<ValidationError>),
   ServiceErrors(Vec<String>),
+  HyperError(#[from] hyper::Error),
+  HttpError(#[from] hyper::http::Error),
+  PostError(String)
 }
 
 impl std::fmt::Display for Error
@@ -21,6 +24,9 @@ impl std::fmt::Display for Error
       Error::Other(oth) => f.write_str(&oth.to_string()),
       Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
       Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
+      Error::HyperError(e) => f.write_str(&e.to_string()),
+      Error::HttpError(e) => f.write_str(&e.to_string()),
+      Error::PostError(e) => f.write_str(e),
     }
   }
 }

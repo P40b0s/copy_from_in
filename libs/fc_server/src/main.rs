@@ -18,6 +18,7 @@ use tokio::sync::OnceCell;
 use crossbeam_channel::{Receiver, bounded};
 use websocket_service::{Server, WebsocketMessage};
 use clap::{arg, command, Parser};
+use serializer::BytesSerializer;
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));
 #[derive(Parser)]
 #[command(version, about, long_about = None)]

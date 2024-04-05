@@ -7,6 +7,7 @@ authors = ["phobos"]
 license = ""
 repository = "https://github.com/P40b0s/copy_from_in"
 
+
 #sudo dnf install mingw32-gcc mingw64-gcc
 [target.x86_64-pc-windows-gnu]
 linker = "x86_64-w64-mingw32-gcc"
@@ -26,6 +27,7 @@ tokio-test= {version ="0.4.4"}
 uuid = {version = "1.8.0", features = ["v4"] }
 const_format = "0.2.32"
 settings = {path = "../settings"}
+serializer = {path = "../serializer"}
 medo_parser = {path = "../medo_parser"}
 crossbeam-channel="0.5.12"
 #http api

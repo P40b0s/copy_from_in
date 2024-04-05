@@ -701,6 +701,36 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98cc8fbded0c607b7ba9dd60cd98df59af97e84d24e49c8557331cfc26d301ce"
 
 [[package]]
+name = "client"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "chrono",
+ "clap",
+ "clap_derive",
+ "const_format",
+ "crossbeam-channel",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "logger",
+ "medo_parser",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "serializer",
+ "settings",
+ "tauri",
+ "tauri-build",
+ "thiserror",
+ "tokio",
+ "tokio-test",
+ "uuid",
+ "websocket_service",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "4.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1366,6 +1396,7 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
+ "serializer",
  "settings",
  "thiserror",
  "tokio",
@@ -2818,31 +2849,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
 
 [[package]]
-name = "packets_copyist_tasker"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "clap_derive",
- "const_format",
- "crossbeam-channel",
- "logger",
- "medo_parser",
- "once_cell",
- "serde",
- "serde_json",
- "settings",
- "tauri",
- "tauri-build",
- "thiserror",
- "tokio",
- "tokio-test",
- "uuid",
- "websocket_service",
-]
-
-[[package]]
 name = "packets_copyist_tasker_workspace"
 version = "0.1.0"
 
@@ -3660,6 +3666,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "serializer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "flexbuffers",
+ "serde",
+ "settings",
 ]
 
 [[package]]

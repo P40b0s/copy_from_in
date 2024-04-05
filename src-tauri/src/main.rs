@@ -4,13 +4,17 @@
 )]
 mod helpers;
 mod error;
+mod ws_serivice;
+mod http;
 use clap::{arg, command, Parser};
 //mod copyer;
 //use copyer::{DirectoriesSpy, NewPacketInfo};
 use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
+use http::initialize_http_requests;
 use settings::Settings;
 use websocket_service::{Client, WebsocketMessage};
+use ws_serivice::start_ws_service;
 use std::{fmt::Display, sync::Arc, time::Duration};
 pub use logger;
 mod commands;
@@ -18,7 +22,7 @@ use commands::*;
 mod state;
 use state::AppState;
 pub use const_format::concatcp;
-use logger::{warn, StructLogger};
+use logger::{debug, warn, StructLogger};
 use once_cell::sync::OnceCell;
 use tauri::Manager;
 use tokio::sync::Mutex;
@@ -30,83 +34,51 @@ use tokio::sync::Mutex;
 struct Cli 
 {
   #[arg(long)]
-  server: String,
+  host: String,
   #[arg(long)]
-  port: String,
+  ws_port: usize,
+  #[arg(long)]
+  api_port: usize,
 }
-
-
+impl Default for Cli
+{
+  fn default() -> Self 
+  {
+    Self { host: "127.0.0.1".to_owned(), api_port: 3009, ws_port: 3010}
+  }
+}
 
 #[tokio::main]
 async fn main() 
 {
   StructLogger::initialize_logger();
-  let (ip, port) =
+  let args =
   {
-    if let Ok(cli) = Cli::try_parse()
+    let parsed = Cli::try_parse();
+    if let Ok(cli) = parsed
     {
-      (cli.server, cli.port)
+      cli
     }
     else
     {
-      warn!("При запуске программы не обнаружены аргументы --server и --port, будут использоваться агрументы для локального сервера");
-      ("127.0.0.1".to_owned(), "3010".to_owned())
+      warn!("При запуске программы не обнаружены аргументы --server --ws_port и --api_port, будут использоваться агрументы для локального сервера -> {}", parsed.err().unwrap().to_string());
+      Cli::default()
     }
   };
-  let addr = ["ws://", &ip, ":", &port, "/"].concat();
-  Client::start_client(&addr).await;
- 
+
+  let api_addr = [&args.host, ":", &args.api_port.to_string()].concat();
+  let ws_addr = ["ws://", &args.host, ":", &args.ws_port.to_string(), "/"].concat();
+  debug!("api: {} ws: {}", &api_addr, ws_addr);
+  initialize_http_requests(api_addr);
+
   tauri::Builder::default()
-  .manage(AppState 
-  {
-    settings: Mutex::new(Settings::default())
-  })
   .setup(|app| 
     {
-      let app_handle = Arc::new(app.handle());
-      //let st = app_handle.state::<AppState>().inner();
-      //новая арка на каждый асинхронный рантайм
-      let handle_1 = Arc::clone(&app_handle);
-      let handle_2 = Arc::clone(&app_handle);
-      tauri::async_runtime::spawn(async move
+      let handle = Arc::new(app.handle());
+      //handle.emit_all("sdf", "32");
+      tauri::async_runtime::spawn(async move 
       {
-        Client::on_receive_message(|msg|
-        {
-          async 
-          {
-            let handle = Arc::clone(&handle_1);
-            match msg.command.get_target() 
-            {
-              "settings" => 
-              {
-                match msg.command.get_method()
-                {
-                  "reload" => 
-                  {
-                    let new_settings = msg.command.extract_payload::<Settings>().unwrap();
-                    let stt = handle.state::<AppState>().settings.lock().await;
-                    *stt = new_settings;
-                    //TODO послать эмит в фронтэенд с новыми настройками
-                  }
-                  _ => ()
-                }
-              }
-              _ => ()
-            }
-        };
-        }).await;
-        let init_msg = WebsocketMessage::new("event", "on_client_connected", None);
-        Client::send_message(&init_msg).await;
-      });
-      tauri::async_runtime::spawn(async move
-      {
-        loop
-        {
-          if let Ok(packet) = new_doc_receiver.recv()
-          {
-            new_packet_found(packet, Arc::clone(&handle_2));
-          }
-        }
+        start_ws_service(ws_addr, handle).await;
       });
       Ok(())
     })
@@ -120,32 +92,78 @@ async fn main()
     .expect("Ошибка запуска приложения!");
 }
 
-fn new_packet_found<R: tauri::Runtime>(packet: NewPacketInfo, manager: Arc<impl Manager<R>>) 
-{
-  logger::info!("Поступил новый документ! {} {:?}", packet.get_packet_name(), &packet);
-    manager
-        .emit_all("new_packet_found", packet)
-        .unwrap();
-}
-
-// pub enum TauriEvent
+// fn new_packet_found<R: tauri::Runtime>(packet: NewPacketInfo, manager: Arc<impl Manager<R>>) 
 // {
-//   Test,
-//   UpdateState,
-//   UpdateDate,
-//   UpdateUsers
+//   logger::info!("Поступил новый документ! {} {:?}", packet.get_packet_name(), &packet);
+//     manager
+//         .emit_all("new_packet_found", packet)
+//         .unwrap();
 // }
 
-// impl Display for TauriEvent
-// {
-//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+
+
+
+
+//оставлю на память
+// tauri::Builder::default()
+//   .manage(AppState 
 //   {
-//       match &self
+//     settings: Mutex::new(Settings::default())
+//   })
+//   .setup(|app| 
+//     {
+//       let app_handle = Arc::new(app.handle());
+//       //let st = app_handle.state::<AppState>().inner();
+//       //новая арка на каждый асинхронный рантайм
+//       let handle_1 = Arc::clone(&app_handle);
+//       let handle_2 = Arc::clone(&app_handle);
+//       tauri::async_runtime::spawn(async move
 //       {
-//         TauriEvent::Test => f.write_str("test"),
-//         TauriEvent::UpdateState => f.write_str("update_state"),
-//         TauriEvent::UpdateDate => f.write_str("update_date"),
-//         TauriEvent::UpdateUsers => f.write_str("update_users"),
-//       }
-//   }
-// }
+//         Client::on_receive_message(|msg|
+//         {
+//           async 
+//           {
+//             let handle = Arc::clone(&handle_1);
+//             match msg.command.get_target() 
+//             {
+//               "settings" => 
+//               {
+//                 match msg.command.get_method()
+//                 {
+//                   "reload" => 
+//                   {
+//                     let new_settings = msg.command.extract_payload::<Settings>().unwrap();
+//                     let stt = handle.state::<AppState>().settings.lock().await;
+//                     *stt = new_settings;
+//                     //TODO послать эмит в фронтэенд с новыми настройками
+//                   }
+//                   _ => ()
+//                 }
+//               }
+//               _ => ()
+//             }
+//         };
+//         }).await;
+//         let init_msg = WebsocketMessage::new("event", "on_client_connected", None);
+//         Client::send_message(&init_msg).await;
+//       });
+//       tauri::async_runtime::spawn(async move
+//       {
+//         loop
+//         {
+//           if let Ok(packet) = new_doc_receiver.recv()
+//           {
+//             new_packet_found(packet, Arc::clone(&handle_2));
+//           }
+//         }
+//       });
+//       Ok(())
+//     })
+//     .plugin(commands::date_plugin())
+//     .plugin(commands::settings_plugin())
+//     .plugin(commands::service_plugin())
+//     // .invoke_handler(tauri::generate_handler![
+//     //   //initialize_app_state,
+//     // ])
+//     .run(tauri::generate_context!())
+//     .expect("Ошибка запуска приложения!");

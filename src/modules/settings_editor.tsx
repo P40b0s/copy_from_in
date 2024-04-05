@@ -6,11 +6,12 @@ import
     CSSProperties,
     onMounted,
     ref,
+    onUnmounted,
   } from 'vue'
 import { open } from '@tauri-apps/api/dialog';
 import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
-import { settings } from '../services/tauri-service.ts';
+import { TauriEvents, settings } from '../services/tauri-service.ts';
 import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
@@ -90,7 +91,7 @@ export const SettingsEditor =  defineComponent({
         const selected_task = ref<Task>();
         const is_new_task = ref(false);
         const save_error = ref<string|undefined>();
-        onMounted(async ()=>
+        const get_tasks = async () =>
         {
             let s = await settings.load_settings()
             if(s != undefined)
@@ -107,6 +108,22 @@ export const SettingsEditor =  defineComponent({
                 }
                 //console.log(tasks.value);
             }
+        }
+        const unlisten = TauriEvents.settings_updated(async (task) => 
+        {
+            await get_tasks();
+        })
+        onUnmounted(()=>
+        {
+            unlisten.then(f => 
+            {
+                if (f)
+                f()
+            });
+        })
+        onMounted(async ()=>
+        {
+           await get_tasks();
         })
         const settings_names = (): Array<SelectOption | SelectGroupOption> =>
         {

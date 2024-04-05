@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "tauri:icon": "tauri icon tasker.png",
+    "vite:build": "vite build",
     "serve": "vite dev",
     "serve:tauri": "RUST_BACKTRACE=1 tauri build --debug",
     "serve:native": "RUST_BACKTRACE=1  tauri dev",

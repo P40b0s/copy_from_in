@@ -19,7 +19,20 @@ export class TauriEvents
         if(is_tauri())
             return await listen<IPacket>('new_packet_found', (event) => 
             {
-                console.log(`Эвент new_packet_found обновлен ${event.windowLabel}, payload: ${event.payload.document?.parseTime}`);
+                console.log(`Эвент new_packet_found обновлен ${event.windowLabel}, payload: ${event.payload.parseTime}`);
+                func(event);
+            });
+        else
+        {
+            console.error("таури не заинжекчен!")
+        }
+    }
+    static async settings_updated(func: (arg: event.Event<Task>) => void) : Promise<UnlistenFn|undefined>
+    {
+        if(is_tauri())
+            return await listen<Task>('settings/tasks/update', (event) => 
+            {
+                console.log(`Получен эвент что настройки сервера были обновлены ${event.windowLabel}`);
                 func(event);
             });
         else

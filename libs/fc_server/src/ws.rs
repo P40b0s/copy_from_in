@@ -36,12 +36,13 @@ pub async fn start_new_packets_handler()
 
 pub async fn on_receive_message(addr: SocketAddr, msg: websocket_service::WebsocketMessage)
 {
+    debug!("Поступило сообщение {} {}", msg.command.get_target(), msg.command.get_method());
     let state = Arc::clone(&APP_STATE);
     if msg.success
     {
         match msg.command.get_target()
         {
-            "settings" => 
+            "settings/tasks" => 
             {
                 settings_worker(&addr, &msg.command, state).await;
             },
@@ -58,13 +59,19 @@ async fn settings_worker(addr: &SocketAddr, cmd: &Command, state: Arc<AppState>)
 {
     match cmd.get_method()
     {
-        "update" => 
+        "updated" => 
         {
+            debug!("обновлены настройки на сервере!");
             if let Ok(task) = cmd.extract_payload::<Task>()
             {
-                if let Err(e) = commands::settings::update(task, state).await
+                if let Err(e) = commands::settings::update(task.clone(), state).await
                 {
                     send_error_msg(addr, "settings", e);
+                }
+                else
+                {
+                    let msg = WebsocketMessage::new_with_flex_serialize("settings/tasks", "updated", Some(&task));
+                    Server::broadcast_message_to_all(&msg).await;
                 }
             }
         }
