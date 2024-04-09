@@ -5,7 +5,8 @@ use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::sync::{Mutex};
 use crate::{ state::AppState};
-use crossbeam_channel::{bounded, Receiver, Sender};
+//use crossbeam_channel::{bounded, Receiver, Sender};
+use async_channel::{bounded, Sender, Receiver};
 //use crossbeam_channel::unbounded;
 use super::{NewDocument, NewPacketInfo};
 
@@ -25,7 +26,7 @@ impl DirectoriesSpy
         let _ = NEW_PACKET_EVENT.set(Arc::new(sender));
         receiver
     }
-    ///Будет вызываться каждые 15 секунда, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
+    ///Будет вызываться каждые 15 секунд, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
     pub async fn process_tasks(state: Arc<AppState>) -> anyhow::Result<()>
     {
         
@@ -275,7 +276,7 @@ async fn new_packet_found(mut packet: NewPacketInfo)
     let mut log = PACKETS.lock().await;
     if let Some(sender) = NEW_PACKET_EVENT.get()
     {
-        let _ = sender.send(packet.clone());
+        let _ = sender.send(packet.clone()).await;
     }
     log.push_front(packet);
     log.truncate(LOG_LENGHT);

@@ -19,6 +19,7 @@ use crossbeam_channel::{Receiver, bounded};
 use websocket_service::{Server, WebsocketMessage};
 use clap::{arg, command, Parser};
 use serializer::BytesSerializer;
+extern crate async_channel;
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -32,7 +33,7 @@ struct Cli
 }
 
 
-#[tokio::main]
+#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main()
 {
     StructLogger::initialize_logger();
@@ -56,5 +57,6 @@ async fn main()
         let settings = Arc::clone(&APP_STATE);
         let _ = DirectoriesSpy::process_tasks(settings).await;
         tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
+        //for testing
     }
 }

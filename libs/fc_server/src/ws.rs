@@ -2,33 +2,27 @@ use std::{net::SocketAddr, sync::Arc};
 use logger::debug;
 use settings::Task;
 use websocket_service::{Command, Server, WebsocketMessage};
-
 use crate::{commands, copyer::{self, DirectoriesSpy}, state::AppState, Error, APP_STATE};
 
 ///Стартуем сервер вебсокет для приема и отправки сообщений
 pub async fn start_ws_server(port: usize)
 {
     let addr = ["127.0.0.1:".to_owned(), port.to_string()].concat();
-    Server::start_server(&addr).await;
-    Server::on_receive_message(on_receive_message).await;
+    Server::start_server(&addr, on_receive_message).await;
 }
 ///стартуем обработчик новых поступивших пакетов
 /// одна из функций отправка этих пакетов всем подключенным клиентам через сервер websocket
 pub async fn start_new_packets_handler()
 {
-    let receiver = DirectoriesSpy::subscribe_new_packet_event().await;
-    //в цикле получаем сообщение от копировальщика
+    let receiver: crate::async_channel::Receiver<copyer::NewPacketInfo> = DirectoriesSpy::subscribe_new_packet_event().await;
+    //получаем сообщения от копировальщика
     tokio::spawn(async move
     {
         let receiver = Arc::new(receiver);
-        loop 
+        while let Ok(r) = receiver.recv().await
         {
-            if let Ok(r) = receiver.recv()
-            {
-                debug!("main получено сообщение о парсинге нового пакета");
-                let wsmsg = WebsocketMessage::new_with_flex_serialize("packet", "new", Some(&r));
-                Server::broadcast_message_to_all(&wsmsg).await;
-            }
+            let wsmsg = WebsocketMessage::new_with_flex_serialize("packet", "new", Some(&r));
+            Server::broadcast_message_to_all(&wsmsg).await;  
         }
     });
 }
@@ -36,7 +30,7 @@ pub async fn start_new_packets_handler()
 
 pub async fn on_receive_message(addr: SocketAddr, msg: websocket_service::WebsocketMessage)
 {
-    debug!("Поступило сообщение {} {}", msg.command.get_target(), msg.command.get_method());
+    debug!("Серверу поступило сообщение {} {}", msg.command.get_target(), msg.command.get_method());
     let state = Arc::clone(&APP_STATE);
     if msg.success
     {

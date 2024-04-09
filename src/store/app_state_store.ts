@@ -39,7 +39,7 @@ class AppStateStore extends Store<IGlobalAppState>
   add_packet(packet: IPacket)
   {
     this.state.current_log.splice(0,0, packet);
-    if(this.state.current_log.length > 5000)
+    if(this.state.current_log.length > 1000)
       this.state.current_log.pop();
   }
 }

@@ -160,7 +160,7 @@ export const PacketsViewer =  defineComponent({
                     width: '100%',
                     //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
                     //backgroundSize: '50px 50px'
-                    backgroundImage: 'url(src/assets/svg/back.svg)'
+                    backgroundImage: background
                 }   as CSSProperties
             },
             virtual_list()

@@ -5,7 +5,7 @@ import
     defineAsyncComponent,
   } from 'vue'
 
-import { NConfigProvider, NNotificationProvider, NSpin, dateRuRU, ruRU } from 'naive-ui';
+import { NConfigProvider, NNotificationProvider, NSpin, NotificationType, dateRuRU, ruRU, useNotification } from 'naive-ui';
 import {MainTab} from './modules/main_tab.tsx';
 import './main_grid.scss'
 import { darkTheme } from 'naive-ui';

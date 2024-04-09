@@ -353,6 +353,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-tungstenite"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2cca750b12e02c389c1694d35c16539f88b8bbaa5945934fdc1b41a776688589"
+dependencies = [
+ "futures-io",
+ "futures-util",
+ "log",
+ "pin-project-lite",
+ "tungstenite",
+]
+
+[[package]]
 name = "atk"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -705,6 +718,7 @@ name = "client"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bytes",
  "chrono",
  "clap",
@@ -1381,6 +1395,7 @@ name = "fc_server"
 version = "0.2.0"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bytes",
  "chrono",
  "clap",
@@ -5008,9 +5023,10 @@ dependencies = [
 [[package]]
 name = "websocket_service"
 version = "0.2.0"
-source = "git+https://github.com/P40b0s/websocket_service.git#bad68bc165686f1d980e2d530574231aaea52f5e"
+source = "git+https://github.com/P40b0s/websocket_service.git#486be09c314c49c5fe06734d195f1ba0c6cb7c2b"
 dependencies = [
  "anyhow",
+ "async-tungstenite",
  "flatbuffers",
  "flexbuffers",
  "futures",
@@ -5022,6 +5038,7 @@ dependencies = [
  "serde_json",
  "tokio",
  "tokio-tungstenite",
+ "tungstenite",
  "url",
 ]
 

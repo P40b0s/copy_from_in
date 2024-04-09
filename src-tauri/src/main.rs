@@ -23,9 +23,11 @@ mod state;
 use state::AppState;
 pub use const_format::concatcp;
 use logger::{debug, warn, StructLogger};
-use once_cell::sync::OnceCell;
-use tauri::Manager;
+use once_cell::{sync::OnceCell};
+use tauri::{AppHandle, Manager};
 use tokio::sync::Mutex;
+
+use crate::ws_serivice::start_ws_service2;
 
 
 #[derive(Parser)]
@@ -48,6 +50,9 @@ impl Default for Cli
   }
 }
 
+
+static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
+
 #[tokio::main]
 async fn main() 
 {
@@ -66,16 +71,16 @@ async fn main()
     }
   };
 
+  
   let api_addr = [&args.host, ":", &args.api_port.to_string()].concat();
   let ws_addr = ["ws://", &args.host, ":", &args.ws_port.to_string(), "/"].concat();
   debug!("api: {} ws: {}", &api_addr, ws_addr);
+  //start_ws_service2(ws_addr).await;
   initialize_http_requests(api_addr);
-
   tauri::Builder::default()
   .setup(|app| 
     {
       let handle = Arc::new(app.handle());
-      //handle.emit_all("sdf", "32");
       tauri::async_runtime::spawn(async move 
       {
         start_ws_service(ws_addr, handle).await;
