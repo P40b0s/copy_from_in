@@ -16,6 +16,7 @@ pub async fn get() -> Result<Vec<Task>, Error>
 #[tauri::command]
 pub async fn update(payload: Task) -> Result<(), Error>
 {
+    debug!("Попытка сохранить задачу {:?}", payload);
     http::post("settings/tasks/update", &payload).await
 }
 

@@ -4,7 +4,7 @@ use medo_parser::{DeliveryTicketPacket, Packet};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::sync::{Mutex};
-use crate::{ state::AppState};
+use crate::{ copyer::NewPacketInfoTrait, state::AppState};
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
 //use crossbeam_channel::unbounded;
@@ -271,7 +271,7 @@ impl DirectoriesSpy
 ///Обнаружен новый пакет
 async fn new_packet_found(mut packet: NewPacketInfo)
 {
-    let sended = send_report(packet.document.as_ref(), &packet.name, &packet.task).await;
+    let sended = send_report(packet.get_document().as_ref(), &packet.name, packet.get_task()).await;
     packet.report_sended = sended;
     let mut log = PACKETS.lock().await;
     if let Some(sender) = NEW_PACKET_EVENT.get()

@@ -11,10 +11,33 @@ import run_man_ico from '../assets/svg/runman.svg'
 import train_ico from '../assets/svg/train.svg'
 import journal_ico from '../assets/svg/journal.svg'
 import bell_ico from '../assets/svg/bell.svg'
-import error_ico from '../assets/svg/error.svg'
+import error_ico from '../assets/svg/clouderror.svg'
+import warning_ico from '../assets/svg/warning.svg'
 import envelope_ico from '../assets/svg/envelope.svg'
 import clean_ico from '../assets/svg/clean.svg'
 import cut_ico from '../assets/svg/cut.svg'
 import background from '../assets/svg/back.svg'
+import success_ico from '../assets/svg/success.svg'
 
-export {disease_ico, background, health_ico, cut_ico, palm_ico, clean_ico, error_ico, envelope_ico, user_ico, test_ico, vacc_ico, info_ico, add_user_ico, run_man_ico, train_ico, disease_red_ico, journal_ico, bell_ico}
+export {
+    disease_ico,
+    warning_ico,
+    background,
+    health_ico,
+    cut_ico,
+    palm_ico,
+    clean_ico,
+    error_ico,
+    envelope_ico,
+    user_ico,
+    test_ico,
+    success_ico,
+    vacc_ico,
+    info_ico,
+    add_user_ico,
+    run_man_ico,
+    train_ico,
+    disease_red_ico,
+    journal_ico,
+    bell_ico
+}

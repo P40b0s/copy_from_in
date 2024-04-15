@@ -5,7 +5,7 @@ use logger::{debug, error};
 use serde::{Serialize, Deserialize};
 use settings::{FileMethods, Settings, Task};
 use uuid::Uuid;
-use websocket_service::{Server, WebsocketMessage};
+use service::{Server, WebsocketMessage};
 use crate::copyer::ExcludesCreator;
 use crate::helpers::{Date, DateTimeFormat, DateFormat};
 use crate::state::AppState;

@@ -1,7 +1,8 @@
 use std::{net::SocketAddr, sync::Arc};
-use logger::debug;
+use logger::{debug, error, info};
 use settings::Task;
-use websocket_service::{Command, Server, WebsocketMessage};
+use service::{Server, WebsocketMessage};
+use transport::Contract;
 use crate::{commands, copyer::{self, DirectoriesSpy}, state::AppState, Error, APP_STATE};
 
 ///Стартуем сервер вебсокет для приема и отправки сообщений
@@ -14,84 +15,71 @@ pub async fn start_ws_server(port: usize)
 /// одна из функций отправка этих пакетов всем подключенным клиентам через сервер websocket
 pub async fn start_new_packets_handler()
 {
-    let receiver: crate::async_channel::Receiver<copyer::NewPacketInfo> = DirectoriesSpy::subscribe_new_packet_event().await;
+    let receiver: crate::async_channel::Receiver<transport::NewPacketInfo> = DirectoriesSpy::subscribe_new_packet_event().await;
     //получаем сообщения от копировальщика
     tokio::spawn(async move
     {
         let receiver = Arc::new(receiver);
         while let Ok(r) = receiver.recv().await
         {
-            let wsmsg = WebsocketMessage::new_with_flex_serialize("packet", "new", Some(&r));
-            Server::broadcast_message_to_all(&wsmsg).await;  
+            let message = Contract::new_packet(r).as_ws_message();
+            Server::broadcast_message_to_all(&message).await;  
         }
     });
 }
 
 
-pub async fn on_receive_message(addr: SocketAddr, msg: websocket_service::WebsocketMessage)
+pub async fn on_receive_message(addr: SocketAddr, msg: service::WebsocketMessage)
 {
-    debug!("Серверу поступило сообщение {} {}", msg.command.get_target(), msg.command.get_method());
-    let state = Arc::clone(&APP_STATE);
-    if msg.success
+    debug!("Серверу поступило сообщение {:?} от {}", &msg, &addr);
+    let contract: Contract = msg.into();
+    match &contract
     {
-        match msg.command.get_target()
-        {
-            "settings/tasks" => 
-            {
-                settings_worker(&addr, &msg.command, state).await;
-            },
-            "event" => 
-            {
-                event_worker(&addr, &msg.command, state).await;
-            },
-            _ => {}
-        }
-    }
-}
-
-async fn settings_worker(addr: &SocketAddr, cmd: &Command, state: Arc<AppState>)
-{
-    match cmd.get_method()
-    {
-        "updated" => 
-        {
-            debug!("обновлены настройки на сервере!");
-            if let Ok(task) = cmd.extract_payload::<Task>()
-            {
-                if let Err(e) = commands::settings::update(task.clone(), state).await
-                {
-                    send_error_msg(addr, "settings", e);
-                }
-                else
-                {
-                    let msg = WebsocketMessage::new_with_flex_serialize("settings/tasks", "updated", Some(&task));
-                    Server::broadcast_message_to_all(&msg).await;
-                }
-            }
-        }
-        _=>()
-    }
-}
-
-async fn event_worker(addr: &SocketAddr, cmd: &Command, state: Arc<AppState>)
-{
-    match cmd.get_method()
-    {
-        "on_client_connected" => 
-        {
-            let settings = state.get_settings().await;
-            let ws_settings = WebsocketMessage::new_with_flex_serialize("settings", "reload", Some(&settings));
-            Server::send(&ws_settings, &addr).await;
-            let packets = copyer::get_full_log().await;
-            let ws_logs = WebsocketMessage::new_with_flex_serialize("packets", "reload", Some(&packets));
-            Server::send(&ws_logs, &addr).await;
-        }
+        Contract::Error(e) => error!("{}", e),
+        Contract::ErrorConversion(e) => error!("{}", e),
+        Contract::TaskUpdated(t) => task_updated(&addr, t).await,
+        Contract::TaskDeleted(t) => task_deleted(&addr, t).await,
+        //остальные сообщения нем на сервере обрабатывать ненужно
         _ => ()
     }
+    
 }
 
-async fn send_error_msg(addr: &SocketAddr, target: &str, error: Error)
+async fn task_updated(addr: & SocketAddr, task: &Task)
 {
-    let msg = WebsocketMessage::new_with_flex_serialize(target, "error", Some(&error.to_string()));
+    let state = Arc::clone(&APP_STATE);
+    debug!("Попытка обновить задачу {:?}", task);
+    if let Err(e) = commands::settings::update(task.clone(), state).await
+    {
+        error!("Ошибка обновления задачи {:?}", &e.to_string());
+        send_error_msg(addr, e).await;
+    }
+    else
+    {
+        let message = Contract::new_task_updated(task).as_ws_message();
+        info!("Задача {} успешно обновлена", task.get_task_name());
+        Server::broadcast_message_to_all(&message).await;
+    }
+}
+async fn task_deleted(addr: & SocketAddr, task: &Task)
+{
+    let state = Arc::clone(&APP_STATE);
+    debug!("Попытка удалить задачу {:?}", task);
+    if let Err(e) = commands::settings::delete(task.clone(), state).await
+    {
+        error!("Ошибка удаления задачи {:?}", &e.to_string());
+        send_error_msg(addr, e).await;
+    }
+    else
+    {
+        let message = Contract::new_task_deleted(task).as_ws_message();
+        info!("Задача {} успешно удалена", task.get_task_name());
+        Server::broadcast_message_to_all(&message).await;
+    }
+}
+
+async fn send_error_msg(addr: &SocketAddr, error: Error)
+{
+    let msg = Contract::new_error(error.to_string()).as_ws_message();
     Server::send(&msg, &addr).await;
 }

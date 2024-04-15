@@ -7,19 +7,19 @@ use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{body::Incoming as IncomingBody, header, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
-use logger::{debug, error};
+use logger::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use settings::{Settings, Task};
 use tokio::net::{TcpListener, TcpStream};
-use anyhow::{anyhow, Context, Result};
-use crate::BytesSerializer;
+use anyhow::{anyhow, Context, Error, Result};
+use service::Server;
+use transport::{BytesSerializer, Contract};
 use crate::state::AppState;
 use crate::{commands, APP_STATE};
 
 //type GenericError = Box<dyn std::error::Error + Send + Sync>;
 //type Result<T> = std::result::Result<T, GenericError>;
 type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
-
 // static INDEX: &[u8] = b"<a href=\"test.html\">test.html</a>";
 // static INTERNAL_SERVER_ERROR: &[u8] = b"Internal Server Error";
  static NOTFOUND: &[u8] = b"Not Found";
@@ -71,6 +71,7 @@ type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 //     Ok(response)
 // }
 
+//получается это единственная фунция что нужна?) а может и вообще ненужна если норм реализовать ящик Contract
 async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
     let data = 
@@ -91,11 +92,18 @@ async fn update_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
 {
     let body = req.collect().await?.to_bytes();
     let task: Task = Task::from_bytes(&body)?;
-    let _ = commands::settings::update(task, app_state).await?;
+    if let Err(e) = commands::settings::update(task.clone(), app_state).await
+    {
+        return error_responce(e);
+    }
     let response = Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/json")
         .body(empty_body())?;
+    //сообщаем всем через вебсокет что мы обновили какую то таску
+    
+    let wsmsg = Contract::new_task_updated(&task).as_ws_message();
+    Server::broadcast_message_to_all(&wsmsg).await;
     Ok(response)
 }
 
@@ -153,7 +161,7 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
     match (req.method(), req.uri().path()) 
     {
         (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
-        (&Method::GET, "/settings/tasks/update") => update_task(req, app_state).await,
+        (&Method::POST, "/settings/tasks/update") => update_task(req, app_state).await,
         (&Method::POST, "/settings/tasks/delete") => delete_task(req, app_state).await,
         _ => 
         {
@@ -186,6 +194,15 @@ pub fn to_body(bytes: Bytes) -> BoxBody
 fn empty_body() -> BoxBody
 {
     to_body(Bytes::new())
+}
+
+fn error_responce(error: crate::Error) -> Result<Response<BoxBody>>
+{
+    let req = Response::builder()
+        .status(StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS)
+        .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .body(full(error.to_string()))?;
+    Ok(req)
 }
 
 // pub trait ToBody
@@ -222,13 +239,20 @@ pub async fn start_http_server(port: usize) -> Result<()>
             loop 
             {
                 let connected = listener.accept().await;
-                if let Ok((stream, _)) = connected
+                if let Ok((stream, addr)) = connected
                 {
                     let io = TokioIo::new(stream);
                     tokio::task::spawn(async move 
                     {
-                        let service = service_fn(move |req| response_examples(req));
-                        if let Err(err) = http1::Builder::new().serve_connection(io, service).await 
+                        
+                        let service = service_fn(move |req|
+                        {
+                            info!("Поступил запрос от {} headers->{:?}", &addr, req.headers());
+                            response_examples(req)
+                        });
+                        if let Err(err) = http1::Builder::new()
+                        //еще настройки из https://docs.rs/hyper/latest/hyper/server/conn/http1/struct.Builder.html
+                        .serve_connection(io, service).await 
                         {
                             error!("Ошибка обслуживания соединения: {:?}", err);
                         }

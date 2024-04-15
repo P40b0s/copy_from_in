@@ -4,15 +4,17 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Alex_Xar <P40b0s@gmail.com>"]
 
-
-
 [workspace]
 members = [
     "src-tauri",
     "libs/medo_parser",
     "libs/settings", 
-    "libs/fc_server", "libs/serializer",]
+    "libs/fc_server",
+    "libs/serializer",
+    "libs/transport"
+]
 default-members = ["src-tauri"]
+
 [dependencies]
 
 

@@ -9,12 +9,13 @@ import
     onUnmounted,
   } from 'vue'
 import { open } from '@tauri-apps/api/dialog';
-import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption} from 'naive-ui';
+import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
 import { TauriEvents, settings } from '../services/tauri-service.ts';
-import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
+import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin, WarningSharp } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
+import { naive_notify } from '../services/notification.ts';
 export const SettingsEditorAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
@@ -87,10 +88,10 @@ const form_validation_rules = () : FormRules =>
 export const SettingsEditor =  defineComponent({
     setup () 
     {
+        const notify = useNotification();
         const tasks = ref<Task[]>([]);
         const selected_task = ref<Task>();
         const is_new_task = ref(false);
-        const save_error = ref<string|undefined>();
         const get_tasks = async () =>
         {
             let s = await settings.load_settings()
@@ -111,7 +112,24 @@ export const SettingsEditor =  defineComponent({
         }
         const unlisten = TauriEvents.settings_updated(async (task) => 
         {
-            await get_tasks();
+            const new_task = task.payload;
+            const saved = tasks.value.findIndex(t=>t.name == new_task.name);
+            //новая задача
+            if (saved == -1)
+            {
+                tasks.value.push(new_task);
+                naive_notify(notify, 'info', "Добавлена задача " + new_task.name, "");
+            }
+            //задача уже есть в списке
+            else
+            {
+                tasks.value.splice(saved, 1, new_task);
+                if (selected_task.value && selected_task.value.name == new_task.name)
+                {
+                    selected_task.value = tasks.value[saved];
+                }
+                naive_notify(notify, 'info', "Задача " + new_task.name + " была изменена", "");
+            }
         })
         onUnmounted(()=>
         {
@@ -183,7 +201,6 @@ export const SettingsEditor =  defineComponent({
                 },
                 [
                     settings_selector(),
-                    error(),
                     settings_dashboard(),
                     
                 ]
@@ -192,22 +209,21 @@ export const SettingsEditor =  defineComponent({
             ]
             );
         }
-        const error = () =>
-        {
-            return h("span", {
-            style:
-                {
-                    color: 'red',
-                    visibility: save_error.value ? 'visible' : 'collapse'
-                } as CSSProperties
-            },
-            save_error.value
-            )
-        }
-
+        // const error = () =>
+        // {
+        //     return h("span", {
+        //     style:
+        //         {
+        //             color: 'red',
+        //             visibility: save_error.value ? 'visible' : 'collapse'
+        //         } as CSSProperties
+        //     },
+        //     save_error.value
+        //     )
+        // }
+        
         const settings_selector = () =>
         {
-            const save_button_label = ref<string | VN>("СОХРАНИТЬ");
             return h("div",
             {
                 style:
@@ -275,45 +291,72 @@ export const SettingsEditor =  defineComponent({
                         selected_task.value = taskClone.clone(tasks.value.find(f=>f.name == v));
                     }
                 }),
-                h(NButton,
-                {
-                    type: 'primary',
-                    style:
-                    {
-                        marginLeft: '5px',
-                        width: '100px'
-                    }    as CSSProperties,
-                    onClick: async () => 
-                    {
-                        const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
-                        tasks.value.splice(saved, 1, selected_task.value as Task);
-                        const result = await settings.save_task(tasks.value[saved]);
-                        if (result === 'string')
-                        {
-                            console.error(result);
-                            save_error.value = result;
-                        }
-                        else
-                        {
-                            is_new_task.value = false;
-                            //await notify("Настройки успешно сохранены", "Настройки успешно сохранены")
-                            (selected_task.value as Task).generate_exclude_file = false;
-                            tasks.value[saved].generate_exclude_file = false;
-                            save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
-                            setTimeout(() => 
-                            {
-                                save_button_label.value = "СОХРАНИТЬ"
-                            }, 1000);
-                              
-                        }
-                    }
-                },
-                {
-                    default:() => save_button_label.value
-                }),
+                save_button()
             ]
             )
         }
+
+        const save_button = () :VN =>
+        {
+            const button_is_loading = ref(false);
+            const save_button_label = ref<string | VN>("СОХРАНИТЬ");
+            return h(NButton,
+            {
+                type: 'primary',
+                loading: button_is_loading.value,
+                style:
+                {
+                    marginLeft: '5px',
+                    width: '100px'
+                }    as CSSProperties,
+                onClick: async () => 
+                {
+                    button_is_loading.value = true;
+                    const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
+                    tasks.value.splice(saved, 1, selected_task.value as Task);
+                    const result = await settings.save_task(tasks.value[saved]);
+                    if (typeof result === 'string')
+                    {
+                        save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
+                        const res = result.split("\\n");
+                        if (res.length == 1)
+                            naive_notify(notify, 'error', "Ошибка сохранения настроек", result);
+                        else
+                            naive_notify(notify, 'error', "Ошибка сохранения настроек", () => 
+                        {
+                            return h('div',null,
+                                res.map(r=> h('div', 
+                                {
+                                    style:{
+                                        color: 'red'
+                                    } as CSSProperties
+                                },
+                                r))
+                            );
+                        });
+                            
+                    }
+                    else
+                    {
+                        is_new_task.value = false;
+                        (selected_task.value as Task).generate_exclude_file = false;
+                        tasks.value[saved].generate_exclude_file = false;
+                        save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
+                        naive_notify(notify, 'success', "Настройки успешно сохранены", "Настройки для задачи " + selected_task.value?.name + " успешно сохранены"); 
+                    }
+                    setTimeout(() => 
+                    {
+                        save_button_label.value = "СОХРАНИТЬ"
+                        button_is_loading.value = false;
+                    }, 1000);
+                    
+                }
+            },
+            {
+                default:() => save_button_label.value
+            });
+        }
+
         const formRef = ref<FormInst | null>(null);
         const settings_dashboard = () =>
         {

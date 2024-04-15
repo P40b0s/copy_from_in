@@ -1,7 +1,9 @@
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/api/notification';
-import { NButton, NotificationType } from 'naive-ui';
+import { NAvatar, NButton, NotificationType } from 'naive-ui';
 import { NotificationApiInjection } from 'naive-ui/es/notification/src/NotificationProvider';
-import { CSSProperties, h } from 'vue';
+import { match } from 'ts-pattern';
+import { CSSProperties, VNodeChild, h } from 'vue';
+import { error_ico, info_ico, success_ico, warning_ico } from './svg';
 
 
 export const notify = async (title: string, body : string) =>
@@ -20,42 +22,30 @@ export const notify = async (title: string, body : string) =>
     }
 }
 
-
-export const naive_notify =  (injection: NotificationApiInjection, type: NotificationType, title: string, description: string) => 
+const avatar_selector = (type: NotificationType) =>
+{
+  return match(type)
+  .with('error', () => error_ico)
+  .with('info', () => info_ico)
+  .with('warning', () => warning_ico)
+  .with('success', () => success_ico)
+  .exhaustive();
+}
+export const naive_notify =  (injection: NotificationApiInjection, type: NotificationType, title: string, description: string | (() => VNodeChild) | undefined) => 
 {
     const n = injection.create({
         type: type,
         title: title,
         description: description,
-        // avatar:() => h(NProgress,
-        //     {
-        //         style:{
-        //             width: '100px',
-        //             marginBottom: '20px'
-        //         } as CSSProperties,
-        //         type: 'circle',
-        //         //circleGap: 0.6,
-        //         //strokeWidth: 10,
-        //         status: 'info',
-        //         indicatorPosition: 'inside',
+        avatar:() => h(NAvatar,
+            {
                 
-        //         percentage: tw.progress,
-        //         color: 'rgba(255, 43, 15, 0.8)',
-        //         railColor: 'rgba(84, 237, 33, 0.8)'
+                round: true,
+                size: 50,
+                color: 'transparent',
+                src: avatar_selector(type)
                 
-        //     },
-        //     {
-        //         default:()=> h(NIcon,
-        //         {
-        //             style:{
-        //                 marginTop: '14px'
-        //             } as CSSProperties,
-        //             size: '20',
-        //             color: 'rgba(255, 43, 15, 0.8)',
-        //             component: WarningOutline
-        //         }),
-        //     }
-        //     ),
+            }),
         duration: 25500,
         keepAliveOnHover: true
     })

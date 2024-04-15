@@ -10,15 +10,14 @@ mod state;
 mod commands;
 use std::{default, future, net::SocketAddr, sync::Arc};
 use anyhow::Result;
-use copyer::{DirectoriesSpy, NewPacketInfo};
+use copyer::{DirectoriesSpy};
 use logger::{debug, warn, StructLogger};
 use state::AppState;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 use crossbeam_channel::{Receiver, bounded};
-use websocket_service::{Server, WebsocketMessage};
+use service::{Server, WebsocketMessage};
 use clap::{arg, command, Parser};
-use serializer::BytesSerializer;
 extern crate async_channel;
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));
 #[derive(Parser)]

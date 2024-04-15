@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, str::FromStr};
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::{Request, StatusCode};
-use hyper_util::rt::TokioIo;
+use hyper_util::{client::legacy::Client, rt::TokioIo};
 use logger::error;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
@@ -46,6 +46,23 @@ pub async fn get<R>(subpath: &str) -> Result<R> where for <'de> R : Deserialize<
 }
 
 
+
+// pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Result<()>
+// {
+//     let client = Client::new();
+
+//     // Make a GET /ip to 'http://httpbin.org'
+//     let res = client.get(Uri::from_static("http://httpbin.org/ip")).await?;
+
+//     // And then, if the request gets a response...
+//     println!("status: {}", res.status());
+
+//     // Concatenate the body stream into a single buffer...
+//     let buf = hyper::body::to_bytes(res).await?;
+// }
+
+
+
 pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Result<()>
 {
     let (addr, uri) = HOST.get().unwrap();
@@ -54,25 +71,43 @@ pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Res
     let stream = TcpStream::connect(addr).await?;
     let io = TokioIo::new(stream);
     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
+    
     tokio::task::spawn(async move 
     {
         if let Err(err) = conn.await 
         {
-            error!("Ошибка соединения с сервером: {:?}", err);
+            error!("Ошибка соединения с сервером: {:?}", &err);
         }
     });
     let authority = uri.authority().unwrap().clone();
     let bytes = obj.to_bytes()?;
+
     let req = Request::builder()
+    .method("POST")
     .uri(uri)
     .header(hyper::header::HOST, authority.as_str())
-    .body(to_body(bytes))?;
-    let res = sender.send_request(req).await?;
-    if res.status() != StatusCode::OK
+    .header(hyper::header::CONNECTION, "keep-alive")
+    .header("Keep-Alive", "timeout=5, max=50")
+    .body(to_body(bytes));
+    if req.is_err()
     {
-        let e = format!("Ошибка post запроса для: {}", &req_path);
+        error!("{:?}", req.as_ref().err().unwrap());
+    }
+    sender.ready().await?;
+    let res = sender.send_request(req.unwrap()).await;
+    if res.is_err()
+    {
+        let e = format!("Ошибка post запроса для: {} -> {}", &req_path, res.err().as_ref().unwrap().to_string());
         error!("{}", &e);
         return Err(Error::PostError(e));
+    }
+    if res.as_ref().unwrap().status() != StatusCode::OK
+    {
+        let body = res.unwrap().collect().await?.to_bytes();
+        let obj = std::str::from_utf8(body.as_ref()).unwrap_or("От сервера возвращена неизвестная ошибка");
+        let e = format!("Ошибка post запроса для: {} -> {}", &req_path, obj);
+        error!("{}", &e);
+        return Err(Error::PostError(obj.to_owned()));
     }
     else
     {
@@ -147,4 +182,31 @@ pub fn to_body(bytes: Bytes) -> BoxBody
     Full::new(bytes)
         .map_err(|never| match never {})
         .boxed()
+}
+
+
+#[cfg(test)]
+mod tests
+{
+    use bytes::Bytes;
+    use http_body_util::Empty;
+    use hyper::Request;
+    use logger::{debug, StructLogger};
+
+    #[test]
+    fn test_headers()
+    {
+        StructLogger::initialize_logger();
+        let req_path = ["http://127.0.0.1:3010/", "users"].concat();
+        let uri = req_path.parse::<hyper::Uri>().unwrap();
+        let authority = uri.authority().unwrap().clone();
+        let req = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header(hyper::header::HOST, authority.as_str())
+        .header(hyper::header::CONNECTION, "keep-alive")
+        .header("Keep-Alive", "timeout=5, max=50")
+        .body(Empty::<Bytes>::new());
+        debug!("{:?}", req.unwrap());
+    }
 }
