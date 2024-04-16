@@ -7,61 +7,95 @@ import
     ref,
   } from 'vue'
 import { NAvatar, NButton, NSpin, NTooltip, useNotification} from 'naive-ui';
-import { clean_ico, cut_ico} from '../services/svg.ts';
+import { clean_ico, cut_ico, offline_ico, online_ico} from '../services/svg.ts';
 import { service } from '../services/tauri-service.ts';
 import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
+import store from '../store/app_state_store.ts';
 export const ServicesAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
 })
 
 export const Services =  defineComponent({
-    setup () 
+setup () 
+{
+    const notify_inj = useNotification();
+    const in_work = ref(false);
+    const list = () =>
     {
-        const notify_inj = useNotification();
-        const in_work = ref(false);
-        const list = () =>
+        return h('div',
         {
-            return h('div',
+            style:
+            {
+                display: 'flex',
+                flexDirection: 'row',
+                width: '100%'
+            }   as CSSProperties
+        },
+        [
+            h("div",
             {
                 style:
                 {
+                    width: '100%',
                     display: 'flex',
-                    flexDirection: 'row',
-                    width: '100%'
-                }   as CSSProperties
+                    flexDirection: 'column',
+                } as CSSProperties
             },
             [
-                h("div",
+                h('div',
                 {
                     style:
                     {
                         width: '100%',
                         display: 'flex',
-                        flexDirection: 'column',
+                        flexDirection: 'row',
                     } as CSSProperties
                 },
                 [
-                    h('div',
-                    {
-                        style:
-                        {
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'row',
-                        } as CSSProperties
-                    },
-                    [
-                        clean_button(),
-                        truncate_button()
+                    clean_button(),
+                    truncate_button(),
+                    right_panel()
 
-                    ])
-                ]),
-            ]
-            );
-        }
+                ])
+            ]),
+        ]
+        );
+    }
 
+
+    const right_panel = () =>
+    {
+        return h('div',
+        {
+            style:{
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'row-reverse',
+                alignItems: 'center',
+
+            } as CSSProperties
+        },
+        h(NTooltip,{placement: 'left'},
+        {
+            trigger:() =>
+            h(NAvatar,
+            {
+                size: 30,
+                src: store.getState().server_is_online ? online_ico : offline_ico,
+                class: 'hover-button',
+                style:
+                {
+                    backgroundColor: 'transparent',
+                    marginRight: '5px',
+                    minWidth: '50px'
+                }   as CSSProperties
+                
+            }),
+            default:() => store.getState().server_is_online ? "Сервер онлайн" : "Нет соединения с сервером!",
+        }))
+    }
     const clean_button = () => 
     {
        return h(NTooltip,{placement: 'bottom'},

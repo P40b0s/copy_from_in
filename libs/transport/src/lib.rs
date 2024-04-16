@@ -57,3 +57,4 @@ impl BytesSerializer for Task{}
 impl BytesSerializer for Vec<Task>{}
 impl BytesSerializer for u32{}
 impl BytesSerializer for Contract{}
+impl BytesSerializer for NewPacketInfo{}

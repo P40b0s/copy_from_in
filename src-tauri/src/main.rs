@@ -7,27 +7,18 @@ mod error;
 mod ws_serivice;
 mod http;
 use clap::{arg, command, Parser};
-//mod copyer;
-//use copyer::{DirectoriesSpy, NewPacketInfo};
-use crossbeam_channel::{bounded, Sender};
 pub use error::Error;
 use http::initialize_http_requests;
-use settings::Settings;
-use websocket_service::{Client, WebsocketMessage};
 use ws_serivice::start_ws_service;
-use std::{fmt::Display, sync::Arc, time::Duration};
+use std::{sync::Arc};
 pub use logger;
 mod commands;
 use commands::*;
 mod state;
-use state::AppState;
 pub use const_format::concatcp;
 use logger::{debug, warn, StructLogger};
-use once_cell::{sync::OnceCell};
-use tauri::{AppHandle, Manager};
-use tokio::sync::Mutex;
-
-use crate::ws_serivice::start_ws_service2;
+use once_cell::sync::OnceCell;
+use tauri::AppHandle;
 
 
 #[derive(Parser)]

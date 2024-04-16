@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import { AppState } from '../models/app_state';
 import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2, timeToString } from '../services/date';
 import Store from './abstract_store';
-import { TauriEvents } from '../services/tauri-service';
+import { events, service } from '../services/tauri-service';
 import { IPacket } from '../models/types';
 
 /**
@@ -10,11 +10,13 @@ import { IPacket } from '../models/types';
  */
 interface IGlobalAppState extends Object 
 {
+  server_is_online: boolean;
   current_log: IPacket[];
 }
 class GlobalAppState implements IGlobalAppState
 {
  current_log: IPacket[] = [];
+ server_is_online = false;
 }
 
 class AppStateStore extends Store<IGlobalAppState> 
@@ -22,15 +24,26 @@ class AppStateStore extends Store<IGlobalAppState>
   protected data(): IGlobalAppState
   {
     this.listen_log();
+    this.check_online();
     return new GlobalAppState();
   }
-
+  
+  check_online()
+  {
+    let intervalId = setInterval(async () => 
+    {
+      const result = await service.ws_server_online()
+      if (typeof result === 'boolean')
+      {
+        this.state.server_is_online = result;
+      }
+    }, 7000)
+  }
   async listen_log()
   {
-    await TauriEvents.new_document_event((doc) => 
+    await events.packets_update((doc) => 
     {
       console.log(doc);
-      const pl = doc.payload
       this.add_packet(doc.payload);
     })
   }

@@ -36,7 +36,6 @@ uuid = {version = "1.6.1", features = ["v4"] }
 const_format = "0.2.32"
 settings = {path = "../libs/settings"}
 medo_parser = {path = "../libs/medo_parser"}
-serializer = {path = "../libs/serializer"}
 transport = {path = "../libs/transport"}
 crossbeam-channel="0.5.11"
 clap= {version = "4.5.4", features = ["derive"] }
@@ -51,8 +50,8 @@ async-channel="2.2.0"
 [dependencies.service]
 git = "https://github.com/P40b0s/websocket_service.git"
 package="service"
-default-features=false
-features = ["client", "json"]
+default-features = false
+features = ["json", "client"]
 
 [features]
 # by default Tauri runs in production mode

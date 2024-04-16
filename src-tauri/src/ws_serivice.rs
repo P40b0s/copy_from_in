@@ -4,56 +4,36 @@ use logger::{debug, error};
 use once_cell::sync::OnceCell;
 use settings::Task;
 use tauri::{AppHandle, Manager};
-use websocket_service::{Client, Command};
+use service::Client;
+use transport::Contract;
+
+use crate::commands;
 
 
 static TAURI : OnceCell<Arc<AppHandle>> = OnceCell::new();
 pub async fn start_ws_service(addr: String, handle: Arc<AppHandle>)
 {   
     let _ = TAURI.set(handle);
-    Client::start_client(&addr, on_receive).await;
-    debug!("стартуем получение сообщений от сервера");
-    // loop 
-    // {
-    //     tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-    // }
-}
-
-pub async fn start_ws_service2(addr: String)
-{   
-    Client::start_client(&addr, on_receive).await;
+    Client::<Contract>::start_client(&addr, on_receive).await;
     debug!("стартуем получение сообщений от сервера");
 }
 
-
-fn on_receive(msg: websocket_service::WebsocketMessage)
+fn on_receive(msg: Contract)
 {
 
     debug!("Получено сообщение от сервера {:?}", msg);
+    let _ = match msg
+    {
+        Contract::NewPacket(p) => TAURI.get().unwrap().app_handle().emit_all("packets_update", p),
+        Contract::Error(e) => TAURI.get().unwrap().app_handle().emit_all("error", e),
+        Contract::ErrorConversion(e) => TAURI.get().unwrap().app_handle().emit_all("error", e),
+        Contract::TaskUpdated(t) => TAURI.get().unwrap().app_handle().emit_all("task_updated", t),
+        Contract::TaskDeleted(t) => TAURI.get().unwrap().app_handle().emit_all("packets_delete", t),
+    };
     // match msg.command.get_target()
     // {
     //     "settings/tasks" => settings_operations(&msg.command),
     //     _=>()
     // }
     
-}
-
-fn settings_operations(cmd: &Command)
-{
-    match cmd.get_target()
-    {
-        "updated" => 
-        {
-            let payload = cmd.extract_payload::<Task>();
-            if let Ok(pl) = payload
-            {
-                TAURI.get().unwrap().emit_all("settings/tasks/update", pl);
-            }
-            else
-            {
-                error!("Ошибка извлечения нагрузки из сообщения ->{}", payload.err().unwrap().to_string());
-            }
-        },
-        _=>()
-    };
 }

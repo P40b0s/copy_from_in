@@ -5,7 +5,7 @@ use hyper_util::{client::legacy::Client, rt::TokioIo};
 use logger::error;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
-use serializer::BytesSerializer;
+use transport::BytesSerializer;
 use tokio::net::TcpStream;
 use bytes::Bytes;
 use crate::Error;

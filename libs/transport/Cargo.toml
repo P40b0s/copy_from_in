@@ -25,4 +25,4 @@ logger = {git = "https://github.com/P40b0s/logger.git"}
 git = "https://github.com/P40b0s/websocket_service.git"
 package="service"
 default-features = false
-features = ["client", "json"]
+features = ["json"]

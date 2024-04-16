@@ -3,6 +3,7 @@ use std::sync::Arc;
 use logger::error;
 use serde::{Serialize, Deserialize};
 use settings::{FileMethods, Settings, Task};
+use transport::NewPacketInfo;
 use uuid::Uuid;
 use crate::copyer::PacketsCleaner;
 use crate::helpers::{Date, DateTimeFormat, DateFormat};
@@ -17,6 +18,13 @@ pub async fn clear_dirs(state: Arc<AppState>) -> Result<u32, Error>
 }
 
 pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>
+{
+    let settings = state.get_settings().await;
+    let r = settings.truncate_excludes();
+    Ok(r)
+}
+
+pub async fn rescan_packet(packet: NewPacketInfo, state: Arc<AppState>) -> Result<u32, Error>
 {
     let settings = state.get_settings().await;
     let r = settings.truncate_excludes();

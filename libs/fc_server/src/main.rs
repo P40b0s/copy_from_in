@@ -16,7 +16,7 @@ use state::AppState;
 use once_cell::sync::Lazy;
 use tokio::sync::OnceCell;
 use crossbeam_channel::{Receiver, bounded};
-use service::{Server, WebsocketMessage};
+use service::{Server};
 use clap::{arg, command, Parser};
 extern crate async_channel;
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));

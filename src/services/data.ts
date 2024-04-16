@@ -1,7 +1,7 @@
 // import { ref } from "vue";
 // import { TauriEvents } from "./tauri-service";
 
-import { TauriEvents } from "./tauri-service";
+import { events } from "./tauri-service";
 
 // export const current_log = ref<string[]>(["123 34 2234 234", "TEST!"]);
 // await TauriEvents.new_document_event((doc) => 
@@ -19,15 +19,15 @@ import { TauriEvents } from "./tauri-service";
 // })
         
 
-const ndc = async () => 
-{
-    await TauriEvents.new_document_event((doc) => 
-    {
-        console.log(doc);
-        const pl = doc.payload
-    })
-}
-export const start_events = () =>
-{
-    ndc();
-}
+// const ndc = async () => 
+// {
+//     await TauriEvents.new_document_event((doc) => 
+//     {
+//         console.log(doc);
+//         const pl = doc.payload
+//     })
+// }
+// export const start_events = () =>
+// {
+//     ndc();
+// }

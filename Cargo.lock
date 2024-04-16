@@ -730,7 +730,6 @@ dependencies = [
  "once_cell",
  "serde",
  "serde_json",
- "serializer",
  "service",
  "settings",
  "tauri",
@@ -3668,7 +3667,7 @@ dependencies = [
 [[package]]
 name = "service"
 version = "0.2.0"
-source = "git+https://github.com/P40b0s/websocket_service.git#fefbc975e3f258d6f88acd773ac29d3e9c4627cb"
+source = "git+https://github.com/P40b0s/websocket_service.git#ee334b0368c93abb54463ab01d1e585411c8395a"
 dependencies = [
  "anyhow",
  "base64 0.13.1",
@@ -3682,7 +3681,6 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "url",
- "websocket_derive",
 ]
 
 [[package]]
@@ -5013,16 +5011,6 @@ dependencies = [
  "pkg-config",
  "soup2-sys",
  "system-deps 6.2.2",
-]
-
-[[package]]
-name = "websocket_derive"
-version = "0.10.1"
-source = "git+https://github.com/P40b0s/websocket_service.git#fefbc975e3f258d6f88acd773ac29d3e9c4627cb"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.59",
 ]
 
 [[package]]

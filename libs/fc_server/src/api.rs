@@ -13,7 +13,7 @@ use settings::{Settings, Task};
 use tokio::net::{TcpListener, TcpStream};
 use anyhow::{anyhow, Context, Error, Result};
 use service::Server;
-use transport::{BytesSerializer, Contract};
+use transport::{BytesSerializer, Contract, NewPacketInfo};
 use crate::state::AppState;
 use crate::{commands, APP_STATE};
 
@@ -74,12 +74,13 @@ type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 //получается это единственная фунция что нужна?) а может и вообще ненужна если норм реализовать ящик Contract
 async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let data = 
-    {
-        let guard = app_state.settings.lock().await;
-        guard.clone()
-    };
-    let bytes = data.tasks.to_bytes()?;
+    // let data = 
+    // {
+    //     let guard = app_state.settings.lock().await;
+    //     guard.clone()
+    // };
+    let settings = commands::settings::get(app_state).await?;
+    let bytes = settings.to_bytes()?;
     let body_data = to_body(bytes);
     let response = Response::builder()
         .status(StatusCode::OK)
@@ -96,14 +97,9 @@ async fn update_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
     {
         return error_responce(e);
     }
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(empty_body())?;
+    let response = response_ok(None)?;
     //сообщаем всем через вебсокет что мы обновили какую то таску
-    
-    let wsmsg = Contract::new_task_updated(&task).as_ws_message();
-    Server::broadcast_message_to_all(&wsmsg).await;
+    Server::broadcast_message_to_all(Contract::new_task_updated(&task)).await;
     Ok(response)
 }
 
@@ -111,30 +107,43 @@ async fn delete_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
 {
     let body = req.collect().await?.to_bytes();
     let task: Task = Task::from_bytes(&body)?;
-    let _ = commands::settings::delete(task, app_state).await?;
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(empty_body())?;
+    if let Err(e) = commands::settings::delete(task.clone(), app_state).await
+    {
+        return error_responce(e);
+    }
+    let response = response_ok(None)?;
+    Server::broadcast_message_to_all(Contract::new_task_deleted(&task)).await;
     Ok(response)
 }
 
-async fn clear_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let _ = commands::service::clear_dirs(app_state).await?;
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(empty_body())?;
+    if let Err(e) = commands::service::clear_dirs(app_state).await
+    {
+        return error_responce(e);
+    }
+    let response = response_ok(None)?;
     Ok(response)
 }
-async fn truncate_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let _ = commands::service::truncate_tasks_excepts(app_state).await?;
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(empty_body())?;
+    if let Err(e) = commands::service::truncate_tasks_excepts(app_state).await
+    {
+        return error_responce(e);
+    }
+    let response : Response<BoxBody> = response_ok(None)?;
+    Ok(response)
+}
+
+async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+{
+    let body = req.collect().await?.to_bytes();
+    let packet = NewPacketInfo::from_bytes(&body)?;
+    if let Err(e) = commands::service::rescan_packet(packet, app_state).await
+    {
+        return error_responce(e);
+    }
+    let response = response_ok(None)?;
     Ok(response)
 }
 
@@ -163,6 +172,9 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
         (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
         (&Method::POST, "/settings/tasks/update") => update_task(req, app_state).await,
         (&Method::POST, "/settings/tasks/delete") => delete_task(req, app_state).await,
+        (&Method::GET, "packets/truncate") => truncate(app_state).await,
+        (&Method::GET, "packets/clean") => clean(app_state).await,
+        (&Method::POST, "packets/rescan") => rescan(req, app_state).await,
         _ => 
         {
             // Return 404 not found response.
@@ -182,6 +194,29 @@ fn full<T: Into<Bytes>>(chunk: T) -> BoxBody
     Full::new(chunk.into())
         .map_err(|never| match never {})
         .boxed()
+}
+
+fn response_ok<T : BytesSerializer + Serialize>(obj: Option<T>) -> Result<Response<BoxBody>>
+{
+    if let Some(obj) = obj
+    {
+        let bytes = obj.to_bytes()?;
+        let body_data = to_body(bytes);
+        return Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/octet-stream")
+        .body(body_data)
+    }
+    else
+    {
+        return Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(empty_body())
+    }
+    
+    
+    
 }
 
 pub fn to_body(bytes: Bytes) -> BoxBody

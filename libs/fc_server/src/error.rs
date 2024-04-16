@@ -9,7 +9,7 @@ pub enum Error
   Other(#[from] anyhow::Error),
   SettingsValidation(Vec<ValidationError>),
   ServiceErrors(Vec<String>),
-  HyperError(#[from] hyper::Error)
+  HyperError(#[from] hyper::Error),
 }
 
 impl std::fmt::Display for Error
