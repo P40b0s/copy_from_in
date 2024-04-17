@@ -7,33 +7,27 @@ use tauri::{AppHandle, Manager};
 use service::Client;
 use transport::Contract;
 
-use crate::commands;
+use crate::{commands, emits::TauriEmits};
 
-
-static TAURI : OnceCell<Arc<AppHandle>> = OnceCell::new();
+pub struct WebsocketClient;
+impl Client<Contract> for WebsocketClient{}
 pub async fn start_ws_service(addr: String, handle: Arc<AppHandle>)
 {   
-    let _ = TAURI.set(handle);
-    Client::<Contract>::start_client(&addr, on_receive).await;
     debug!("стартуем получение сообщений от сервера");
-}
-
-fn on_receive(msg: Contract)
-{
-
-    debug!("Получено сообщение от сервера {:?}", msg);
-    let _ = match msg
+    WebsocketClient::start_client(&addr, |msg|
     {
-        Contract::NewPacket(p) => TAURI.get().unwrap().app_handle().emit_all("packets_update", p),
-        Contract::Error(e) => TAURI.get().unwrap().app_handle().emit_all("error", e),
-        Contract::ErrorConversion(e) => TAURI.get().unwrap().app_handle().emit_all("error", e),
-        Contract::TaskUpdated(t) => TAURI.get().unwrap().app_handle().emit_all("task_updated", t),
-        Contract::TaskDeleted(t) => TAURI.get().unwrap().app_handle().emit_all("packets_delete", t),
-    };
-    // match msg.command.get_target()
-    // {
-    //     "settings/tasks" => settings_operations(&msg.command),
-    //     _=>()
-    // }
-    
+        async 
+        {
+            debug!("Получено сообщение от сервера {:?}", msg);
+            let _ = match msg
+            {
+                Contract::NewPacket(p) => TauriEmits::packets_update(p),
+                Contract::Error(e) => TauriEmits::error(e),
+                Contract::ErrorConversion(e) => TauriEmits::error(e),
+                Contract::TaskUpdated(t) => TauriEmits::task_updated(t),
+                Contract::TaskDeleted(t) => TauriEmits::task_deleted(t),
+            };
+        }
+    }).await;
+   
 }

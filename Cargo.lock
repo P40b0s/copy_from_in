@@ -3667,7 +3667,7 @@ dependencies = [
 [[package]]
 name = "service"
 version = "0.2.0"
-source = "git+https://github.com/P40b0s/websocket_service.git#ee334b0368c93abb54463ab01d1e585411c8395a"
+source = "git+https://github.com/P40b0s/websocket_service.git#9377cc36ce08ea0573816d21d5e28c96d3d3feac"
 dependencies = [
  "anyhow",
  "base64 0.13.1",

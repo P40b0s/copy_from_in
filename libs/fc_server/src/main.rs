@@ -4,6 +4,7 @@ mod api;
 use api::start_http_server;
 pub use error::Error;
 use ws::{start_ws_server, start_new_packets_handler};
+pub use ws::WebsocketServer;
 mod helpers;
 mod copyer;
 mod state;

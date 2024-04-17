@@ -2,8 +2,8 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use settings::Task;
 use crate::NewPacketInfo;
-impl service::Converter for Contract{}
 
+impl service::Converter for Contract{}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Contract
 {
@@ -15,27 +15,24 @@ pub enum Contract
 }
 
 
-impl Contract
-{
-    pub fn new_packet(packet: NewPacketInfo)-> Self
-    {
-        Self::NewPacket(packet)
-    }
-    pub fn new_error(error: String)-> Self
-    {
-        Self::Error(error)
-    }
-    pub fn new_task_updated(task: &Task)-> Self
-    {
-        Self::TaskUpdated(task.clone())
-    }
-    pub fn new_task_deleted(task: &Task)-> Self
-    {
-        Self::TaskDeleted(task.clone())
-    }
-}
+// pub trait ContractBuilder
+// {
+//     fn new_packet(packet: NewPacketInfo)-> Contract
+//     {
+//         Contract::NewPacket(packet)
+//     }
+//     fn new_error(error: String)-> Contract
+//     {
+//         Contract::Error(error)
+//     }
+//     fn new_task_updated(task: &Task)-> Contract
+//     {
+//         Contract::TaskUpdated(task.clone())
+//     }
+//     fn new_task_deleted(task: &Task)-> Contract
+//     {
+//         Contract::TaskDeleted(task.clone())
+//     }    
+// }
 
-pub trait FromWsCommand
-{
-    fn get_command(&self) -> Contract;
-}
+// impl ContractBuilder for Contract{}

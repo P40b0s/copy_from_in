@@ -6,6 +6,8 @@ mod helpers;
 mod error;
 mod ws_serivice;
 mod http;
+mod emits;
+pub use emits::TauriEmits;
 use clap::{arg, command, Parser};
 pub use error::Error;
 use http::initialize_http_requests;
@@ -41,8 +43,7 @@ impl Default for Cli
   }
 }
 
-
-static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
+pub static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
 
 #[tokio::main]
 async fn main() 
@@ -72,6 +73,7 @@ async fn main()
   .setup(|app| 
     {
       let handle = Arc::new(app.handle());
+      HANDLE.set(handle);
       tauri::async_runtime::spawn(async move 
       {
         start_ws_service(ws_addr, handle).await;

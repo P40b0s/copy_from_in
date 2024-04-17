@@ -11,7 +11,8 @@ import
 import { open } from '@tauri-apps/api/dialog';
 import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
-import { TauriEvents, settings } from '../services/tauri-service.ts';
+import { settings } from '../services/tauri/commands.ts';
+import { events } from '../services/tauri/events.ts';
 import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin, WarningSharp } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
@@ -110,7 +111,8 @@ export const SettingsEditor =  defineComponent({
                 //console.log(tasks.value);
             }
         }
-        const unlisten = TauriEvents.settings_updated(async (task) => 
+
+        const updated_event = events.task_updated(async (task) => 
         {
             const new_task = task.payload;
             const saved = tasks.value.findIndex(t=>t.name == new_task.name);
@@ -131,13 +133,25 @@ export const SettingsEditor =  defineComponent({
                 naive_notify(notify, 'info', "Задача " + new_task.name + " была изменена", "");
             }
         })
+        const delete_event = events.task_deleted(async (task) => 
+        {
+            const new_task = task.payload;
+            const saved = tasks.value.findIndex(t=>t.name == new_task.name);
+            if (saved != -1)
+            {
+                tasks.value.splice(saved, 1);
+                naive_notify(notify, 'info', "Удалена задача " + new_task.name, "");
+            }
+        })
         onUnmounted(()=>
         {
-            unlisten.then(f => 
-            {
-                if (f)
-                f()
-            });
+            events.unsubscribe(updated_event);
+            events.unsubscribe(delete_event);
+            // unlisten.then(f => 
+            // {
+            //     if (f)
+            //     f()
+            // });
         })
         onMounted(async ()=>
         {

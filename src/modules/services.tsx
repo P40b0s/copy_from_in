@@ -8,7 +8,7 @@ import
   } from 'vue'
 import { NAvatar, NButton, NSpin, NTooltip, useNotification} from 'naive-ui';
 import { clean_ico, cut_ico, offline_ico, online_ico} from '../services/svg.ts';
-import { service } from '../services/tauri-service.ts';
+import { service } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';

@@ -1,7 +1,7 @@
 // import { ref } from "vue";
 // import { TauriEvents } from "./tauri-service";
 
-import { events } from "./tauri-service";
+//import { events } from "./tauri/tauri-service";
 
 // export const current_log = ref<string[]>(["123 34 2234 234", "TEST!"]);
 // await TauriEvents.new_document_event((doc) => 

@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import { AppState } from '../models/app_state';
 import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2, timeToString } from '../services/date';
 import Store from './abstract_store';
-import { events, service } from '../services/tauri-service';
+import { events, service } from '../services/tauri/tauri-service';
 import { IPacket } from '../models/types';
 
 /**

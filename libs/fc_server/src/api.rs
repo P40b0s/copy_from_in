@@ -15,14 +15,77 @@ use anyhow::{anyhow, Context, Error, Result};
 use service::Server;
 use transport::{BytesSerializer, Contract, NewPacketInfo};
 use crate::state::AppState;
-use crate::{commands, APP_STATE};
+use crate::{commands, WebsocketServer, APP_STATE};
 
+type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
+static NOTFOUND: &[u8] = b"Not Found";
+
+pub async fn start_http_server(port: usize) -> Result<()>
+{
+    let addr = ["127.0.0.1:".to_owned(), port.to_string()].concat();
+    
+        let addr: SocketAddr = addr.parse().unwrap();
+        let listener = TcpListener::bind(&addr).await?;
+        debug!("api доступно по http://{}", addr);
+        tokio::spawn(async move
+        {
+            loop 
+            {
+                let connected = listener.accept().await;
+                if let Ok((stream, addr)) = connected
+                {
+                    let io = TokioIo::new(stream);
+                    tokio::task::spawn(async move 
+                    {
+                        let service = service_fn(move |req|
+                        {
+                            info!("Поступил запрос от {} headers->{:?}", &addr, req.headers());
+                            response_examples(req)
+                        });
+                        if let Err(err) = http1::Builder::new().serve_connection(io, service).await 
+                        //еще настройки из https://docs.rs/hyper/latest/hyper/server/conn/http1/struct.Builder.html
+                        {
+                            error!("Ошибка обслуживания соединения: {:?}", err);
+                        }
+                    });
+                }
+                else 
+                {
+                    error!("Ошибка подключения клиента к api {}", connected.err().unwrap().to_string());
+                }
+                
+            }
+        });
+    Ok(())
+}
+
+async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBody>> 
+{
+    let app_state = Arc::clone(&APP_STATE);
+    match (req.method(), req.uri().path()) 
+    {
+        (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
+        (&Method::POST, "/settings/tasks/update") => update_task(req, app_state).await,
+        (&Method::POST, "/settings/tasks/delete") => delete_task(req, app_state).await,
+        (&Method::GET, "packets/truncate") => truncate(app_state).await,
+        (&Method::GET, "packets/clean") => clean(app_state).await,
+        (&Method::POST, "packets/rescan") => rescan(req, app_state).await,
+        _ => 
+        {
+            // Return 404 not found response.
+            Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(full(NOTFOUND))
+                .unwrap())
+        }
+    }
+}
 //type GenericError = Box<dyn std::error::Error + Send + Sync>;
 //type Result<T> = std::result::Result<T, GenericError>;
-type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
+
 // static INDEX: &[u8] = b"<a href=\"test.html\">test.html</a>";
 // static INTERNAL_SERVER_ERROR: &[u8] = b"Internal Server Error";
- static NOTFOUND: &[u8] = b"Not Found";
+
 // static POST_DATA: &str = r#"{"original": "data"}"#;
 // static URL: &str = "http://127.0.0.1:1337/json_api";
 
@@ -97,9 +160,9 @@ async fn update_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
     {
         return error_responce(e);
     }
-    let response = response_ok(None)?;
+    let response = response_ok_empty()?;
     //сообщаем всем через вебсокет что мы обновили какую то таску
-    Server::broadcast_message_to_all(Contract::new_task_updated(&task)).await;
+    WebsocketServer::task_update_event(task).await;
     Ok(response)
 }
 
@@ -111,8 +174,8 @@ async fn delete_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
     {
         return error_responce(e);
     }
-    let response = response_ok(None)?;
-    Server::broadcast_message_to_all(Contract::new_task_deleted(&task)).await;
+    let response = response_ok_empty()?;
+    WebsocketServer::task_delete_event(task).await;
     Ok(response)
 }
 
@@ -122,7 +185,7 @@ async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
     {
         return error_responce(e);
     }
-    let response = response_ok(None)?;
+    let response = response_ok_empty()?;
     Ok(response)
 }
 async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
@@ -131,7 +194,7 @@ async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
     {
         return error_responce(e);
     }
-    let response : Response<BoxBody> = response_ok(None)?;
+    let response : Response<BoxBody> = response_ok_empty()?;
     Ok(response)
 }
 
@@ -143,7 +206,7 @@ async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<
     {
         return error_responce(e);
     }
-    let response = response_ok(None)?;
+    let response = response_ok_empty()?;
     Ok(response)
 }
 
@@ -164,27 +227,7 @@ async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<
 //     Ok(res)
 // }
 
-async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBody>> 
-{
-    let app_state = Arc::clone(&APP_STATE);
-    match (req.method(), req.uri().path()) 
-    {
-        (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
-        (&Method::POST, "/settings/tasks/update") => update_task(req, app_state).await,
-        (&Method::POST, "/settings/tasks/delete") => delete_task(req, app_state).await,
-        (&Method::GET, "packets/truncate") => truncate(app_state).await,
-        (&Method::GET, "packets/clean") => clean(app_state).await,
-        (&Method::POST, "packets/rescan") => rescan(req, app_state).await,
-        _ => 
-        {
-            // Return 404 not found response.
-            Ok(Response::builder()
-                .status(StatusCode::NOT_FOUND)
-                .body(full(NOTFOUND))
-                .unwrap())
-        }
-    }
-}
+
 
 // let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
 //             Ok(Response::new(full(reversed_body)))
@@ -196,26 +239,25 @@ fn full<T: Into<Bytes>>(chunk: T) -> BoxBody
         .boxed()
 }
 
-fn response_ok<T : BytesSerializer + Serialize>(obj: Option<T>) -> Result<Response<BoxBody>>
+fn response_ok<T : BytesSerializer + Serialize>(obj: T) -> Result<Response<BoxBody>>
 {
-    if let Some(obj) = obj
-    {
-        let bytes = obj.to_bytes()?;
-        let body_data = to_body(bytes);
-        return Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/octet-stream")
-        .body(body_data)
-    }
-    else
-    {
-        return Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(empty_body())
-    }
     
-    
+    let bytes = obj.to_bytes()?;
+    let body_data = to_body(bytes);
+    let resp = Response::builder()
+    .status(StatusCode::OK)
+    .header(header::CONTENT_TYPE, "application/octet-stream")
+    .body(body_data)?;
+    Ok(resp)
+}
+
+fn response_ok_empty() -> Result<Response<BoxBody>>
+{
+    let resp =  Response::builder()
+    .status(StatusCode::OK)
+    .header(header::CONTENT_TYPE, "application/json")
+    .body(empty_body())?;
+    Ok(resp)
     
 }
 
@@ -262,43 +304,3 @@ fn error_responce(error: crate::Error) -> Result<Response<BoxBody>>
 // impl ToBody for Task{}
 
 
-pub async fn start_http_server(port: usize) -> Result<()>
-{
-    let addr = ["127.0.0.1:".to_owned(), port.to_string()].concat();
-    
-        let addr: SocketAddr = addr.parse().unwrap();
-        let listener = TcpListener::bind(&addr).await?;
-        debug!("api доступно по http://{}", addr);
-        tokio::spawn(async move
-        {
-            loop 
-            {
-                let connected = listener.accept().await;
-                if let Ok((stream, addr)) = connected
-                {
-                    let io = TokioIo::new(stream);
-                    tokio::task::spawn(async move 
-                    {
-                        
-                        let service = service_fn(move |req|
-                        {
-                            info!("Поступил запрос от {} headers->{:?}", &addr, req.headers());
-                            response_examples(req)
-                        });
-                        if let Err(err) = http1::Builder::new()
-                        //еще настройки из https://docs.rs/hyper/latest/hyper/server/conn/http1/struct.Builder.html
-                        .serve_connection(io, service).await 
-                        {
-                            error!("Ошибка обслуживания соединения: {:?}", err);
-                        }
-                    });
-                }
-                else 
-                {
-                    error!("Ошибка подключения клиента к api {}", connected.err().unwrap().to_string());
-                }
-                
-            }
-        });
-    Ok(())
-}
