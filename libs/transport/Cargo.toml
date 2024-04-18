@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["flexbuffers"]
+default = ["json"]
 flexbuffers = ["dep:flexbuffers"]
 binary = ["dep:bitcode"]
 json = ["dep:serde_json"]
@@ -21,6 +21,7 @@ anyhow="1.0.81"
 settings = {path = "../settings"}
 serde = { version = "1.0.197", features = ["derive"], default=false}
 logger = {git = "https://github.com/P40b0s/logger.git"}
+
 [dependencies.service]
 git = "https://github.com/P40b0s/websocket_service.git"
 package="service"

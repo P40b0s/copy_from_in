@@ -49,14 +49,14 @@ export abstract class Plugin<C extends string>
             try
             {
                 const data = await invoke<T>(this.plugin + cmd, {payload: saved_obj});
-                return {value: data} as Result<T>;
+                return new Result<T>(data);
             }
             catch(e: unknown)
             {
                 console.error(e);
                 return new Promise<Result<T>>((resolve) => 
                 {
-                    resolve({error: String(e)} as Result<T>);
+                    resolve(new Result<T>(undefined, String(e)));
                 });
             }
         }
@@ -65,7 +65,7 @@ export abstract class Plugin<C extends string>
             console.error("Tauri не заинжекчен, невозможно выполнить команду ", saved_obj);
             return new Promise<Result<T>>((resolve) => 
             {
-                resolve({error: "Tauri не заинжекчен, невозможно выполнить команду"} as Result<T>);
+                resolve(new Result<T>(undefined, "Tauri не заинжекчен, невозможно выполнить команду"));
             });
         }
     }
@@ -77,14 +77,14 @@ export abstract class Plugin<C extends string>
             try
             {
                 const data = await invoke<T>(this.plugin + cmd, args);
-                return {value: data} as Result<T>;
+                return new Result<T>(data)
             }
             catch(e: unknown)
             {
                 console.error(e);
                 return new Promise<Result<T>>((resolve) => 
                 {
-                    resolve({error: String(e)} as Result<T>);
+                    resolve(new Result<T>(undefined, String(e)));
                 });
             }
         }
@@ -93,7 +93,7 @@ export abstract class Plugin<C extends string>
             console.error("Tauri не заинжекчен, невозможно выполнить команду");
             return new Promise<Result<T>>((resolve) => 
             {
-                resolve({error: "Tauri не заинжекчен, невозможно выполнить команду"} as Result<T>);
+                resolve(new Result<T>(undefined, "Tauri не заинжекчен, невозможно выполнить команду"));
             });
         }
     }
@@ -107,6 +107,11 @@ export class Result<T>
 {
     value?: T
     error?: string;
+    constructor(val?: T, err?: string)
+    {
+        this.value = val;
+        this.error = err;
+    }
 
     is_ok(): boolean
     {

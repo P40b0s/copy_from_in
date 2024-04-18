@@ -42,7 +42,8 @@ pub fn settings_plugin<R: Runtime>() -> TauriPlugin<R>
       .invoke_handler(tauri::generate_handler![
         get,
         update,
-        delete
+        delete,
+        get_packets_list
         ])
       .build()
 }

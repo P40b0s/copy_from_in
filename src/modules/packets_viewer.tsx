@@ -6,13 +6,15 @@ import
     CSSProperties,
   } from 'vue'
 
-import { NButton, NIcon, NSpin, NTooltip, NVirtualList} from 'naive-ui';
+import { NButton, NIcon, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { background, envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
 import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
+import { service, settings } from '../services/tauri/commands.ts';
+import { naive_notify } from '../services/notification.ts';
 
 
 const task_1 = (): Task => 
@@ -140,6 +142,7 @@ export const PacketsViewerAsync = defineAsyncComponent({
 export const PacketsViewer =  defineComponent({
     setup () 
     {
+        const notify = useNotification();
         //для тестирования
         for (let index = 0; index < 100; index++) {
             app_state_store.add_packet(test_packet1());
@@ -317,8 +320,12 @@ export const PacketsViewer =  defineComponent({
             {
                 style:
                 {
-                    position: 'absolute',
-                    rigth: '20px'
+                    flexGrow: 1,
+                    justifyContent: 'end',
+                    display: 'flex',
+                    visibility: packet.error ? 'visible' : 'collapse'
+
+
                 } as CSSProperties
             },
             h(NTooltip, 
@@ -329,19 +336,21 @@ export const PacketsViewer =  defineComponent({
                     trigger:() =>
                     h(NButton,
                     {
-                        text: true
+                        text: true,
+                        size: 'large',
+                        onClick: async (e) =>
+                        {
+                            const res = await service.rescan_packet(packet)
+                            if (res.is_err())
+                                naive_notify(notify, 'error', "Ошибка запроса раскана пакета", res.get_error());
+                        },
                     },
                     {
                         icon:() =>
                         h(NIcon, 
                             {
                                 component: RefreshCircleSharp,
-                                color: 'rgb(75, 207, 38)',
-                                style:
-                                {
-                                    marginLeft: '5px',
-                                    marginRight: '2px'
-                                } as CSSProperties,
+                                color: 'rgb(221, 245, 41)',
                             }),
                     }),
                     default:() => "Пересканировать текущий пакет"
@@ -394,7 +403,7 @@ export const PacketsViewer =  defineComponent({
             ) : []
         }
 
-        
+
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;

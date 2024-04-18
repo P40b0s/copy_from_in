@@ -34,9 +34,11 @@ class AppStateStore extends Store<IGlobalAppState>
     let intervalId = setInterval(async () => 
     {
       const result = await service.ws_server_online()
-      if (typeof result === 'boolean')
+      console.log(result)
+      if (result.is_ok())
       {
-        this.state.server_is_online = result;
+        this.state.server_is_online = result.get_value();
+        console.log(result.get_value());
       }
     }, 7000)
   }
