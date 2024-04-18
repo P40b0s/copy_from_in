@@ -1,31 +1,32 @@
+use crate::ws_serivice::WebsocketClient;
 use service::Client;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
 use transport::{Contract, NewPacketInfo};
 use crate::Error;
-use crate::http;
+use crate::http_service;
 
 #[tauri::command]
 pub async fn clear_dirs() -> Result<u32, Error>
 {
-  http::get::<u32>("packets/clean").await
+  http_service::get::<u32>("packets/clean").await
 }
 
 #[tauri::command]
 pub async fn truncate_tasks_excepts() -> Result<u32, Error>
 {
-  http::get::<u32>("packets/truncate").await
+  http_service::get::<u32>("packets/truncate").await
 }
 
 #[tauri::command]
 pub async fn ws_server_online() -> Result<bool, Error>
 {
-  Ok(Client::<Contract>::is_connected())
+  Ok(WebsocketClient::is_connected())
 }
 #[tauri::command]
 pub async fn rescan_packet(packet: NewPacketInfo) -> Result<(), Error>
 {
-  http::post::<NewPacketInfo>("packets/rescan", &packet).await
+  http_service::post::<NewPacketInfo>("packets/rescan", &packet).await
 }
 
 pub fn service_plugin<R: Runtime>() -> TauriPlugin<R> 

@@ -4,27 +4,36 @@ use serde::{Serialize, Deserialize};
 use settings::{FileMethods, Settings, Task};
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
-use crate::http;
+use transport::NewPacketInfo;
+use crate::http_service;
 use crate::Error;
 
 #[tauri::command]
 pub async fn get() -> Result<Vec<Task>, Error>
 {
-    http::get::<Vec<Task>>("settings/tasks").await
+    http_service::get::<Vec<Task>>("settings/tasks").await
 }
 
 #[tauri::command]
 pub async fn update(payload: Task) -> Result<(), Error>
 {
     debug!("Попытка сохранить задачу {:?}", payload);
-    http::post("settings/tasks/update", &payload).await
+    http_service::post("settings/tasks/update", &payload).await
 }
 
 #[tauri::command]
 pub async fn delete(payload: Task) -> Result<(), Error>
 {
-    http::post("settings/tasks/delete", &payload).await
+    http_service::post("settings/tasks/delete", &payload).await
 }
+
+#[tauri::command]
+pub async fn get_packets_list() -> Result<Vec<NewPacketInfo>, Error>
+{
+    http_service::get("packets/list").await
+}
+
+
 
 
 pub fn settings_plugin<R: Runtime>() -> TauriPlugin<R> 

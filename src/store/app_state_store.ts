@@ -2,7 +2,8 @@ import { listen } from '@tauri-apps/api/event';
 import { AppState } from '../models/app_state';
 import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2, timeToString } from '../services/date';
 import Store from './abstract_store';
-import { events, service } from '../services/tauri/tauri-service';
+import { events} from '../services/tauri/events';
+import { service, settings } from '../services/tauri/commands'
 import { IPacket } from '../models/types';
 
 /**
@@ -23,11 +24,11 @@ class AppStateStore extends Store<IGlobalAppState>
 {
   protected data(): IGlobalAppState
   {
+    this.get_packets_log();
     this.listen_log();
     this.check_online();
     return new GlobalAppState();
   }
-  
   check_online()
   {
     let intervalId = setInterval(async () => 
@@ -39,6 +40,19 @@ class AppStateStore extends Store<IGlobalAppState>
       }
     }, 7000)
   }
+  async get_packets_log()
+  {
+    const packets = await settings.get_packets_list();
+    if (packets.is_err())
+    {
+      console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
+      this.state.current_log = [];
+    }
+    else
+    {
+      this.state.current_log = packets.get_value();
+    }
+  }
   async listen_log()
   {
     await events.packets_update((doc) => 
@@ -47,6 +61,7 @@ class AppStateStore extends Store<IGlobalAppState>
       this.add_packet(doc.payload);
     })
   }
+
 
   /**Добавляем пакет в начало списка, если список больше 5000 то удаляем последний в списке */
   add_packet(packet: IPacket)
@@ -59,3 +74,17 @@ class AppStateStore extends Store<IGlobalAppState>
 const store = new AppStateStore();
 
 export default store;
+
+const get_packets_log = async (): Promise<IPacket[]> =>
+{
+  const packets = await settings.get_packets_list();
+  if (packets.is_err())
+  {
+    console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
+    return [];
+  }
+  else
+  {
+    return packets.get_value();
+  }
+}

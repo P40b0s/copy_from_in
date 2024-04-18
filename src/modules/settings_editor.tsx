@@ -96,19 +96,14 @@ export const SettingsEditor =  defineComponent({
         const get_tasks = async () =>
         {
             let s = await settings.load_settings()
-            if(s != undefined)
+            if (s.is_ok())
             {
-                //если пришла строка то ошибка
-                if(typeof s === "string")
-                {
-                    console.error(s);
-                } 
-                else
-                {
-                    tasks.value = s;
-                    selected_task.value =  taskClone.clone(s[0]);
-                }
-                //console.log(tasks.value);
+                tasks.value = s.get_value();
+                selected_task.value =  taskClone.clone(tasks.value[0]);
+            }
+            else
+            {
+                console.error(s.get_error());
             }
         }
 
@@ -277,7 +272,7 @@ export const SettingsEditor =  defineComponent({
                                 is_active: true,
                                 generate_exclude_file: true,
                                 clean_types: [],
-                                color: '#4f46',
+                                color: '#0ff00f',
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -329,12 +324,12 @@ export const SettingsEditor =  defineComponent({
                     const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
                     tasks.value.splice(saved, 1, selected_task.value as Task);
                     const result = await settings.save_task(tasks.value[saved]);
-                    if (typeof result === 'string')
+                    if (result.is_err())
                     {
                         save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
-                        const res = result.split("\\n");
+                        const res = result.get_error().split("\\n");
                         if (res.length == 1)
-                            naive_notify(notify, 'error', "Ошибка сохранения настроек", result);
+                            naive_notify(notify, 'error', "Ошибка сохранения настроек", result.get_error());
                         else
                             naive_notify(notify, 'error', "Ошибка сохранения настроек", () => 
                         {
@@ -518,7 +513,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.source_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).source_dir = v,
                         },
@@ -531,17 +526,17 @@ export const SettingsEditor =  defineComponent({
                                     text: true,
                                     onClick: async ()=>
                                     {
-                                        // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор исходной директории",
-                                            defaultPath: selected_task.value?.source_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).source_dir = selected as string
-                                            }
+                                        // Open a selection dialog for files
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор исходной директории",
+                                        //     defaultPath: selected_task.value?.source_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).source_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {
@@ -562,7 +557,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.target_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
                         },
@@ -576,16 +571,16 @@ export const SettingsEditor =  defineComponent({
                                     onClick: async ()=>
                                     {
                                         // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор целевой директории",
-                                            defaultPath: selected_task.value?.target_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).target_dir = selected as string
-                                            }
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор целевой директории",
+                                        //     defaultPath: selected_task.value?.target_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).target_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {
@@ -606,7 +601,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.report_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).report_dir = v
                         },
@@ -620,16 +615,16 @@ export const SettingsEditor =  defineComponent({
                                     onClick: async ()=>
                                     {
                                         // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор директории отправки уведомлений",
-                                            defaultPath: selected_task.value?.report_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).report_dir = selected as string
-                                            }
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор директории отправки уведомлений",
+                                        //     defaultPath: selected_task.value?.report_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).report_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {

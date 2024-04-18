@@ -9,7 +9,7 @@
     "vite:build": "vite build",
     "serve": "vite dev",
     "serve:tauri": "RUST_BACKTRACE=1 tauri build --debug",
-    "client": "RUST_BACKTRACE=1  tauri dev",
+    "client": "RUST_BACKTRACE=1 tauri dev",
     "server": "RUST_BACKTRACE=1  cargo run -p fc_server",
     "build:win": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --target x86_64-pc-windows-gnu",
     "build:lin": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build",
@@ -22,6 +22,7 @@
     "mitt": "^3.0.1",
     "naive-ui": "^2.38.1",
     "ts-pattern": "^5.1.0",
+    "typestyle": "^2.4.0",
     "uuid": "^9.0.1",
     "vue": "3.4.21"
   },

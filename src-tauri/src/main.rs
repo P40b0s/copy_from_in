@@ -5,12 +5,13 @@
 mod helpers;
 mod error;
 mod ws_serivice;
-mod http;
+mod http_service;
 mod emits;
+mod cli;
 pub use emits::TauriEmits;
-use clap::{arg, command, Parser};
+
 pub use error::Error;
-use http::initialize_http_requests;
+use http_service::initialize_http_requests;
 use ws_serivice::start_ws_service;
 use std::{sync::Arc};
 pub use logger;
@@ -20,63 +21,27 @@ mod state;
 pub use const_format::concatcp;
 use logger::{debug, warn, StructLogger};
 use once_cell::sync::OnceCell;
-use tauri::AppHandle;
-
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-#[command(next_line_help = true)]
-struct Cli 
-{
-  #[arg(long)]
-  host: String,
-  #[arg(long)]
-  ws_port: usize,
-  #[arg(long)]
-  api_port: usize,
-}
-impl Default for Cli
-{
-  fn default() -> Self 
-  {
-    Self { host: "127.0.0.1".to_owned(), api_port: 3009, ws_port: 3010}
-  }
-}
-
+use tauri::{AppHandle, Manager};
 pub static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
 
 #[tokio::main]
 async fn main() 
 {
   StructLogger::initialize_logger();
-  let args =
-  {
-    let parsed = Cli::try_parse();
-    if let Ok(cli) = parsed
-    {
-      cli
-    }
-    else
-    {
-      warn!("При запуске программы не обнаружены аргументы --server --ws_port и --api_port, будут использоваться агрументы для локального сервера -> {}", parsed.err().unwrap().to_string());
-      Cli::default()
-    }
-  };
-
-  
-  let api_addr = [&args.host, ":", &args.api_port.to_string()].concat();
-  let ws_addr = ["ws://", &args.host, ":", &args.ws_port.to_string(), "/"].concat();
+  let args = cli::Cli::parse_or_default();
+  let api_addr = args.api_addr();
+  let ws_addr = args.ws_addr();
   debug!("api: {} ws: {}", &api_addr, ws_addr);
   //start_ws_service2(ws_addr).await;
   initialize_http_requests(api_addr);
   tauri::Builder::default()
   .setup(|app| 
     {
-      let handle = Arc::new(app.handle());
+      let handle = Arc::new(app.app_handle());
       HANDLE.set(handle);
       tauri::async_runtime::spawn(async move 
       {
-        start_ws_service(ws_addr, handle).await;
+        start_ws_service(ws_addr).await;
       });
       Ok(())
     })
@@ -97,9 +62,6 @@ async fn main()
 //         .emit_all("new_packet_found", packet)
 //         .unwrap();
 // }
-
-
-
 
 
 //оставлю на память

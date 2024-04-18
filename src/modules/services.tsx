@@ -112,15 +112,13 @@ setup ()
                     
                     in_work.value = true;
                     const result = await service.clean_dirs();
-                    console.log(result)
-                    if (result != undefined)
+                    if (result.is_ok())
                     {
-                        if(result === 'string')
-                        {
-                            naive_notify(notify_inj, 'error', "Ошибка очистки", result);
-                        }
-                        else
-                            naive_notify(notify_inj, 'success', "Очистка успешно завершена", "Найдено и удалено " + result + " пакетов");
+                        naive_notify(notify_inj, 'success', "Очистка успешно завершена", "Найдено и удалено " + result.get_value() + " пакетов");
+                    }
+                    else
+                    {
+                        naive_notify(notify_inj, 'error', "Ошибка очистки", result.get_error());
                     }
                     in_work.value = false;
                 },
@@ -162,18 +160,15 @@ setup ()
                 disabled: in_work.value,
                 onClick: async (c) =>
                 {
-                    
                     in_work.value = true;
                     const result = await service.truncate_tasks_excepts();
-                    console.log(result)
-                    if (result != undefined)
+                    if (result.is_ok())
                     {
-                        if(result === 'string')
-                        {
-                            naive_notify(notify_inj, 'error', "Ошибка обрезки файла задачи", result);
-                        }
-                        else
-                            naive_notify(notify_inj, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result + " несовпадающих записей");
+                        naive_notify(notify_inj, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");
+                    }
+                    else
+                    {
+                        naive_notify(notify_inj, 'error', "Ошибка обрезки файла задачи", result.get_error());
                     }
                     in_work.value = false;
                 },

@@ -1,9 +1,11 @@
+use std::collections::VecDeque;
 use std::path::Path;
 use std::sync::Arc;
 
 use logger::{debug, error};
 use serde::{Serialize, Deserialize};
 use settings::{FileMethods, Settings, Task};
+use transport::NewPacketInfo;
 use uuid::Uuid;
 use service::{Server};
 use crate::copyer::ExcludesCreator;
@@ -11,6 +13,11 @@ use crate::helpers::{Date, DateTimeFormat, DateFormat};
 use crate::state::AppState;
 use crate::Error;
 
+pub async fn get_log(state: Arc<AppState>) -> Result<Vec<NewPacketInfo>, Error>
+{
+    let log:Vec<NewPacketInfo> = crate::copyer::get_full_log().await.into();
+    Ok(log)
+}
 pub async fn get(state: Arc<AppState>) -> Result<Vec<Task>, Error>
 {
     let settings = state.get_settings().await;

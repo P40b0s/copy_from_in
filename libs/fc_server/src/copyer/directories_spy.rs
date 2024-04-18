@@ -10,7 +10,7 @@ use async_channel::{bounded, Sender, Receiver};
 //use crossbeam_channel::unbounded;
 use super::{NewDocument, NewPacketInfo};
 
-const LOG_LENGHT: usize = 1000;
+const LOG_LENGHT: usize = 500;
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 static PACKETS: Lazy<Mutex<VecDeque<NewPacketInfo>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
 static NEW_PACKET_EVENT: OnceCell<Arc<Sender<NewPacketInfo>>> = OnceCell::new();

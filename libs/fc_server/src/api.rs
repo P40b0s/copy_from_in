@@ -70,6 +70,7 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
         (&Method::GET, "packets/truncate") => truncate(app_state).await,
         (&Method::GET, "packets/clean") => clean(app_state).await,
         (&Method::POST, "packets/rescan") => rescan(req, app_state).await,
+        (&Method::GET, "packets/list") => get_packets_list(app_state).await,
         _ => 
         {
             // Return 404 not found response.
@@ -144,6 +145,18 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
     // };
     let settings = commands::settings::get(app_state).await?;
     let bytes = settings.to_bytes()?;
+    let body_data = to_body(bytes);
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/octet-stream")
+        .body(body_data)?;
+    Ok(response)
+}
+
+async fn get_packets_list(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+{
+    let log = commands::settings::get_log(app_state).await?;
+    let bytes = log.to_bytes()?;
     let body_data = to_body(bytes);
     let response = Response::builder()
         .status(StatusCode::OK)

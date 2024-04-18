@@ -45,24 +45,6 @@ pub async fn get<R>(subpath: &str) -> Result<R> where for <'de> R : Deserialize<
     Ok(obj)
 }
 
-
-
-// pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Result<()>
-// {
-//     let client = Client::new();
-
-//     // Make a GET /ip to 'http://httpbin.org'
-//     let res = client.get(Uri::from_static("http://httpbin.org/ip")).await?;
-
-//     // And then, if the request gets a response...
-//     println!("status: {}", res.status());
-
-//     // Concatenate the body stream into a single buffer...
-//     let buf = hyper::body::to_bytes(res).await?;
-// }
-
-
-
 pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Result<()>
 {
     let (addr, uri) = HOST.get().unwrap();
@@ -114,68 +96,6 @@ pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Res
         Ok(())
     }
 }
-
-
-
-
-// pub async fn get_tasks() -> Result<Vec<Task>>
-// {
-//     let (addr, uri) = HOST.get().unwrap();
-//     let stream = TcpStream::connect(addr).await?;
-//     let io = TokioIo::new(stream);
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-//     tokio::task::spawn(async move 
-//     {
-//         if let Err(err) = conn.await 
-//         {
-//             error!("Ошибка соединения с сервером: {:?}", err);
-//         }
-//     });
-//     let authority = uri.authority().unwrap().clone();
-//     let req = Request::builder()
-//     .uri(uri)
-//     .header(hyper::header::HOST, authority.as_str())
-//     .body(Empty::<Bytes>::new())?;
-//     let res = sender.send_request(req).await?;
-
-//     Ok(vec![])
-// }
-
-
-// async fn fetch_json(url: hyper::Uri) -> Result<Vec<User>> {
-//     let host = url.host().expect("uri has no host");
-//     let port = url.port_u16().unwrap_or(80);
-//     let addr = format!("{}:{}", host, port);
-
-//     let stream = TcpStream::connect(addr).await?;
-//     let io = TokioIo::new(stream);
-
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-//     tokio::task::spawn(async move {
-//         if let Err(err) = conn.await {
-//             println!("Ошибка сое: {:?}", err);
-//         }
-//     });
-
-//     let authority = url.authority().unwrap().clone();
-
-//     // Fetch the url...
-//     let req = Request::builder()
-//         .uri(url)
-//         .header(hyper::header::HOST, authority.as_str())
-//         .body(Empty::<Bytes>::new())?;
-
-//     let res = sender.send_request(req).await?;
-
-//     // asynchronously aggregate the chunks of the body
-//     let body = res.collect().await?.aggregate();
-
-//     // try to parse as json with serde_json
-//     let users = serde_json::from_reader(body.reader())?;
-
-//     Ok(users)
-// }
-
 
 pub fn to_body(bytes: Bytes) -> BoxBody
 {

@@ -6,13 +6,13 @@ import
     CSSProperties,
   } from 'vue'
 
-import { NIcon, NSpin, NTooltip, NVirtualList} from 'naive-ui';
+import { NButton, NIcon, NSpin, NTooltip, NVirtualList} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { background, envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
-import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
+import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
 
 
 const task_1 = (): Task => 
@@ -141,12 +141,12 @@ export const PacketsViewer =  defineComponent({
     setup () 
     {
         //для тестирования
-        // for (let index = 0; index < 100; index++) {
-        //     app_state_store.add_packet(test_packet1());
-        //     app_state_store.add_packet(test_error_packet());
-        //     app_state_store.add_packet(test_error_packet2());
-        //     app_state_store.add_packet(test_packet2());
-        // }
+        for (let index = 0; index < 100; index++) {
+            app_state_store.add_packet(test_packet1());
+            app_state_store.add_packet(test_error_packet());
+            app_state_store.add_packet(test_error_packet2());
+            app_state_store.add_packet(test_packet2());
+        }
        
         const list = () =>
         {
@@ -303,6 +303,7 @@ export const PacketsViewer =  defineComponent({
                                 packet.name,
                             ]),
                             report_icon(packet),
+                            rescan_icon(packet)
                         ]),
                         requisites_or_error(packet)
                     ])
@@ -310,6 +311,43 @@ export const PacketsViewer =  defineComponent({
             })
         }
 
+        const rescan_icon = (packet: IPacket) =>
+        {
+            return  h('div',
+            {
+                style:
+                {
+                    position: 'absolute',
+                    rigth: '20px'
+                } as CSSProperties
+            },
+            h(NTooltip, 
+                {
+                   
+                },
+                {
+                    trigger:() =>
+                    h(NButton,
+                    {
+                        text: true
+                    },
+                    {
+                        icon:() =>
+                        h(NIcon, 
+                            {
+                                component: RefreshCircleSharp,
+                                color: 'rgb(75, 207, 38)',
+                                style:
+                                {
+                                    marginLeft: '5px',
+                                    marginRight: '2px'
+                                } as CSSProperties,
+                            }),
+                    }),
+                    default:() => "Пересканировать текущий пакет"
+                }),
+            ) 
+        }
 
         const report_icon = (packet: IPacket) =>
         {
@@ -356,6 +394,7 @@ export const PacketsViewer =  defineComponent({
             ) : []
         }
 
+        
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;
