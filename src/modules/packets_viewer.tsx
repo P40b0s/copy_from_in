@@ -4,6 +4,7 @@ import
     defineComponent,
     defineAsyncComponent,
     CSSProperties,
+    ref,
   } from 'vue'
 
 import { NButton, NIcon, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
@@ -80,7 +81,7 @@ const test_packet1 = () =>
             number: "299-СФ",
             signDate: "2023-06-21",
         },
-        report_sended: false,
+        reportSended: false,
         name: "ошибочное название директории",
         parseTime: "2024-12-24T00:00:00",
         task: task_1()
@@ -101,7 +102,7 @@ const test_packet2 = () =>
             number: "299-РП",
             signDate: "2023-06-21",
         },
-        report_sended: true,
+        reportSended: true,
         name: "ошибочное название директории",
         parseTime: "2024-12-24T00:00:00",
         task: task_2()
@@ -114,7 +115,7 @@ const test_error_packet = () =>
         name: "123error_packet",
         parseTime: "2024-12-24T00:00:00",
         error: "Ошибка распознавания пакета йв3242342!",
-        report_sended: false,
+        reportSended: false,
         task: task_1()
     }
     return p;
@@ -124,7 +125,7 @@ const test_error_packet2 = () =>
     const p : IPacket = {
         name: "err_packet",
         parseTime: "2024-12-24T00:00:00",
-        report_sended: false,
+        reportSended: false,
         error: "Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета!",
         task: task_2()
     }
@@ -144,12 +145,12 @@ export const PacketsViewer =  defineComponent({
     {
         const notify = useNotification();
         //для тестирования
-        for (let index = 0; index < 100; index++) {
-            app_state_store.add_packet(test_packet1());
-            app_state_store.add_packet(test_error_packet());
-            app_state_store.add_packet(test_error_packet2());
-            app_state_store.add_packet(test_packet2());
-        }
+        // for (let index = 0; index < 100; index++) {
+        //     app_state_store.add_packet(test_packet1());
+        //     app_state_store.add_packet(test_error_packet());
+        //     app_state_store.add_packet(test_error_packet2());
+        //     app_state_store.add_packet(test_packet2());
+        // }
        
         const list = () =>
         {
@@ -229,6 +230,7 @@ export const PacketsViewer =  defineComponent({
                                 } as CSSProperties
                             },
                             [
+                                report_icon(packet),
                                 h(NTooltip, null,
                                 {
                                     trigger:() =>
@@ -305,7 +307,6 @@ export const PacketsViewer =  defineComponent({
                                 }),
                                 packet.name,
                             ]),
-                            report_icon(packet),
                             rescan_icon(packet)
                         ]),
                         requisites_or_error(packet)
@@ -316,6 +317,7 @@ export const PacketsViewer =  defineComponent({
 
         const rescan_icon = (packet: IPacket) =>
         {
+            const disabled = ref(false);
             return  h('div',
             {
                 style:
@@ -323,12 +325,10 @@ export const PacketsViewer =  defineComponent({
                     flexGrow: 1,
                     justifyContent: 'end',
                     display: 'flex',
-                    visibility: packet.error ? 'visible' : 'collapse'
-
-
                 } as CSSProperties
             },
-            h(NTooltip, 
+            [
+                h(NTooltip, 
                 {
                    
                 },
@@ -336,13 +336,23 @@ export const PacketsViewer =  defineComponent({
                     trigger:() =>
                     h(NButton,
                     {
+                        style:
+                        {
+                            visibility: packet.error ? 'visible' : 'collapse',
+                            marginRight: '2px',
+                            
+                        } as CSSProperties,
+                        disabled: disabled.value,
                         text: true,
                         size: 'large',
                         onClick: async (e) =>
                         {
                             const res = await service.rescan_packet(packet)
                             if (res.is_err())
-                                naive_notify(notify, 'error', "Ошибка запроса раскана пакета", res.get_error());
+                                naive_notify(notify, 'error', "Ошибка запроса пересканирования пакета " + packet.name, res.get_error());
+                            else
+                            disabled.value = true;
+
                         },
                     },
                     {
@@ -350,42 +360,38 @@ export const PacketsViewer =  defineComponent({
                         h(NIcon, 
                             {
                                 component: RefreshCircleSharp,
-                                color: 'rgb(221, 245, 41)',
+                                color: 'rgb(67, 237, 29)',
                             }),
                     }),
                     default:() => "Пересканировать текущий пакет"
                 }),
-            ) 
+                report_icon(packet)
+            ])
         }
 
         const report_icon = (packet: IPacket) =>
         {
-            return packet.task.report_dir != "" ?
-            h('div',
+            const report_sended_icon = () =>
             {
-                style:
-                {
-                    position: 'absolute',
-                    left: '15px'
-                } as CSSProperties
-            },
-                packet.report_sended ?
-                h(NTooltip, null,
-                {
-                    trigger:() =>
-                    h(NIcon, 
+                return h(NTooltip, null,
                     {
-                        component: CheckmarkDoneCircle,
-                        color: 'rgb(100, 165, 9)',
-                        size:'large',
-                        style:
+                        trigger:() =>
+                        h(NIcon, 
                         {
-                            marginRight: '2px',
-                        } as CSSProperties,
-                    }),
-                    default:() => "Уведомление успешно отправлено"
-                }) :
-                h(NTooltip, null,
+                            component: CheckmarkDoneCircle,
+                            color: 'rgb(67, 237, 29)',
+                            size: 'large',
+                            style:
+                            {
+                                marginRight: '2px',
+                            } as CSSProperties,
+                        }),
+                        default:() => "Уведомление успешно отправлено"
+                    });
+            }
+            const report_not_sended_icon = () =>
+            {
+                return h(NTooltip, null,
                 {
                     trigger:() =>
                     h(NIcon, 
@@ -399,8 +405,43 @@ export const PacketsViewer =  defineComponent({
                         } as CSSProperties,
                     }),
                     default:() => "Ошибка отправки уведомления"
-                }),
-            ) : []
+                })
+            }
+            const report_sended = packet.task.report_dir != "" && packet.reportSended && packet.document != undefined;
+            const error_sended = packet.task.report_dir != "" && !packet.reportSended && packet.document != undefined;
+
+            const icon = () =>
+            {
+                if (report_sended)
+                {
+                    console.log("Уведомление отправлено", packet)
+                    return report_sended_icon();
+                } 
+                if (error_sended)
+                {
+                    console.error("Ошибка отправки уведомления", packet)
+                    return report_not_sended_icon();
+                }
+                if(packet.task.copy_modifier == 'CopyAll')
+                {
+                    console.info("Уведомление с модификатором  CopyAll не отправляются, так как xml не парситься", packet.task.name, packet.task);
+                    return []
+                }
+                //это значит что модификатор copyall
+                return [];
+            }
+
+            return h('div',
+            {
+                style:
+                {
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    paddingRight: '3px',
+                } as CSSProperties
+            },
+            icon())
         }
 
 
@@ -439,7 +480,7 @@ export const PacketsViewer =  defineComponent({
                     (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
                 ])
             }
-            else
+            else if (packet.error)
             {
                 return h('div',
                 {
@@ -468,6 +509,12 @@ export const PacketsViewer =  defineComponent({
                     packet.error
                 ])
             }
+            //если нет ошибок и документа значит документ копируется с опцией CopyAll
+            //в этом случае ошибки парсинга пакета  не имеют значения 
+            else
+            {
+                return [];
+            }
         }
         const virtual_list = () =>
         {
@@ -476,11 +523,11 @@ export const PacketsViewer =  defineComponent({
                     style:
                     {
                         maxHeight: "600px",
-                        minHeight: '600px',
+                        minHeight: '900px',
                         padding: '10px'
                     } as CSSProperties,
                     trigger: 'hover',
-                    itemSize: 70,
+                    itemSize: 80,
                     items: app_state_store.getState().current_log
                 },
                 {

@@ -112,6 +112,7 @@ setup ()
                     
                     in_work.value = true;
                     const result = await service.clean_dirs();
+                    console.log(result);
                     if (result.is_ok())
                     {
                         naive_notify(notify_inj, 'success', "Очистка успешно завершена", "Найдено и удалено " + result.get_value() + " пакетов");

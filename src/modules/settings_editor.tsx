@@ -140,8 +140,8 @@ export const SettingsEditor =  defineComponent({
         })
         onUnmounted(()=>
         {
-            events.unsubscribe(updated_event);
-            events.unsubscribe(delete_event);
+            updated_event.then(v=> v.unsubscribe())
+            delete_event.then(t=>t.unsubscribe())
             // unlisten.then(f => 
             // {
             //     if (f)

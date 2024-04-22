@@ -24,9 +24,9 @@ pub async fn ws_server_online() -> Result<bool, Error>
   Ok(WebsocketClient::is_connected())
 }
 #[tauri::command]
-pub async fn rescan_packet(packet: NewPacketInfo) -> Result<(), Error>
+pub async fn rescan_packet(payload: NewPacketInfo) -> Result<(), Error>
 {
-  http_service::post::<NewPacketInfo>("packets/rescan", &packet).await
+  http_service::post::<NewPacketInfo>("packets/rescan", &payload).await
 }
 
 pub fn service_plugin<R: Runtime>() -> TauriPlugin<R> 

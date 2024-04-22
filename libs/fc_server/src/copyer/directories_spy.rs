@@ -1,4 +1,5 @@
 use std::{self, collections::{HashMap, VecDeque}, ops::Deref, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
+use futures::TryFutureExt;
 use logger::{debug, error, info, warn, LevelFilter};
 use medo_parser::{DeliveryTicketPacket, Packet};
 use once_cell::sync::{Lazy, OnceCell};
@@ -138,15 +139,16 @@ impl DirectoriesSpy
         packet_dir_name: &str, 
         task : &Task) -> bool
     {
-        if super::io::path_is_exists(&target_path)
-        {
-            warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",packet_dir_name, target_path.display());
-            return false;
-        }
-        else 
-        {
-            if let Ok(copy_time) = super::io::copy_recursively_async(&source_path, &target_path, 3000).await
-            {
+        //если это оставить то рескан не сработает, надо тогда удалять еще пакет по адресу копирования, пока так нормально
+        // if super::io::path_is_exists(&target_path)
+        // {
+        //     warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",packet_dir_name, target_path.display());
+        //     return false;
+        // }
+        // else 
+        // {
+            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 3000).await
+            {  
                 if task.delete_after_copy
                 {
                     if let Err(e) = std::fs::remove_dir_all(source_path)
@@ -162,7 +164,7 @@ impl DirectoriesSpy
                 error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
                 return false;
             }
-        }
+        //}
     }
 
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
@@ -271,6 +273,7 @@ impl DirectoriesSpy
 ///Обнаружен новый пакет
 async fn new_packet_found(mut packet: NewPacketInfo)
 {
+    logger::debug!("Сервером отправлен новый пакет {:?}, {}", &packet, logger::backtrace!());
     let sended = send_report(packet.get_document().as_ref(), &packet.name, packet.get_task()).await;
     packet.report_sended = sended;
     let mut log = PACKETS.lock().await;

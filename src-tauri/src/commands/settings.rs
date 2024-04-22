@@ -30,7 +30,7 @@ pub async fn delete(payload: Task) -> Result<(), Error>
 #[tauri::command]
 pub async fn get_packets_list() -> Result<Vec<NewPacketInfo>, Error>
 {
-    http_service::get("packets/list").await
+    http_service::get::<Vec<NewPacketInfo>>("packets/list").await
 }
 
 

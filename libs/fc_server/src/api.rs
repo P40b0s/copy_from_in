@@ -18,7 +18,7 @@ use crate::state::AppState;
 use crate::{commands, WebsocketServer, APP_STATE};
 
 type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
-static NOTFOUND: &[u8] = b"Not Found";
+static NOTFOUND: &[u8] = b"this endpoint not found";
 
 pub async fn start_http_server(port: usize) -> Result<()>
 {
@@ -67,82 +67,25 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
         (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
         (&Method::POST, "/settings/tasks/update") => update_task(req, app_state).await,
         (&Method::POST, "/settings/tasks/delete") => delete_task(req, app_state).await,
-        (&Method::GET, "packets/truncate") => truncate(app_state).await,
-        (&Method::GET, "packets/clean") => clean(app_state).await,
-        (&Method::POST, "packets/rescan") => rescan(req, app_state).await,
-        (&Method::GET, "packets/list") => get_packets_list(app_state).await,
+        (&Method::GET, "/packets/truncate") => truncate(app_state).await,
+        (&Method::GET, "/packets/clean") => clean(app_state).await,
+        (&Method::POST, "/packets/rescan") => rescan(req, app_state).await,
+        (&Method::GET, "/packets/list") => get_packets_list(app_state).await,
         _ => 
         {
+            
+            let err = format!("В Апи отсуствует эндпоинт {}", req.uri().path());
+            logger::warn!("{}", &err);
             // Return 404 not found response.
             Ok(Response::builder()
                 .status(StatusCode::NOT_FOUND)
-                .body(full(NOTFOUND))
+                .body(full(err))
                 .unwrap())
         }
     }
 }
-//type GenericError = Box<dyn std::error::Error + Send + Sync>;
-//type Result<T> = std::result::Result<T, GenericError>;
-
-// static INDEX: &[u8] = b"<a href=\"test.html\">test.html</a>";
-// static INTERNAL_SERVER_ERROR: &[u8] = b"Internal Server Error";
-
-// static POST_DATA: &str = r#"{"original": "data"}"#;
-// static URL: &str = "http://127.0.0.1:1337/json_api";
-
-// async fn client_request_response() -> Result<Response<BoxBody>> {
-//     let req = Request::builder()
-//         .method(Method::POST)
-//         .uri(URL)
-//         .header(header::CONTENT_TYPE, "application/json")
-//         .body(Full::new(Bytes::from(POST_DATA)))
-//         .unwrap();
-
-//     let host = req.uri().host().expect("uri has no host");
-//     let port = req.uri().port_u16().expect("uri has no port");
-//     let stream = TcpStream::connect(format!("{}:{}", host, port)).await?;
-//     let io = TokioIo::new(stream);
-
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-
-//     tokio::task::spawn(async move {
-//         if let Err(err) = conn.await {
-//             println!("Connection error: {:?}", err);
-//         }
-//     });
-
-//     let web_res = sender.send_request(req).await?;
-
-//     let res_body = web_res.into_body().boxed();
-
-//     Ok(Response::new(res_body))
-// }
-
-// async fn api_post_response(req: Request<IncomingBody>) -> Result<Response<BoxBody>> 
-// {
-//     // Aggregate the body...
-//     let whole_body = req.collect().await?.aggregate();
-//     // Decode as JSON...
-//     let mut data: serde_json::Value = serde_json::from_reader(whole_body.reader())?;
-//     // Change the JSON...
-//     data["test"] = serde_json::Value::from("test_value");
-//     // And respond with the new JSON.
-//     let json = serde_json::to_string(&data)?;
-//     let response = Response::builder()
-//         .status(StatusCode::OK)
-//         .header(header::CONTENT_TYPE, "application/json")
-//         .body(full(json))?;
-//     Ok(response)
-// }
-
-//получается это единственная фунция что нужна?) а может и вообще ненужна если норм реализовать ящик Contract
 async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    // let data = 
-    // {
-    //     let guard = app_state.settings.lock().await;
-    //     guard.clone()
-    // };
     let settings = commands::settings::get(app_state).await?;
     let bytes = settings.to_bytes()?;
     let body_data = to_body(bytes);
@@ -153,9 +96,11 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
     Ok(response)
 }
 
+//что то тут непонятное передается
 async fn get_packets_list(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
     let log = commands::settings::get_log(app_state).await?;
+    logger::debug!("{:?}", log);
     let bytes = log.to_bytes()?;
     let body_data = to_body(bytes);
     let response = Response::builder()
@@ -194,20 +139,22 @@ async fn delete_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
 
 async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    if let Err(e) = commands::service::clear_dirs(app_state).await
+    let cl = commands::service::clear_dirs(app_state).await;
+    if let Err(e) = cl
     {
         return error_responce(e);
     }
-    let response = response_ok_empty()?;
+    let response = response_ok(cl.unwrap())?;
     Ok(response)
 }
 async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    if let Err(e) = commands::service::truncate_tasks_excepts(app_state).await
+    let trunc = commands::service::truncate_tasks_excepts(app_state).await;
+    if let Err(e) = trunc
     {
         return error_responce(e);
     }
-    let response : Response<BoxBody> = response_ok_empty()?;
+    let response : Response<BoxBody> = response_ok(trunc.unwrap())?;
     Ok(response)
 }
 
@@ -222,28 +169,6 @@ async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<
     let response = response_ok_empty()?;
     Ok(response)
 }
-
-// async fn api_get_response() -> Result<Response<BoxBody>> 
-// {
-//     let data = vec!["foo", "bar"];
-//     let res = match serde_json::to_string(&data) 
-//     {
-//         Ok(json) => Response::builder()
-//             .header(header::CONTENT_TYPE, "application/json")
-//             .body(full(json))
-//             .unwrap(),
-//         Err(_) => Response::builder()
-//             .status(StatusCode::INTERNAL_SERVER_ERROR)
-//             .body(full(INTERNAL_SERVER_ERROR))
-//             .unwrap(),
-//     };
-//     Ok(res)
-// }
-
-
-
-// let reversed_body = whole_body.iter().rev().cloned().collect::<Vec<u8>>();
-//             Ok(Response::new(full(reversed_body)))
 
 fn full<T: Into<Bytes>>(chunk: T) -> BoxBody 
 {

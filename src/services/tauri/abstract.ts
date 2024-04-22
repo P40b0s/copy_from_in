@@ -11,30 +11,38 @@ function is_tauri() : boolean
         return false;
 }
 
-
+export class Unlistener
+{
+    constructor(unlisten: event.UnlistenFn|undefined)
+    {
+        this.unlisten = unlisten;
+    }
+    unlisten: event.UnlistenFn|undefined
+    unsubscribe()
+    {
+        if (this.unlisten)
+            this.unlisten();
+    }
+    
+}
 export abstract class AbstractEvents<E extends string>
 {
     /** Запуск команды таури, если таури не заинжекчен то undefined если тип string то значит пришла ошибка*/
-    async subscribe<T>(event_name: E, func: (arg: event.Event<T>) => void) : Promise<UnlistenFn|undefined>
+    async subscribe<T>(event_name: E, func: (arg: event.Event<T>) => void) : Promise<Unlistener>
     {
         if(is_tauri())
-            return await listen<T>(event_name, (event) => 
+        {
+            return new Unlistener(await listen<T>(event_name, (event) => 
             {
                 console.log(`Получен эвент ${event.windowLabel}`);
                 func(event);
-            });
+            }));
+        }
         else
         {
             console.error("таури не заинжекчен!")
+            return new Unlistener(undefined);
         }
-    }
-    public async unsubscribe(event: Promise<UnlistenFn|undefined>)
-    {
-        event.then(f => 
-        {
-            if (f)
-            f()
-        });
     }
 }
 
@@ -115,11 +123,11 @@ export class Result<T>
 
     is_ok(): boolean
     {
-        return this.value ? true : false
+        return this.value != undefined ? true : false
     }
     is_err(): boolean
     {
-        return this.error ? true : false
+        return this.error != undefined ? true : false
     }
     get_value(): T
     {

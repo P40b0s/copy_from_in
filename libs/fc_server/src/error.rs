@@ -1,3 +1,4 @@
+use futures::FutureExt;
 use settings::ValidationError;
 
 // create the error type that represents all errors possible in our program
@@ -10,6 +11,8 @@ pub enum Error
   SettingsValidation(Vec<ValidationError>),
   ServiceErrors(Vec<String>),
   HyperError(#[from] hyper::Error),
+  //Ошибка если дата и размер копируемого файла не может синхронизироваться больше 2 минут
+  FileTimeCopyError(String)
 }
 
 impl std::fmt::Display for Error
@@ -23,6 +26,23 @@ impl std::fmt::Display for Error
       Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
       Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
       Error::HyperError(e) => f.write_str(&e.to_string()),
+      Error::FileTimeCopyError(e) => f.write_str(&e),
+    }
+  }
+}
+
+impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Error>>
+{
+  fn from(value: Error) -> Self 
+  {
+    match value
+    {
+      Error::Io(io) => async move { Err(Error::Io(io)) }.boxed(),
+      Error::Other(oth) => async move { Err(Error::Other(oth)) }.boxed(),
+      Error::SettingsValidation(e) => async move { Err(Error::SettingsValidation(e)) }.boxed(),
+      Error::ServiceErrors(e) => async move { Err(Error::ServiceErrors(e)) }.boxed(),
+      Error::HyperError(e) => async move { Err(Error::HyperError(e)) }.boxed(),
+      Error::FileTimeCopyError(e) => async move { Err(Error::FileTimeCopyError(e)) }.boxed(),
     }
   }
 }

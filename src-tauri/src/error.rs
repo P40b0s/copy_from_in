@@ -11,7 +11,7 @@ pub enum Error
   ServiceErrors(Vec<String>),
   HyperError(#[from] hyper::Error),
   HttpError(#[from] hyper::http::Error),
-  PostError(String)
+  RequestError(String)
 }
 
 impl std::fmt::Display for Error
@@ -26,7 +26,7 @@ impl std::fmt::Display for Error
       Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
       Error::HyperError(e) => f.write_str(&e.to_string()),
       Error::HttpError(e) => f.write_str(&e.to_string()),
-      Error::PostError(e) => f.write_str(e),
+      Error::RequestError(e) => f.write_str(e),
     }
   }
 }

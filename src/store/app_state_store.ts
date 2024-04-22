@@ -26,22 +26,27 @@ class AppStateStore extends Store<IGlobalAppState>
   {
     this.get_packets_log();
     this.listen_log();
-    this.check_online();
+    this.check_online_intervally();
     return new GlobalAppState();
   }
-  check_online()
+  check_online_intervally()
   {
-    let intervalId = setInterval(async () => 
+    this.check_online();
+    let intervalId = setInterval(() => 
     {
-      const result = await service.ws_server_online()
-      console.log(result)
-      if (result.is_ok())
-      {
-        this.state.server_is_online = result.get_value();
-        console.log(result.get_value());
-      }
+     this.check_online();
     }, 7000)
   }
+
+  async check_online()
+  {
+    const result = await service.ws_server_online()
+    if (result.is_ok())
+    {
+      this.state.server_is_online = result.get_value();
+    }
+  }
+
   async get_packets_log()
   {
     const packets = await settings.get_packets_list();

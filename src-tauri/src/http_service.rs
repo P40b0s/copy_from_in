@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, str::FromStr};
+use std::{io::Read, net::SocketAddr, str::FromStr};
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::{Request, StatusCode};
 use hyper_util::{client::legacy::Client, rt::TokioIo};
@@ -40,7 +40,17 @@ pub async fn get<R>(subpath: &str) -> Result<R> where for <'de> R : Deserialize<
     .header(hyper::header::HOST, authority.as_str())
     .body(Empty::<Bytes>::new())?;
     let res = sender.send_request(req).await?;
+    let status = res.status();
     let body = res.collect().await?.to_bytes();
+    if status != StatusCode::OK
+    {
+        let dd: &[u8] = &body;
+        let str = String::from_utf8(dd.to_vec()).unwrap();
+        let err_format = format!("Ошибка {} -> {}", status, str);
+        error!{"{}", &err_format};
+        return Err(Error::RequestError(err_format));
+    }
+    
     let obj = R::from_bytes(&body)?;
     Ok(obj)
 }
@@ -63,7 +73,6 @@ pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Res
     });
     let authority = uri.authority().unwrap().clone();
     let bytes = obj.to_bytes()?;
-
     let req = Request::builder()
     .method("POST")
     .uri(uri)
@@ -81,7 +90,7 @@ pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Res
     {
         let e = format!("Ошибка post запроса для: {} -> {}", &req_path, res.err().as_ref().unwrap().to_string());
         error!("{}", &e);
-        return Err(Error::PostError(e));
+        return Err(Error::RequestError(e));
     }
     if res.as_ref().unwrap().status() != StatusCode::OK
     {
@@ -89,7 +98,7 @@ pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Res
         let obj = std::str::from_utf8(body.as_ref()).unwrap_or("От сервера возвращена неизвестная ошибка");
         let e = format!("Ошибка post запроса для: {} -> {}", &req_path, obj);
         error!("{}", &e);
-        return Err(Error::PostError(obj.to_owned()));
+        return Err(Error::RequestError(obj.to_owned()));
     }
     else
     {

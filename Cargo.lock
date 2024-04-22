@@ -1393,6 +1393,7 @@ dependencies = [
  "const_format",
  "crossbeam-channel",
  "flexbuffers",
+ "futures",
  "http-body-util",
  "hyper",
  "hyper-util",
@@ -3654,20 +3655,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "serializer"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bytes",
- "flexbuffers",
- "serde",
- "settings",
-]
-
-[[package]]
 name = "service"
 version = "0.2.0"
-source = "git+https://github.com/P40b0s/websocket_service.git#9377cc36ce08ea0573816d21d5e28c96d3d3feac"
+source = "git+https://github.com/P40b0s/websocket_service.git#bebdd7865c1869ddf7fdf72402e4d2e934a75519"
 dependencies = [
  "anyhow",
  "base64 0.13.1",

@@ -20,7 +20,7 @@ export interface IPacket
     document?: IDocument,
     error?: string,
     task: Task,
-    report_sended: boolean,
+    reportSended: boolean,
 }
 
 export type Task = 

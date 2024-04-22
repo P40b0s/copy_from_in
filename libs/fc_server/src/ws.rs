@@ -1,5 +1,5 @@
 use std::{net::SocketAddr, sync::Arc};
-use logger::{debug, error, info};
+use logger::{backtrace, debug, error, info};
 use settings::Task;
 use transport::{Contract, NewPacketInfo};
 use service::Server;
@@ -59,6 +59,7 @@ pub async fn start_new_packets_handler()
         let receiver = Arc::new(receiver);
         while let Ok(r) = receiver.recv().await
         {
+            logger::debug!("Сервером отправлен новый пакет {:?}, {}", &r, backtrace!());
             WebsocketServer::new_packet_event(r).await;
         }
     });
