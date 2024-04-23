@@ -4,3 +4,4 @@ test_data
 src-tauri/logs
 *.log
 /dist
+dist/

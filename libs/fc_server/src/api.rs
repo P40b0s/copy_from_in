@@ -21,7 +21,7 @@ static NOTFOUND: &[u8] = b"this endpoint not found";
 
 pub async fn start_http_server(port: usize) -> Result<()>
 {
-    let addr = ["127.0.0.1:".to_owned(), port.to_string()].concat();
+    let addr = ["0.0.0.0:".to_owned(), port.to_string()].concat();
     
         let addr: SocketAddr = addr.parse().unwrap();
         let listener = TcpListener::bind(&addr).await?;

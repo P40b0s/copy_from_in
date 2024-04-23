@@ -30,7 +30,7 @@ impl WebsocketServer
 ///Стартуем сервер вебсокет для приема и отправки сообщений
 pub async fn start_ws_server(port: usize)
 {
-    let addr = ["127.0.0.1:".to_owned(), port.to_string()].concat();
+    let addr = ["0.0.0.0:".to_owned(), port.to_string()].concat();
     WebsocketServer::start_server(&addr, |addr, msg|
     {
         async move
