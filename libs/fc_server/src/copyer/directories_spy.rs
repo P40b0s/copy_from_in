@@ -147,7 +147,7 @@ impl DirectoriesSpy
         // }
         // else 
         // {
-            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 3000).await
+            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 20000).await
             {  
                 if task.delete_after_copy
                 {

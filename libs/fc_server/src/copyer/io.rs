@@ -87,7 +87,6 @@ use crate::Error;
  {
     async move 
     {
-        
         let read_dir = std::fs::read_dir(source.as_ref());
         if read_dir.is_err()
         {
@@ -95,6 +94,8 @@ use crate::Error;
         }
         if read_dir.unwrap().count() == 0
         {
+            //если в начальной пусто то все правильно, если во вложенной то просто возвращаем 0 в предыдущую функцию
+            //вызываться будет ниже
             return Ok(0);
         }
         let start = std::time::SystemTime::now();
@@ -137,51 +138,14 @@ use crate::Error;
             if filetype.is_dir() 
             {
                 let new_dest = Path::new(destination.as_ref()).join(entry.file_name());
-                return copy_recursively_async(Arc::new(entry.path()), Arc::new(new_dest), check_duration).await;
+                let _ = copy_recursively_async(Arc::new(entry.path()), Arc::new(new_dest), check_duration).await?;
             }
             else 
             {
                 let dest = destination.as_ref().join(entry.file_name());
-                set.spawn(check_file(path, dest));
-                // handles.push(tokio::spawn(async move
-                // {
-                //     let mut modifed_time: Option<SystemTime> = None;
-                //     loop 
-                //     {
-                //         //в цикле сверяем время изменения файла каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
-                //         let metadata = std::fs::metadata(&path)?;
-                //         if let Ok(md_time) = metadata.modified()
-                //         {
-                //             if modifed_time.is_none()
-                //             {
-                //                 modifed_time = Some(md_time);
-                //             }
-                //             else
-                //             {
-                //                 if modifed_time.as_ref().unwrap() <  &md_time
-                //                 {
-                //                     modifed_time = Some(md_time);
-                //                 }
-                //                 else
-                //                 {
-                //                     modifed_time = None;
-                //                     return Ok((path, dest.clone()));
-                //                 }
-                //             }
-                //         }
-                //     tokio::time::sleep(tokio::time::Duration::from_millis(check_duration)).await;
-                //    }
-                // }));
+                set.spawn(check_file(path, dest, check_duration));
             }
         }
-
-        // for h in handles
-        // {
-        //     if let Ok(join_result) = h.await
-        //     {
-        //         files.push(join_result?);
-        //     }
-        // }
         while let Some(res) = set.join_next().await 
         {
             let out = res.map_err(|e| Error::FileTimeCopyError(e.to_string()));
@@ -209,7 +173,7 @@ use crate::Error;
         if entry_count != count
         {
             debug!("За время копирования файлов в исходной директории зафиксированно изменение количества файлов с `{}` на `{}`, процедура копирования перезапущена...", entry_count, count);
-            return copy_recursively_async(source, destination, check_duration).await;
+            let _ = copy_recursively_async(source, destination, check_duration).await?;
         }
         //копируем все файлы в списке
         for f in files
@@ -229,40 +193,41 @@ use crate::Error;
  }
 
 
-async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P) -> anyhow::Result<(P, P), Error>
+async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, check_duration: u64) -> anyhow::Result<(P, P), Error>
 {
     let mut modifed_time: Option<SystemTime> = None;
     let mut modifed_len: Option<u64> = None;
     let mut max_repeats = 30;
-    loop 
+    loop
     {
         //в цикле сверяем время изменения файла и его длинну каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
         let metadata = std::fs::metadata(source_file_path.as_ref())?;
-        if modifed_len.is_none()
-        {
-            modifed_len = Some(metadata.len());
-        }
-        else if modifed_len.as_ref().unwrap() < &metadata.len()
-        {
-            modifed_len = Some(metadata.len())
-        }
         if let Ok(md_time) = metadata.modified()
         {
-            if modifed_time.is_none()
+            if modifed_time.is_none() &&  modifed_len.is_none()
             {
                 modifed_time = Some(md_time);
+                modifed_len = Some(metadata.len());
+                logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+                logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
             }
             else
             {
-                if modifed_time.as_ref().unwrap() <  &md_time
-                {
-                    modifed_time = Some(md_time);
-                }
-                else if modifed_len.as_ref().unwrap() == &metadata.len()
+                logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+                logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
+                if modifed_len.as_ref().unwrap() == &metadata.len() && modifed_time.as_ref().unwrap() ==  &md_time
                 {
                     modifed_time = None;
                     modifed_len = None;
                     return Ok((source_file_path, dest_file_path));
+                }
+                if modifed_time.as_ref().unwrap() !=  &md_time
+                {
+                    modifed_time = Some(md_time);
+                }
+                if modifed_len.as_ref().unwrap() != &metadata.len()
+                {
+                    modifed_len = Some(metadata.len())
                 }
             }
         }
@@ -273,7 +238,7 @@ async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P) -> a
             error!("{} {}", &err, backtrace!());
             return Err(Error::FileTimeCopyError(err));
         }
-        tokio::time::sleep(tokio::time::Duration::from_millis(2000)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(check_duration)).await;
     }
 }
 
