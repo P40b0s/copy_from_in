@@ -115,7 +115,7 @@ export const SettingsEditor =  defineComponent({
             if (saved == -1)
             {
                 tasks.value.push(new_task);
-                naive_notify(notify, 'info', "Добавлена задача " + new_task.name, "");
+                naive_notify(notify, 'success', "Добавлена задача " + new_task.name, "", 2000);
             }
             //задача уже есть в списке
             else
@@ -125,8 +125,14 @@ export const SettingsEditor =  defineComponent({
                 {
                     selected_task.value = tasks.value[saved];
                 }
-                naive_notify(notify, 'info', "Задача " + new_task.name + " была изменена", "");
+                if(is_new_task.value == false)
+                    naive_notify(notify, 'success', "Задача " + new_task.name + " была изменена", "", 2000);
+                else
+                    naive_notify(notify, 'success', "Задача " + new_task.name + " была сохранена", "", 2000);
             }
+            is_new_task.value = false;
+            (selected_task.value as Task).generate_exclude_file = false;
+            tasks.value[saved].generate_exclude_file = false;
         })
         const delete_event = events.task_deleted(async (task) => 
         {
@@ -135,18 +141,14 @@ export const SettingsEditor =  defineComponent({
             if (saved != -1)
             {
                 tasks.value.splice(saved, 1);
-                naive_notify(notify, 'info', "Удалена задача " + new_task.name, "");
+                naive_notify(notify, 'success', "Удалена задача " + new_task.name, "", 2000);
+                selected_task.value = tasks.value[0];
             }
         })
         onUnmounted(()=>
         {
             updated_event.then(v=> v.unsubscribe())
             delete_event.then(t=>t.unsubscribe())
-            // unlisten.then(f => 
-            // {
-            //     if (f)
-            //     f()
-            // });
         })
         onMounted(async ()=>
         {
@@ -218,19 +220,7 @@ export const SettingsEditor =  defineComponent({
             ]
             );
         }
-        // const error = () =>
-        // {
-        //     return h("span", {
-        //     style:
-        //         {
-        //             color: 'red',
-        //             visibility: save_error.value ? 'visible' : 'collapse'
-        //         } as CSSProperties
-        //     },
-        //     save_error.value
-        //     )
-        // }
-        
+       
         const settings_selector = () =>
         {
             return h("div",
@@ -272,6 +262,7 @@ export const SettingsEditor =  defineComponent({
                                 is_active: true,
                                 generate_exclude_file: true,
                                 clean_types: [],
+                                sound: false,
                                 color: '#0ff00f',
                                 filters: f
                             }
@@ -300,19 +291,21 @@ export const SettingsEditor =  defineComponent({
                         selected_task.value = taskClone.clone(tasks.value.find(f=>f.name == v));
                     }
                 }),
-                save_button()
+                save_button(),
+                (selected_task.value != undefined && is_new_task.value == false) ? del_button() : [],
+                (selected_task.value != undefined && is_new_task.value) ? cancel_button() : []
+                
+                
             ]
             )
         }
 
         const save_button = () :VN =>
         {
-            const button_is_loading = ref(false);
             const save_button_label = ref<string | VN>("СОХРАНИТЬ");
             return h(NButton,
             {
                 type: 'primary',
-                loading: button_is_loading.value,
                 style:
                 {
                     marginLeft: '5px',
@@ -320,45 +313,51 @@ export const SettingsEditor =  defineComponent({
                 }    as CSSProperties,
                 onClick: async () => 
                 {
-                    button_is_loading.value = true;
-                    const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
-                    tasks.value.splice(saved, 1, selected_task.value as Task);
-                    const result = await settings.save_task(tasks.value[saved]);
-                    if (result.is_err())
+                    if(selected_task.value != undefined)
                     {
-                        save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
-                        const res = result.get_error().split("\\n");
-                        if (res.length == 1)
-                            naive_notify(notify, 'error', "Ошибка сохранения настроек", result.get_error());
-                        else
-                            naive_notify(notify, 'error', "Ошибка сохранения настроек", () => 
+                        const result = await settings.save_task(selected_task.value);
+                        if (result.is_err())
                         {
-                            return h('div',null,
-                                res.map(r=> h('div', 
-                                {
-                                    style:{
-                                        color: 'red'
-                                    } as CSSProperties
-                                },
-                                r))
-                            );
-                        });
-                            
+                            save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
+                            const res = result.get_error().split("\\n");
+                            if (res.length == 1)
+                                naive_notify(notify, 'error', "Ошибка сохранения настроек", result.get_error());
+                            else
+                                naive_notify(notify, 'error', "Ошибка сохранения настроек", () => 
+                            {
+                                return h('div',null,
+                                    res.map(r=> h('div', 
+                                    {
+                                        style:{
+                                            color: 'red'
+                                        } as CSSProperties
+                                    },
+                                    r))
+                                );
+                            });   
+                        }
                     }
-                    else
-                    {
-                        is_new_task.value = false;
-                        (selected_task.value as Task).generate_exclude_file = false;
-                        tasks.value[saved].generate_exclude_file = false;
-                        save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
-                        naive_notify(notify, 'success', "Настройки успешно сохранены", "Настройки для задачи " + selected_task.value?.name + " успешно сохранены"); 
-                    }
-                    setTimeout(() => 
-                    {
-                        save_button_label.value = "СОХРАНИТЬ"
-                        button_is_loading.value = false;
-                    }, 1000);
-                    
+                }
+            },
+            {
+                default:() => save_button_label.value
+            });
+        }
+        const cancel_button = () :VN =>
+        {
+            const save_button_label = ref<string | VN>("ОТМЕНА");
+            return h(NButton,
+            {
+                type: 'warning',
+                style:
+                {
+                    marginLeft: '5px',
+                    width: '100px',
+                }    as CSSProperties,
+                onClick: async () => 
+                {
+                    selected_task.value = tasks.value[0];
+                    is_new_task.value = false;
                 }
             },
             {
@@ -371,7 +370,8 @@ export const SettingsEditor =  defineComponent({
         {
             if(selected_task.value != undefined)
             {
-                return h(NCard,{
+                return h(NCard,
+                {
                     style:
                     {
                         marginTop:'5px'
@@ -402,8 +402,6 @@ export const SettingsEditor =  defineComponent({
                         [
                             left_form(),
                             right_form(),
-                            del_button(),
-                            
                         ])
                     }))
             } else return [];
@@ -413,14 +411,31 @@ export const SettingsEditor =  defineComponent({
         {
             return h(NPopconfirm,
             {
+                style:
+                {
+                   
+                } as CSSProperties,
                 positiveText: "Удалить",
                 onPositiveClick: async () => 
                 {
-                    const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
-                    tasks.value.splice(current_task, 1);
+                    //const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
+                    //tasks.value.splice(current_task, 1);
                     let dl = await settings.delete_task(selected_task.value as Task)
-                    selected_task.value = tasks.value[0];
-                    is_new_task.value = false;
+                    if (dl.is_err())
+                    {
+                        naive_notify(notify, 'error', "Ошибка удаления задачи " + selected_task.value?.name, () => 
+                        {
+                            return h('div', 
+                            {
+                                style:
+                                {
+                                    color: 'red'
+                                } as CSSProperties,
+                            },
+                            dl.get_error()
+                            );
+                        });
+                    }
                 }
             },
             {
@@ -430,13 +445,9 @@ export const SettingsEditor =  defineComponent({
                     {
                         type: 'error',
                         color: "#d90d0d",
-                        size: 'large',
-                        text: true,
                         style:
                         {
-                            position: 'absolute',
-                            top: '15px',
-                            right: '15px'
+                            marginLeft: '5px',
                         }    as CSSProperties,
                     },
                     {
@@ -872,6 +883,26 @@ export const SettingsEditor =  defineComponent({
                             onUpdateValue:(v: string)=>
                             {
                                 (selected_task.value as Task).color = v;
+                            } 
+                        })
+                    }),
+                    h(NFormItem,
+                    {
+                        path: 'snd',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Проигрывать аудио оповещение при поступлении нового пакета",
+                            description: "При поступлении нового пакета будет воспроизводиться аудио уведомление",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NSwitch,
+                        {
+                            value: selected_task.value?.sound,
+                            onUpdateValue:(v: boolean)=>
+                            {
+                                (selected_task.value as Task).sound = v;
                             } 
                         })
                     }),

@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use medo_parser::Packet;
-use settings::{FileMethods, Settings, Task};
+use settings::{Settings, Task};
 
 use crate::{copyer::io::get_files, Error};
 

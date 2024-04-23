@@ -1,7 +1,7 @@
 use std::{io::Read, net::SocketAddr, str::FromStr};
 use http_body_util::{BodyExt, Empty, Full};
 use hyper::{Request, StatusCode};
-use hyper_util::{client::legacy::Client, rt::TokioIo};
+use hyper_util::rt::TokioIo;
 use logger::error;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 pub fn initialize_http_requests(host: String)
 {
     let h: SocketAddr = host.parse().unwrap();
-    HOST.set((h, ["http://", &host, "/"].concat()));
+    let _ = HOST.set((h, ["http://", &host, "/"].concat()));
 }
 
 pub async fn get<R>(subpath: &str) -> Result<R> where for <'de> R : Deserialize<'de> + BytesSerializer

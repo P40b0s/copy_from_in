@@ -1,13 +1,8 @@
-use std::sync::Arc;
-
-use logger::{debug, error};
-use once_cell::sync::OnceCell;
-use settings::Task;
-use tauri::{AppHandle, Manager};
+use logger::debug;
 use service::Client;
 use transport::Contract;
 
-use crate::{commands, emits::TauriEmits};
+use crate::emits::TauriEmits;
 
 pub struct WebsocketClient;
 impl Client<Contract> for WebsocketClient{}

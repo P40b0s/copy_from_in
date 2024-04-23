@@ -19,7 +19,7 @@ mod commands;
 use commands::*;
 mod state;
 pub use const_format::concatcp;
-use logger::{debug, warn, StructLogger};
+use logger::{debug, StructLogger};
 use once_cell::sync::OnceCell;
 use tauri::{AppHandle, Manager};
 pub static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();

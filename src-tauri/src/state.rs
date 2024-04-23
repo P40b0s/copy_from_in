@@ -1,4 +1,3 @@
-use std::process::exit;
 use tokio::sync::Mutex;
 use settings::{FileMethods, Settings};
 

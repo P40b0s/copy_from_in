@@ -37,6 +37,7 @@ const task_1 = (): Task =>
         is_active: true,
         generate_exclude_file: true,
         clean_types: ["Квитанция"],
+        sound: true,
         color: '#4f46',
         filters: f
     }
@@ -60,6 +61,7 @@ const task_2 = (): Task =>
         copy_modifier: "CopyAll",
         is_active: true,
         generate_exclude_file: true,
+        sound: true,
         clean_types: ["Квитанция"],
         color: '#0a8bb2',
         filters: f
@@ -230,7 +232,6 @@ export const PacketsViewer =  defineComponent({
                                 } as CSSProperties
                             },
                             [
-                                report_icon(packet),
                                 h(NTooltip, null,
                                 {
                                     trigger:() =>
@@ -414,17 +415,14 @@ export const PacketsViewer =  defineComponent({
             {
                 if (report_sended)
                 {
-                    console.log("Уведомление отправлено", packet)
                     return report_sended_icon();
                 } 
                 if (error_sended)
                 {
-                    console.error("Ошибка отправки уведомления", packet)
                     return report_not_sended_icon();
                 }
                 if(packet.task.copy_modifier == 'CopyAll')
                 {
-                    console.info("Уведомление с модификатором  CopyAll не отправляются, так как xml не парситься", packet.task.name, packet.task);
                     return []
                 }
                 //это значит что модификатор copyall

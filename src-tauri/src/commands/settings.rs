@@ -1,7 +1,5 @@
-use std::path::Path;
-use logger::{debug, error};
-use serde::{Serialize, Deserialize};
-use settings::{FileMethods, Settings, Task};
+use logger::debug;
+use settings::Task;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
 use transport::NewPacketInfo;

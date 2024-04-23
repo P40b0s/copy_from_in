@@ -2,7 +2,6 @@ use std::fmt::Display;
 
 use chrono::{NaiveDateTime, Local, DateTime, NaiveDate, Datelike, NaiveTime, Timelike};
 use logger::{error, backtrace};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 pub const FORMAT_SERIALIZE_DATE_TIME: &'static str = "%Y-%m-%dT%H:%M:%S";
 pub const FORMAT_SERIALIZE_DATE_TIME_WS: &'static str = "%Y-%m-%d %H:%M:%S";

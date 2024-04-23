@@ -31,7 +31,7 @@ const avatar_selector = (type: NotificationType) =>
   .with('success', () => success_ico)
   .exhaustive();
 }
-export const naive_notify =  (injection: NotificationApiInjection, type: NotificationType, title: string, description: string | (() => VNodeChild) | undefined) => 
+export const naive_notify =  (injection: NotificationApiInjection, type: NotificationType, title: string, description: string | (() => VNodeChild) | undefined, duration: number = 25500) => 
 {
     const n = injection.create({
         type: type,
@@ -46,7 +46,7 @@ export const naive_notify =  (injection: NotificationApiInjection, type: Notific
                 src: avatar_selector(type)
                 
             }),
-        duration: 25500,
+        duration: duration,
         keepAliveOnHover: true
     })
 }

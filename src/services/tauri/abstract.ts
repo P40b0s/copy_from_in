@@ -34,7 +34,7 @@ export abstract class AbstractEvents<E extends string>
         {
             return new Unlistener(await listen<T>(event_name, (event) => 
             {
-                console.log(`Получен эвент ${event.windowLabel}`);
+                console.log(`Получен эвент ${event.event}`);
                 func(event);
             }));
         }

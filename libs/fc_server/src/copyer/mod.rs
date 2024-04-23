@@ -2,7 +2,6 @@ mod directories_spy;
 mod service;
 pub use  {directories_spy::DirectoriesSpy, directories_spy::get_full_log, service::{PacketsCleaner, ExcludesCreator}};
 use medo_parser::Packet;
-use serde::{Deserialize, Serialize};
 use settings::{DateTimeFormat, Task};
 use transport::{NewDocument, NewPacketInfo};
 mod io;

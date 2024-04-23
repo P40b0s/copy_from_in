@@ -2,7 +2,7 @@ use crate::ws_serivice::WebsocketClient;
 use service::Client;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
-use transport::{Contract, NewPacketInfo};
+use transport::NewPacketInfo;
 use crate::Error;
 use crate::http_service;
 

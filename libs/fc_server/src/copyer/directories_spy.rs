@@ -1,10 +1,9 @@
-use std::{self, collections::{HashMap, VecDeque}, ops::Deref, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
-use futures::TryFutureExt;
-use logger::{debug, error, info, warn, LevelFilter};
+use std::{self, collections::{HashMap, VecDeque}, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
+use logger::{debug, error, info};
 use medo_parser::{DeliveryTicketPacket, Packet};
 use once_cell::sync::{Lazy, OnceCell};
-use settings::{CopyModifier, FileMethods, Settings, Task};
-use tokio::sync::{Mutex};
+use settings::{CopyModifier,Settings, Task};
+use tokio::sync::Mutex;
 use crate::{ copyer::NewPacketInfoTrait, state::AppState};
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
@@ -147,7 +146,7 @@ impl DirectoriesSpy
         // }
         // else 
         // {
-            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 20000).await
+            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
             {  
                 if task.delete_after_copy
                 {

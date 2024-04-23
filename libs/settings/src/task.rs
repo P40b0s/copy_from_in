@@ -31,6 +31,8 @@ pub struct Task
     pub generate_exclude_file: bool,
     #[serde(default="def_col")]
     pub color: String,
+    #[serde(default="is_default")]
+    pub sound: bool,
     pub filters: Filter
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -90,6 +92,7 @@ impl Default for Task
             clean_types: vec![],
             generate_exclude_file: false,
             color: def_col(),
+            sound: false,
             filters: Filter
             {
                 document_types: vec![],

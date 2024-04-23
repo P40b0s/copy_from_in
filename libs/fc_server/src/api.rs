@@ -1,19 +1,18 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use bytes::{Buf, Bytes};
-use http_body_util::{BodyExt, Empty, Full};
+use bytes::Bytes;
+use http_body_util::{BodyExt, Full};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{body::Incoming as IncomingBody, header, Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use logger::{debug, error, info};
-use serde::{Deserialize, Serialize};
-use settings::{Settings, Task};
-use tokio::net::{TcpListener, TcpStream};
-use anyhow::{anyhow, Context, Error, Result};
-use service::Server;
-use transport::{BytesSerializer, Contract, NewPacketInfo};
+use serde::Serialize;
+use settings::Task;
+use tokio::net::TcpListener;
+use anyhow::Result;
+use transport::{BytesSerializer, NewPacketInfo};
 use crate::state::AppState;
 use crate::{commands, WebsocketServer, APP_STATE};
 

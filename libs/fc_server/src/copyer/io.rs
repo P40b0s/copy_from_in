@@ -1,16 +1,15 @@
-use std::{fmt::Display, fs::{DirEntry, File, OpenOptions}, future::Future, io::{BufWriter, Read, Write}, ops::Deref, os::unix::fs::MetadataExt, path::{Path, PathBuf}, pin::Pin, sync::Arc, time::SystemTime};
-
+use std::fs::{DirEntry, File, OpenOptions};
+use std::{io::{BufWriter, Read, Write},   path::{Path, PathBuf}, sync::Arc, time::SystemTime};
 use futures::FutureExt;
 use logger::{backtrace, debug, error};
 use serde_json::Value;
-use tokio::{task::{JoinHandle, JoinSet}, try_join};
-
+use tokio::task::JoinSet;
 use crate::Error;
 
  
  /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
  /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
- pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
+ /* pub fn copy_recursively(source: impl AsRef<Path>, destination: impl AsRef<Path>, check_duration: u64) -> std::io::Result<u64> 
  {
     if std::fs::read_dir(source.as_ref())?.count() == 0
     {
@@ -79,7 +78,7 @@ use crate::Error;
     let end = std::time::SystemTime::now();
     let duration = end.duration_since(start).unwrap();
     Ok(duration.as_secs())
- }
+ } */
 
  /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
  /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
@@ -208,13 +207,13 @@ async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, chec
             {
                 modifed_time = Some(md_time);
                 modifed_len = Some(metadata.len());
-                logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
-                logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
+                //logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+                //logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
             }
             else
             {
-                logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
-                logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
+                //logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+                //logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
                 if modifed_len.as_ref().unwrap() == &metadata.len() && modifed_time.as_ref().unwrap() ==  &md_time
                 {
                     modifed_time = None;
@@ -400,10 +399,6 @@ mod tests
     #[test]
     fn test_copy()
     {
-        logger::StructLogger::initialize_logger();
-        super::copy_recursively(
-        "/hard/xar/projects/rust/copy_from_in/test_data/in/38773995_1_1_unzip",
-        "/hard/xar/projects/rust/copy_from_in/test_data/in/test_copy",
-        1000);
+       
     }
 }

@@ -5,6 +5,7 @@ import Store from './abstract_store';
 import { events} from '../services/tauri/events';
 import { service, settings } from '../services/tauri/commands'
 import { IPacket } from '../models/types';
+import { error_sound, new_packet_notify_sound } from '../services/sounds';
 
 /**
  * Хранилище состояний
@@ -64,7 +65,15 @@ class AppStateStore extends Store<IGlobalAppState>
   {
     await events.packets_update((doc) => 
     {
-      console.log(doc);
+      const pl = doc.payload;
+      if(pl.task.sound)
+      {
+        if(pl.error != undefined)
+          error_sound();
+        
+        else
+          new_packet_notify_sound();
+      }
       this.add_packet(doc.payload);
     })
   }
