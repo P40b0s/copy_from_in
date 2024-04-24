@@ -185,7 +185,19 @@ impl DirectoriesSpy
     ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
     async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
     {
-        
+        if task.autocleaning
+        {
+            if let Some(dt) = packet.get_document_type()
+            {
+                if task.clean_types.contains(&dt)
+                {
+                    if let Ok(_) = std::fs::remove_dir_all(source_path)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
         if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
         && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
         && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
