@@ -115,7 +115,8 @@ impl Settings
     /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
     pub fn add_to_exclude(task_name: &str, dir: &String) -> bool
     {
-        let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
+        let value = EXCLUDES.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut guard = value.lock().unwrap();
         if !guard.contains_key(task_name)
         {
             guard.insert(task_name.to_owned(), vec![dir.to_owned()]);

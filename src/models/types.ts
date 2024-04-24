@@ -38,6 +38,7 @@ export type Task =
     color: string,
     sound: boolean,
     clean_types: string[],
+    autocleaning: boolean,
     filters: Filter
 }
 export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
@@ -78,6 +79,7 @@ class TaskClone implements Clone<Task>
                 sound: source.sound,
                 clean_types: source.clean_types,
                 generate_exclude_file: source.generate_exclude_file,
+                autocleaning: source.autocleaning,
                 filters: f
             } 
             return t;

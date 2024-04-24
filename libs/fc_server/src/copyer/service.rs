@@ -9,9 +9,9 @@ use super::io::get_dirs;
 
 pub trait PacketsCleaner
 {
+    ///нам нужно вернуть только колчество удаленных пакетов, ошибки нас не интересуют
     fn clear_packets(settings: &Settings) -> Result<u32, Error>
     {
-        let mut errors: Vec<String> = vec![];
         let mut count = 0;
         for t in &settings.tasks
         {
@@ -52,21 +52,21 @@ pub trait PacketsCleaner
                                     count+=1;
                                 }
                             }
-                            else 
-                            {
-                                let err = ["Ошибка очистки пакета ", d, " тип пакета не найден"].concat();
-                                logger::error!("{}", &err);
-                                errors.push(err);
-                            }
+                            // else 
+                            // {
+                            //     let err = ["Ошибка очистки пакета ", d, " тип пакета не найден в схеме xml не обнаружен"].concat();
+                            //     logger::warn!("{}", &err);
+                            //     errors.push(err);
+                            // }
                         }
                     }
                 }
             }
         }
-        if !errors.is_empty()
-        {
-            return Err(Error::ServiceErrors(errors));
-        }
+        // if !errors.is_empty()
+        // {
+        //     return Err(Error::ServiceErrors(errors));
+        // }
         {
             return Ok(count);
         }

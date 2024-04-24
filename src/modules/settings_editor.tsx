@@ -263,6 +263,7 @@ export const SettingsEditor =  defineComponent({
                                 generate_exclude_file: true,
                                 clean_types: [],
                                 sound: false,
+                                autocleaning: false,
                                 color: '#0ff00f',
                                 filters: f
                             }
@@ -886,26 +887,27 @@ export const SettingsEditor =  defineComponent({
                             } 
                         })
                     }),
+                    
                     h(NFormItem,
                     {
-                        path: 'snd',
+                        path: 'autocln',
                     },
                     {
                         label:() => h(HeaderWithDescription,{
-                            name: "Проигрывать аудио оповещение при поступлении нового пакета",
-                            description: "При поступлении нового пакета будет воспроизводиться аудио уведомление",
+                            name: "Автоочистка",
+                            description: "Пакеты указанные в поле \"Типы пакетов для операции очистки\" при поступлении будут удалятся автоматически",
                             fontSize: '14px'
                         }),
                         default:() =>
                         h(NSwitch,
                         {
-                            value: selected_task.value?.sound,
+                            value: selected_task.value?.autocleaning,
                             onUpdateValue:(v: boolean)=>
                             {
-                                (selected_task.value as Task).sound = v;
+                                (selected_task.value as Task).autocleaning = v;
                             } 
                         })
-                    }),
+                        }),
             ]})
         }
         return {list}
