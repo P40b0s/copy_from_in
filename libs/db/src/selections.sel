@@ -1,0 +1,10 @@
+-- database: /hard/xar/projects/fullstack/complite_in_parser/medo_db/medo.sql
+
+-- Use the ▷ button in the top right corner to run the entire file.
+
+SELECT * FROM packets WHERE requisites->'mj'->'number' = '"72097"';
+
+
+SELECT COUNT(*), sender_info->'organization' as org FROM packets GROUP BY org;
+
+SELECT * FROM packets

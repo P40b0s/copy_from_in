@@ -2,7 +2,7 @@ mod directories_spy;
 mod service;
 pub use  {directories_spy::DirectoriesSpy, directories_spy::get_full_log, service::{PacketsCleaner, ExcludesCreator}};
 use medo_parser::Packet;
-use settings::{DateTimeFormat, Task};
+use settings::Task;
 use transport::{NewDocument, NewPacketInfo};
 mod io;
 mod serialize;
@@ -91,14 +91,14 @@ pub trait NewPacketInfoTrait
 {
     fn from_err(err: &str, packet_name: &str, task: &Task) -> NewPacketInfo
     {
-        NewPacketInfo::new_err(packet_name, settings::Date::now().as_serialized().as_str(), task, err)
+        NewPacketInfo::new_err(packet_name, utilites::Date::now().format(utilites::DateFormat::Serialize).as_str(), task, err)
     }
     fn from_packet(packet: &Packet, task: &Task) -> NewPacketInfo
     {
-        NewPacketInfo::new_doc(packet.get_packet_name(), settings::Date::now().as_serialized().as_str(), task, &packet.as_doc())
+        NewPacketInfo::new_doc(packet.get_packet_name(), utilites::Date::now().format(utilites::DateFormat::Serialize).as_str(), task, &packet.as_doc())
     }
     fn not_packet(packet_dir: &str, task: &Task) -> NewPacketInfo
     {
-        NewPacketInfo::new_empty(packet_dir, settings::Date::now().as_serialized().as_str(), task)
+        NewPacketInfo::new_empty(packet_dir, utilites::Date::now().format(utilites::DateFormat::Serialize).as_str(), task)
     }
 }

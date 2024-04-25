@@ -38,7 +38,7 @@ async fn main()
   .setup(|app| 
     {
       let handle = Arc::new(app.app_handle());
-      HANDLE.set(handle);
+      let _ = HANDLE.set(handle);
       tauri::async_runtime::spawn(async move 
       {
         start_ws_service(ws_addr).await;

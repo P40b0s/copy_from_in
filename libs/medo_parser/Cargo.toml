@@ -27,6 +27,7 @@ time = { version = "0.3.34", features = ["formatting"] }
 once_cell="*"
 #lazy_static="*"
 crossbeam-channel="*"
+utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 
 [features]
 default = []

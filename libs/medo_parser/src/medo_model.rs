@@ -36,13 +36,7 @@ impl Default for Requisites
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PublicationInfo
-{
-    pub number: String,
-    pub date: String,
-}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketInfo
@@ -71,8 +65,6 @@ pub struct PacketInfo
     pub acknowledgment: Option<Ack>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub trace_message: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub publication_info: Option<PublicationInfo>,
     //время обновления пакета
     pub update_key: String,
     pub visible: bool,
@@ -105,7 +97,6 @@ impl Default for PacketInfo
             packet_type: "неизвестно".to_owned(),
             delivery_time: "01-01-2000T00:00:00".to_owned(),
             trace_message: None,
-            publication_info: None,
             update_key: "01-01-2000T00:00:00".to_owned(),
             visible: true
         }

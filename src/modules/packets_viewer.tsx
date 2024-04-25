@@ -38,6 +38,7 @@ const task_1 = (): Task =>
         generate_exclude_file: true,
         clean_types: ["Квитанция"],
         sound: true,
+        autocleaning: false,
         color: '#4f46',
         filters: f
     }
@@ -62,6 +63,7 @@ const task_2 = (): Task =>
         is_active: true,
         generate_exclude_file: true,
         sound: true,
+        autocleaning: false,
         clean_types: ["Квитанция"],
         color: '#0a8bb2',
         filters: f

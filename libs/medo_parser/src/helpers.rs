@@ -1,7 +1,7 @@
 use logger::error;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use settings::{Date, DateTimeFormat};
+use utilites::{Date, DateFormat};
 use uuid::Uuid;
 use time::{OffsetDateTime, format_description, UtcOffset, Duration};
 use std::time::SystemTime;
@@ -36,8 +36,8 @@ pub trait DatesHelper
             let day: u32 = day.as_str().parse().unwrap();
             let month: u32 = month.as_str().parse().unwrap();
             let year: u32 = year.as_str().parse().unwrap();
-            let date = *settings::Date::new(year as i32, month, day).unwrap();
-            return Some(date.as_serialized());
+            let date = Date::new_date(day, month, year);
+            return Some(date.format(DateFormat::Serialize));
         }
         logger::error!("Ошибка разбора даты {date}, неверный формат");
         return None;

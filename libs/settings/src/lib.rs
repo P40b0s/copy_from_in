@@ -1,7 +1,6 @@
 mod io;
 mod task;
 mod validation_error;
-use logger::error;
 mod file_methods;
 pub use file_methods::FileMethods;
 use once_cell::sync::OnceCell;
@@ -10,12 +9,10 @@ pub use io::{serialize, deserialize, Serializer};
 use serde::{Serialize, Deserialize};
 extern crate toml;
 extern crate blake2;
-mod dates;
 mod settings;
 pub use settings::Settings;
 pub use task::{Task, Filter, CopyModifier};
 pub use validation_error::ValidationError;
-pub use dates::*;
 use hashbrown::hash_map::HashMap;
 pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<String>>>> = OnceCell::new();
 

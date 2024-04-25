@@ -10,7 +10,9 @@ members = [
     "libs/medo_parser",
     "libs/settings", 
     "libs/fc_server",
-    "libs/transport"
+    "libs/transport",
+    "libs/pdf",
+    "libs/db"
 ]
 default-members = ["src-tauri"]
 

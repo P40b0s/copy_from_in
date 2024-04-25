@@ -1,0 +1,37 @@
+-- database: /hard/xar/projects/fullstack/complite_in_parser/medo_db/medo.sql
+
+-- Use the ▷ button in the top right corner to run the entire file.
+
+SELECT * FROM "packets";
+SELECT * FROM packets WHERE requisites->'mj'->'number' = '"72097"';
+
+SELECT * FROM packets WHERE error not NULL;
+SELECT * FROM packets WHERE packet_type = 'rc';
+UPDATE packets SET packet_type = 'rc' WHERE packet_type = 'Файл .rc';
+
+SELECT COUNT(*), sender_info->'organization' as org FROM packets GROUP BY org;
+
+SELECT c, pdf_hash FROM 
+    (SELECT COUNT(*) as c, pdf_hash FROM "packets" GROUP BY pdf_hash)
+WHERE c > 1;
+
+SELECT * FROM packets WHERE pdf_hash is NULL;
+
+SELECT sender_info->>'organization', sender_info->>'sourceGuid', delivery_time, requisites->>'signDate' FROM packets
+
+SELECT * FROM "packets" where date(requisites->>("signDate")) < date('2022-01-01');
+SELECT * FROM "packets" where date(requisites->>("signDate")) BETWEEN date('2022-01-01') AND date('2023-01-01');
+
+ALTER TABLE packets ADD COLUMN visible INTEGER NOT NULL DEFAULT 1;
+
+SELECT * FROM addresses where exists (SELECT 1 FROM json_each(publication_api_uid ) WHERE value = '225698f1-cfbc-4e42-9caa-32f9f7403211')
+
+SELECT * FROM addresses where exists (SELECT 1 FROM json_each(publication_api_uid ) WHERE value IN ('225698f1-cfbc-4e42-9caa-32f9f7403211','1049e10d-0133-4ef6-95ae-a487c0e7f653','e8fb63ac-73a0-4db2-85e5-dc5fb1f4a013'))
+
+
+select json_extract( value, '$.comments' ) as Comments,
+       json_extract( value, '$.data' ) as Data,
+       json_extract( value, '$.pod' ) as POD
+  from datatable, json_tree( datatable.data, '$.ALL' )
+ where type = 'object'
+   and json_extract( value, '$.pod' ) = 'fb' ;
