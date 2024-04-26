@@ -1,7 +1,6 @@
 
 use crate::models::{AddresseTable, DbInterface, initialize_db};
 use rusqlite::{Connection, Result};
-use medo_settings::SETTINGS;
 
 
 
@@ -19,97 +18,9 @@ mod tests
     use std::time::UNIX_EPOCH;
 
     use rusqlite::{Connection, Result};
-    use universal_interface::{PacketInfo, Requisites, MinistryOfJustice, SenderInfo};
+    use medo_parser::{PacketInfo, Requisites, MinistryOfJustice, SenderInfo};
 
     use crate::models::{AddresseTable, DbInterface, initialize_db, ContactInfo};
-
-    #[test]
-    fn test_conn_create_table() -> Result<()>
-    {
-        let db_path = super::SETTINGS.read().unwrap().paths.get_db_file();
-        let conn = Connection::open(db_path)?;
-
-        conn.execute(
-            "CREATE TABLE person (
-                id    INTEGER PRIMARY KEY,
-                name  TEXT NOT NULL,
-                data  BLOB
-            )",
-            (), // empty list of parameters.
-        )?;
-
-        Ok(())
-    }
-    #[test]
-    fn test_conn_insert() -> Result<()>
-    {
-        let db_path = super::SETTINGS.read().unwrap().paths.get_db_file();
-        let conn = Connection::open(db_path)?;
-
-        let me = Person {
-            id: 0,
-            name: "Steven".to_string(),
-            data: None,
-        };
-        conn.execute(
-            "INSERT INTO person (name, data) VALUES (?1, ?2)",
-            (&me.name, &me.data),
-        )?;
-        Ok(())
-    }
-    #[test]
-    fn test_conn_select() -> Result<()>
-    {
-        let db_path = super::SETTINGS.read().unwrap().paths.get_db_file();
-        let conn = Connection::open(db_path)?;
-
-        let mut stmt = conn.prepare("SELECT id, name, data FROM person")?;
-        let person_iter = stmt.query_map([], |row| {
-            Ok(Person {
-                id: row.get(0)?,
-                name: row.get(1)?,
-                data: row.get(2)?,
-            })
-        })?;
-    
-        for person in person_iter {
-            println!("Found person {:?}", person.unwrap());
-        }
-        Ok(())
-    }
-    #[test]
-    fn test_conn_drop_db() -> Result<()>
-    {
-        let db_path = super::SETTINGS.read().unwrap().paths.get_db_file();
-        let conn = Connection::open(db_path)?;
-
-        conn.execute(
-            "DROP TABLE IF EXISTS person",
-            (), // empty list of parameters.
-        )?;
-        Ok(())
-    }
-    fn test_conn_closure(f: fn(c: &Connection) -> Result<()>) -> Result<()>
-    {
-        let db_path = super::SETTINGS.read().unwrap().paths.get_db_file();
-        let conn = Connection::open(db_path)?;
-        f(&conn)?;
-        Ok(())
-    }
-
-    #[test]
-    fn test_conn_cl() -> Result<()>
-    {
-        test_conn_closure(|c|
-        {
-            c.execute(
-                "DROP TABLE IF EXISTS person",
-                (), // empty list of parameters.
-            )?;
-            Ok(())
-        })?;
-        Ok(())
-    }
 
     #[test]
     fn test_addresse_create() -> Result<()>
@@ -130,7 +41,6 @@ mod tests
             icon: Some("base64".to_owned()),
             contact_info: vec![],
             update_key: None,
-            publication_api_uid: vec![]
        };
        addr.add_or_replace()?;
        Ok(())
@@ -184,7 +94,6 @@ mod tests
             icon: Some("base64".to_owned()),
             contact_info: vec![],
             update_key: None,
-            publication_api_uid: vec![]
        };
        addr.delete()?;
        Ok(())
@@ -223,7 +132,6 @@ mod tests
                 wrong_encoding: false,
                 error: None,
                 trace_message: None,
-                publication_info: None,
                 files: vec![ "76608808-76609069.pdf".to_owned(),
                 "envelope.ltr".to_owned(),
                 "document.xml".to_owned()],
@@ -250,7 +158,7 @@ mod tests
                     medo_addessee: Some("M_MJUST_S~MEDOGU".to_owned()),
                     addressee: None,
                     source_guid: Some("7c960fc6-2745-4655-80eb-fed1a7905325".to_owned()),
-                    executor: Some(universal_interface::Executor 
+                    executor: Some(medo_parser::Executor 
                     { 
                         organization: Some("Минюст России".to_owned()),
                         person: Some("Государственная регистрация".to_owned()),

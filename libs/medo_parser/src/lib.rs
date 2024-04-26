@@ -9,6 +9,7 @@ mod helpers;
 mod delivery_tickcket_packet;
 pub use delivery_tickcket_packet::DeliveryTicketPacket;
 mod medo_model;
+pub use medo_model::{Ack, PacketInfo, Executor, Requisites, SenderInfo, MinistryOfJustice};
 use helpers::*;
 mod converters;
 use modules::*;

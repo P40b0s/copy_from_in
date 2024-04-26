@@ -1,21 +1,21 @@
-mod addresse;
+
 mod packet;
 mod connection;
 mod contact_info;
+pub use contact_info::ContactInfo;
+mod addresse;
+pub use addresse::AddresseTable;
 use std::slice::Iter;
 
 use connection::get_connection;
-pub use addresse::AddresseTable;
-pub use contact_info::ContactInfo;
 pub use packet::PacketTypesCount;
 use rusqlite::{Result, ToSql, Params, Statement, Rows};
 use serde::Deserialize;
-use universal_interface::{Requisites, SenderInfo, PacketInfo};
+use medo_parser::{Requisites, SenderInfo, PacketInfo};
 
-///Создание если не существуют 2 баз данных
+///Создание если не существует база данных
 pub fn initialize_db()
 {
-    //let _cr = AddresseTable::create();
     let _cr2 = PacketInfo::create();
     let r = "";
 }
