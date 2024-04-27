@@ -1,5 +1,5 @@
 use settings::Task;
-use transport::NewPacketInfo;
+use transport::Packet;
 use tauri::Manager;
 
 use crate::HANDLE;
@@ -8,7 +8,7 @@ use crate::HANDLE;
 pub struct TauriEmits;
 impl TauriEmits
 {
-    pub fn packets_update(packet: NewPacketInfo)
+    pub fn packets_update(packet: Packet)
     {
         let _ = HANDLE.get().unwrap().app_handle().emit_all("packets_update", packet);
     }

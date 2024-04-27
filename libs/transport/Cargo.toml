@@ -22,6 +22,7 @@ settings = {path = "../settings"}
 serde = { version = "1.0.197", features = ["derive"], default=false}
 logger = {git = "https://github.com/P40b0s/logger.git"}
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
+medo_parser = {path = "../medo_parser"}
 
 [dependencies.service]
 git = "https://github.com/P40b0s/websocket_service.git"

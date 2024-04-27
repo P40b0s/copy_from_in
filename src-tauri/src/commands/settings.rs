@@ -2,7 +2,7 @@ use logger::debug;
 use settings::Task;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
-use transport::NewPacketInfo;
+use transport::Packet;
 use crate::http_service;
 use crate::Error;
 
@@ -26,9 +26,9 @@ pub async fn delete(payload: Task) -> Result<(), Error>
 }
 
 #[tauri::command]
-pub async fn get_packets_list() -> Result<Vec<NewPacketInfo>, Error>
+pub async fn get_packets_list() -> Result<Vec<Packet>, Error>
 {
-    http_service::get::<Vec<NewPacketInfo>>("packets/list").await
+    http_service::get::<Vec<Packet>>("packets/list").await
 }
 
 

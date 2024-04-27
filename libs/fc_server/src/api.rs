@@ -12,7 +12,7 @@ use serde::Serialize;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
-use transport::{BytesSerializer, NewPacketInfo};
+use transport::{BytesSerializer, Packet};
 use crate::state::AppState;
 use crate::{commands, WebsocketServer, APP_STATE};
 
@@ -160,7 +160,7 @@ async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
 async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
     let body = req.collect().await?.to_bytes();
-    let packet = NewPacketInfo::from_bytes(&body)?;
+    let packet = Packet::from_bytes(&body)?;
     if let Err(e) = commands::service::rescan_packet(packet, app_state).await
     {
         return error_responce(e);

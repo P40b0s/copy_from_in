@@ -1,28 +1,28 @@
 use std::{self, collections::{HashMap, VecDeque}, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info};
-use medo_parser::{DeliveryTicketPacket, Packet};
+use medo_parser::{DeliveryTicketPacket, PacketInfo};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier,Settings, Task};
 use tokio::sync::Mutex;
-use crate::{ copyer::NewPacketInfoTrait, state::AppState};
+use transport::Packet;
+use utilites::Date;
+use crate::{ state::AppState};
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
-//use crossbeam_channel::unbounded;
-use super::{NewDocument, NewPacketInfo};
 
 const LOG_LENGHT: usize = 500;
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
-static PACKETS: Lazy<Mutex<VecDeque<NewPacketInfo>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
-static NEW_PACKET_EVENT: OnceCell<Arc<Sender<NewPacketInfo>>> = OnceCell::new();
+static PACKETS: Lazy<Mutex<VecDeque<Packet>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
+static NEW_PACKET_EVENT: OnceCell<Arc<Sender<Packet>>> = OnceCell::new();
 static INIT: AtomicBool = AtomicBool::new(false);
 pub struct DirectoriesSpy;
 
 
 impl DirectoriesSpy
 {
-    pub async fn subscribe_new_packet_event() -> Receiver<NewPacketInfo>
+    pub async fn subscribe_new_packet_event() -> Receiver<Packet>
     {
-        let (sender, receiver) = bounded::<NewPacketInfo>(2);
+        let (sender, receiver) = bounded::<Packet>(2);
         let _ = NEW_PACKET_EVENT.set(Arc::new(sender));
         receiver
     }
@@ -92,11 +92,12 @@ impl DirectoriesSpy
         debug!("Сообщение от задачи `{}` -> найден новый пакет {}", task_name, source_path.display());
         match task.copy_modifier
         {
+            //копируются все директории поэтому парсить транспортный пакет не имеет смысла
             CopyModifier::CopyAll =>
             {
                 if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
-                    let new_packet = NewPacketInfo::not_packet(&founded_packet_name, &task);
+                    let new_packet = Packet::new_empty(&founded_packet_name, &Date::now().format(utilites::DateFormat::SerializeReverse), &task);
                     new_packet_found(new_packet).await;
                 }
             },
@@ -106,8 +107,7 @@ impl DirectoriesSpy
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
-                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
-                        new_packet_found(new_packet).await;
+                        new_packet_found(packet).await;
                     }
                 }
                 else
@@ -121,8 +121,7 @@ impl DirectoriesSpy
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
-                        let new_packet = NewPacketInfo::from_packet(&packet, &task);
-                        new_packet_found(new_packet).await;
+                        new_packet_found(packet).await;
                     }
                 }
                 else
@@ -166,15 +165,15 @@ impl DirectoriesSpy
         //}
     }
 
+    //TODO надо сделать этот пакет!
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
     {
-        let packet = medo_parser::Packet::parse(&source_path);
+        let packet = Packet::parse(source_path, task);
         if let Some(errors) = packet.get_error()
         {
             let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
             error!("{}", &err);
-            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
-            new_packet_found(pi).await;
+            new_packet_found(packet).await;
             return None;
         }
         return Some(packet)
@@ -187,7 +186,7 @@ impl DirectoriesSpy
     {
         if task.autocleaning
         {
-            if let Some(dt) = packet.get_document_type()
+            if let Some(dt) = packet.get_packet_info().as_ref().unwrap().packet_type.as_ref()
             {
                 if task.clean_types.contains(&dt)
                 {
@@ -220,37 +219,39 @@ impl DirectoriesSpy
 
     async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
     {
-        let packet_type = packet.get_packet_type();
+        let packet_type = &packet.get_packet_info().as_ref().unwrap().packet_type;
         if packet_type.is_none()
         {
-            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по типу, но тип пакета не найден", source_path.display());
+            let err = format!("Ошибка обработки пакета {} -> тип пакета в схеме xml не найден", source_path.display());
             error!("{}", &err);
-            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            let pi = Packet::new_err(packet.get_packet_name(), &Date::now().format(utilites::DateFormat::SerializeReverse), task, err.as_str());
             new_packet_found(pi).await;
             return false;
         }
-        if task.filters.document_types.contains(&packet_type.unwrap().into_owned()) == need_rule_accept
+        if task.filters.document_types.contains(packet_type.as_ref().unwrap()) == need_rule_accept
         {
             return true;
         }
         false 
     }
+
     async fn source_uid_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
     {
-        let source_uid = packet.get_source_uid();
+        let source_uid = packet.get_packet_info().as_ref().unwrap()
+                                        .sender_info.as_ref().and_then(|a| a.source_guid.as_ref());
         if source_uid.is_none()
         {
-            let err = format!("Ошибка обработки пакета {} -> выбрано копирование пакетов по uid отправителя, но uid отправителя в пакете не найден", source_path.display());
+            let err = format!("Ошибка обработки пакета {} -> uid отправителя в пакете не найден", source_path.display());
             error!("{}", &err);
-            let pi = NewPacketInfo::from_err(err.as_str(), packet.get_packet_name(), task);
+            let pi = Packet::new_err(packet.get_packet_name(), &Date::now().format(utilites::DateFormat::SerializeReverse), task, err.as_str());
             new_packet_found(pi).await;
             return false;
         }
-        if task.filters.document_uids.contains(&source_uid.unwrap().into_owned()) == need_rule_accept
+        if task.filters.document_uids.contains(&source_uid.as_ref().unwrap()) == need_rule_accept
         {
             return true;
         }    
-        false 
+        false
     }
 
     ///проверяем новые пакеты у тасков с вышедшим таймером, получаем список тасков у которых найдены новые пакеты
@@ -270,7 +271,7 @@ impl DirectoriesSpy
                     {
                         exclude_is_changed = true;
                         prepared_tasks.push((cloned_task, d.to_owned()));
-                    }    
+                    }
                 }
                 if exclude_is_changed
                 {
@@ -282,11 +283,11 @@ impl DirectoriesSpy
     }
 }
 
-///Обнаружен новый пакет
-async fn new_packet_found(mut packet: NewPacketInfo)
+///Обнаружен новый пакет при ошибке отправляем всем ошибку
+async fn new_packet_found(mut packet: Packet)
 {
     logger::debug!("Сервером отправлен новый пакет {:?}, {}", &packet, logger::backtrace!());
-    let sended = send_report(packet.get_document().as_ref(), &packet.name, packet.get_task()).await;
+    let sended = send_report(packet.get_packet_name(), packet.get_packet_info().as_ref(), packet.get_task()).await;
     packet.report_sended = sended;
     let mut log = PACKETS.lock().await;
     if let Some(sender) = NEW_PACKET_EVENT.get()
@@ -300,22 +301,26 @@ async fn new_packet_found(mut packet: NewPacketInfo)
     
     //let _ = lg.send(packet);
 }
-pub async fn get_full_log() -> VecDeque<NewPacketInfo>
+pub async fn get_full_log() -> VecDeque<Packet>
 {
     let guard = PACKETS.lock().await;
     guard.clone()
 }
 
-async fn send_report(new_doc: Option<&NewDocument>, packet_name: &str, task: &Task) -> bool
+async fn send_report(packet_name: &str, new_doc: Option<&PacketInfo>, task: &Task) -> bool
 {
     if let Some(r_dir) = task.get_report_dir()
     {
         if let Some(doc) = new_doc
         {
-            if doc.doc_uid.is_none()
-            || doc.organization_uid.is_none()
-            || doc.organization.is_none()
-            || doc.source_medo_addressee.is_none()
+            let doc_uid = doc.requisites.as_ref().and_then(|a| a.document_guid.as_ref());
+            let source_uid = doc.sender_info.as_ref().and_then(|o| o.source_guid.as_ref());
+            let organization = doc.sender_info.as_ref().and_then(|o| o.organization.as_ref());
+            let addresse = doc.sender_info.as_ref().and_then(|o| o.addressee.as_ref());
+            if doc_uid.is_none()
+            || source_uid.is_none()
+            || organization.is_none()
+            || addresse.is_none()
             {
                 logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
                 return false;
@@ -323,10 +328,10 @@ async fn send_report(new_doc: Option<&NewDocument>, packet_name: &str, task: &Ta
             else
             {
                 DeliveryTicketPacket::create_packet(
-                    doc.doc_uid.as_ref().unwrap(),
-                    doc.organization_uid.as_ref().unwrap(),
-                    doc.organization.as_ref().unwrap(),
-                    doc.source_medo_addressee.as_ref().unwrap()
+                    doc_uid.unwrap(),
+                    source_uid.unwrap(),
+                    organization.unwrap(),
+                    addresse.unwrap()
                 ).send(r_dir);
                 return true;
             }

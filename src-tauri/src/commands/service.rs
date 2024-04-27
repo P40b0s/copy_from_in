@@ -2,7 +2,7 @@ use crate::ws_serivice::WebsocketClient;
 use service::Client;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
-use transport::NewPacketInfo;
+use transport::Packet;
 use crate::Error;
 use crate::http_service;
 
@@ -24,9 +24,9 @@ pub async fn ws_server_online() -> Result<bool, Error>
   Ok(WebsocketClient::is_connected())
 }
 #[tauri::command]
-pub async fn rescan_packet(payload: NewPacketInfo) -> Result<(), Error>
+pub async fn rescan_packet(payload: Packet) -> Result<(), Error>
 {
-  http_service::post::<NewPacketInfo>("packets/rescan", &payload).await
+  http_service::post::<Packet>("packets/rescan", &payload).await
 }
 
 pub fn service_plugin<R: Runtime>() -> TauriPlugin<R> 

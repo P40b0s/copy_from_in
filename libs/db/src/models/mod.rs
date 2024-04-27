@@ -16,6 +16,7 @@ use medo_parser::{Requisites, SenderInfo, PacketInfo};
 ///Создание если не существует база данных
 pub fn initialize_db()
 {
+    let _cr1 = AddresseTable::create();
     let _cr2 = PacketInfo::create();
     let r = "";
 }

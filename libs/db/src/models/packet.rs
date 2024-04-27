@@ -223,7 +223,7 @@ impl DbInterface for PacketInfo
     }
 }
 
-
+///Вот где собака зарыта! не мог найти где в базу данных добавление происходит)
 impl super::BatchOperation for Vec<PacketInfo> 
 {
     fn batch(&self) -> Result<()>  where

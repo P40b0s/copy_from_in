@@ -1,15 +1,18 @@
 
 mod contract;
 mod new_document;
-mod new_packet_info;
+mod packet;
+use medo_parser::PacketInfo;
 pub use new_document::NewDocument;
-pub use new_packet_info::NewPacketInfo;
+pub use packet::Packet;
 use anyhow::{Result, Context};
 use bytes::Bytes;
 pub use contract::Contract;
 use settings::{Settings, Task};
 use serde::{Serialize, Deserialize};
 
+///Трейт для сериализации\десериализации данных через http
+/// надо вынести его в отдельный функционал и не мешать с websocket? может его в вебсокет и отправить? тем более фючи совпадают и ящики тоже
 pub trait BytesSerializer
 {
     #[cfg(feature="json")]
@@ -57,5 +60,7 @@ impl BytesSerializer for Task{}
 impl BytesSerializer for Vec<Task>{}
 impl BytesSerializer for u32{}
 impl BytesSerializer for Contract{}
-impl BytesSerializer for NewPacketInfo{}
-impl BytesSerializer for Vec<NewPacketInfo>{}
+impl BytesSerializer for Packet{}
+impl BytesSerializer for Vec<PacketInfo>{}
+impl BytesSerializer for Vec<Packet>{}
+impl BytesSerializer for PacketInfo{}

@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, sync::Arc};
 use logger::{backtrace, debug, error};
 use settings::Task;
-use transport::{Contract, NewPacketInfo};
+use transport::{Contract, Packet};
 use service::Server;
 use crate::{copyer::DirectoriesSpy, Error};
 
@@ -9,7 +9,7 @@ pub struct WebsocketServer;
 impl Server<Contract> for WebsocketServer{}
 impl WebsocketServer
 {
-    pub async fn new_packet_event(packet: NewPacketInfo)
+    pub async fn new_packet_event(packet: Packet)
     {
         Self::broadcast_message_to_all(Contract::NewPacket(packet)).await;  
     }
@@ -47,22 +47,6 @@ pub async fn start_ws_server(port: usize)
             }
         }
     }).await;
-}
-///стартуем обработчик новых поступивших пакетов
-/// одна из функций отправка этих пакетов всем подключенным клиентам через сервер websocket
-pub async fn start_new_packets_handler()
-{
-    let receiver: crate::async_channel::Receiver<transport::NewPacketInfo> = DirectoriesSpy::subscribe_new_packet_event().await;
-    //получаем сообщения от копировальщика
-    tokio::spawn(async move
-    {
-        let receiver = Arc::new(receiver);
-        while let Ok(r) = receiver.recv().await
-        {
-            logger::debug!("Сервером отправлен новый пакет {:?}, {}", &r, backtrace!());
-            WebsocketServer::new_packet_event(r).await;
-        }
-    });
 }
 
 // async fn task_updated(addr: & SocketAddr, task: &Task)

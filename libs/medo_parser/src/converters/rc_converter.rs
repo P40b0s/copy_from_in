@@ -7,7 +7,7 @@ impl UniversalConverter for RcParser
 {
     fn convert(&self, to: &mut PacketInfo) 
     {
-        to.packet_type = "rc".to_owned();
+        to.packet_type = Some("rc".to_owned());
         let mut req = Requisites::default();
         req.document_guid = self.guid.clone();
         req.act_type = self.viddoc.clone();

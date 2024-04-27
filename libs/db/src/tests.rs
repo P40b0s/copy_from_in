@@ -126,7 +126,7 @@ mod tests
                 acknowledgment: None,
                 visible: true,
                 header_guid: Some("511a7c7a-7503-4ea4-a195-9fb6287c7818".to_owned()),
-                packet_type: "Документ".to_owned(),
+                packet_type: Some("Документ".to_owned()),
                 delivery_time: "2023-02-14T13:22:24".to_owned(),
                 update_key: "2023-02-14T13:22:24".to_owned(),
                 wrong_encoding: false,

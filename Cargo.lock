@@ -1578,6 +1578,7 @@ dependencies = [
  "clap_derive",
  "const_format",
  "crossbeam-channel",
+ "db",
  "flexbuffers",
  "futures",
  "http-body-util",
@@ -5216,6 +5217,7 @@ dependencies = [
  "bytes",
  "flexbuffers",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git)",
+ "medo_parser",
  "serde",
  "serde_json",
  "service",
@@ -5357,7 +5359,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 [[package]]
 name = "utilites"
 version = "0.1.0"
-source = "git+https://github.com/P40b0s/help_utilites.git#c88e9cb1d85e6090d0482c9f02db303f511a0a13"
+source = "git+https://github.com/P40b0s/help_utilites.git#b4e7432ec8b4971c11ab8545ce19c067714d7cb5"
 dependencies = [
  "base64 0.13.1",
  "blake2",

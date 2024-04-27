@@ -2,10 +2,12 @@ mod error;
 mod ws;
 mod api;
 mod cli;
+mod packets_handler;
 use api::start_http_server;
 pub use error::Error;
+use packets_handler::start_packets_handler;
 pub use utilites;
-use ws::{start_ws_server, start_new_packets_handler};
+use ws::start_ws_server;
 pub use ws::WebsocketServer;
 mod copyer;
 mod state;
@@ -25,9 +27,10 @@ async fn main()
 {
     StructLogger::initialize_logger();
     let params = cli::Cli::parse_args();
+    db::initialize_db();
     let _ = start_http_server(params.http_port).await;
     start_ws_server(params.ws_port).await;
-    start_new_packets_handler().await;
+    start_packets_handler().await;
     loop
     {
         let settings = Arc::clone(&APP_STATE);

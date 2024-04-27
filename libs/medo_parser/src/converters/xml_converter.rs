@@ -46,7 +46,7 @@ fn identification(value: &XmlParser, packet: &mut PacketInfo) -> bool
         {
             packet.header_guid = Some(uid.into_owned());
         }
-        packet.packet_type = header.get_type().into_owned();
+        packet.packet_type = Some(header.get_type().into_owned());
         //организация отправившая пакет и ее uid
         sender.organization = Some(organization.into_owned());
         sender.source_guid = Some(source.get_uid().into_owned());

@@ -1,4 +1,4 @@
-use std::{path::PathBuf, borrow::Cow};
+use std::{borrow::Cow, path::{Path, PathBuf}};
 use serde::{Serialize, Deserialize};
 use utilites::Date;
 use crate::{get_entries, helpers::DatesHelper, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};
@@ -126,7 +126,7 @@ impl Packet
         self.get_xml().and_then(|x|x.get_header().and_then(|h|Some(h.get_source().get_uid())))
     }
 
-    pub fn parse(path: &PathBuf) -> Self
+    pub fn parse<P: AsRef<Path>>(path: P) -> Self
     {
         let mut p = Packet 
         {
@@ -137,7 +137,7 @@ impl Packet
             error: PacketError::None,
             packet_dir: None,
             packet_date_time: None,
-            path: Some(path.to_owned())
+            path: Some(path.as_ref().into())
         };
         let result = p.parse_transport_packet();
         if result.is_err()

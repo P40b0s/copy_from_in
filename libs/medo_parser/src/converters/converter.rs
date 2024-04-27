@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use crate::{medo_model::PacketInfo, Packet};
 use utilites::{Date, DateFormat};
 
@@ -8,7 +10,7 @@ pub trait UniversalConverter
 
 impl From<&Packet> for PacketInfo
 {
-    fn from(value: &Packet) -> Self 
+    fn from(value: &Packet) -> Self
     {
         let mut info = PacketInfo::default();
         if let Some(files) = value.get_packet_files()
@@ -34,6 +36,48 @@ impl From<&Packet> for PacketInfo
             info.error = Some(err.into_owned());
         }
         info.update_key = Date::now().format(DateFormat::Serialize);
+        if info.default_pdf.is_some()
+        {
+            let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
+            info.pdf_hash = utilites::Hasher::hash_from_path(path);
+        }
+        info
+    }
+}
+
+impl From<Packet> for PacketInfo
+{
+    fn from(value: Packet) -> Self 
+    {
+        let mut info = PacketInfo::default();
+        if let Some(files) = value.get_packet_files()
+        {
+            info.files = files.to_owned();
+        }
+        info.packet_directory = value.get_packet_name().to_owned();
+        if let Some(dt) = value.get_packet_date_time()
+        {
+            info.delivery_time = dt.into_owned();
+        }
+        if let Some(xml) = value.get_xml()
+        {
+            xml.convert(&mut info);
+        }
+        if let Some(rc) = value.get_rc()
+        {
+            rc.convert(&mut info);
+        }
+        let err = value.get_error();
+        if let Some(err) = err
+        {
+            info.error = Some(err.into_owned());
+        }
+        info.update_key = Date::now().format(DateFormat::Serialize);
+        if info.default_pdf.is_some()
+        {
+            let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
+            info.pdf_hash = utilites::Hasher::hash_from_path(path);
+        }
         info
     }
 }

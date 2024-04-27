@@ -2,14 +2,14 @@ use std::path::Path;
 use std::sync::Arc;
 use logger::{debug, error};
 use settings::{FileMethods, Task};
-use transport::NewPacketInfo;
+use transport::Packet;
 use crate::copyer::ExcludesCreator;
 use crate::state::AppState;
 use crate::Error;
 
-pub async fn get_log(state: Arc<AppState>) -> Result<Vec<NewPacketInfo>, Error>
+pub async fn get_log(state: Arc<AppState>) -> Result<Vec<Packet>, Error>
 {
-    let log:Vec<NewPacketInfo> = crate::copyer::get_full_log().await.into();
+    let log:Vec<Packet> = crate::copyer::get_full_log().await.into();
     Ok(log)
 }
 pub async fn get(state: Arc<AppState>) -> Result<Vec<Task>, Error>

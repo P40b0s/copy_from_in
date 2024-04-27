@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
+use utilites::Date;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+use crate::Packet;
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Requisites
 {
@@ -37,14 +40,14 @@ impl Default for Requisites
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketInfo
 {
     #[serde(skip_serializing_if="Option::is_none")]
     pub header_guid : Option<String>,
     pub packet_directory: String,
-    pub packet_type: String,
+    pub packet_type: Option<String>,
     ///Время создания локальной директории
     ///(фактически когда пакет пришел к нам)
     ///зависит от времени на сервере, тому что берет локальное время создания
@@ -76,6 +79,10 @@ impl PacketInfo
     {
        Path::new(&self.packet_directory).to_owned()
     }
+    pub fn parse<P: AsRef<Path>>(path: P) -> Self
+    {
+        Packet::parse(path).into()
+    }
 }
 
 impl Default for PacketInfo
@@ -94,16 +101,16 @@ impl Default for PacketInfo
             pdf_hash: None,
             acknowledgment: None,
             wrong_encoding: false,
-            packet_type: "неизвестно".to_owned(),
-            delivery_time: "01-01-2000T00:00:00".to_owned(),
+            packet_type: None,
+            delivery_time: Date::now().format(utilites::DateFormat::SerializeReverse),
             trace_message: None,
-            update_key: "01-01-2000T00:00:00".to_owned(),
+            update_key: Date::now().format(utilites::DateFormat::SerializeReverse),
             visible: true
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderInfo
 {
@@ -124,7 +131,7 @@ pub struct SenderInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub executor: Option<Executor>
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Executor
 {
@@ -156,14 +163,14 @@ impl Default for SenderInfo
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinistryOfJustice
 {
     pub number: String,
     pub date: String
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Ack
 {
