@@ -7,11 +7,6 @@ use crate::copyer::ExcludesCreator;
 use crate::state::AppState;
 use crate::Error;
 
-pub async fn get_log(state: Arc<AppState>) -> Result<Vec<Packet>, Error>
-{
-    let log:Vec<Packet> = crate::copyer::get_full_log().await.into();
-    Ok(log)
-}
 pub async fn get(state: Arc<AppState>) -> Result<Vec<Task>, Error>
 {
     let settings = state.get_settings().await;

@@ -3,9 +3,9 @@ pub enum DbError
     Error(String)
 }
 
-impl From<rusqlite::Error> for DbError
+impl From<sqlx::Error> for DbError
 {
-    fn from(value: rusqlite::Error) -> Self 
+    fn from(value: sqlx::Error) -> Self 
     {
         match value 
         {

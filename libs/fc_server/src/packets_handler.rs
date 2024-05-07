@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use db::DbInterface;
+use db::{Operations, PacketsTable};
 use logger::backtrace;
 use transport::Packet;
 
-use crate::{copyer::DirectoriesSpy, WebsocketServer};
+use crate::{copyer::DirectoriesSpy, services::WebsocketServer};
 
 ///стартуем обработчик новых поступивших пакетов
 /// одна из функций отправка этих пакетов всем подключенным клиентам через сервер websocket
@@ -18,9 +18,14 @@ pub async fn start_packets_handler()
         while let Ok(r) = receiver.recv().await
         {
             logger::debug!("Сервером отправлен новый пакет {:?}, {}", &r, backtrace!());
-            //TODO если пакет не парсится то пакетинфо отсутсвует! надо это переделать! добавить минимальную инфу о пакете хоть о пустом
             //точнее она там и так есть, надо просто ее протащить наверх при ошибке тоже добавлять в БД
-            let _add_to_base = r.get_packet_info().as_ref().unwrap().add_or_ignore();
+            //TODO нужно сделать обычный id и добавить имя таска которым пакет был обработан
+            let p_table = PacketsTable::new(r.get_packet_info(), r.get_task().get_task_name());
+            let test = PacketsTable::add_or_replace(&p_table).await;
+            if test.is_err()
+            {
+                logger::error!("{}", test.err().unwrap().to_string());
+            }
             WebsocketServer::new_packet_event(r).await;
         }
     });

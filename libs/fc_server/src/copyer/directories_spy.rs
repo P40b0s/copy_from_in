@@ -10,9 +10,9 @@ use crate::{ state::AppState};
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
 
-const LOG_LENGHT: usize = 500;
+//для каждой задачи есть свой таймер, отнимаем 15 сек от времени задачи каждую итерацию
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
-static PACKETS: Lazy<Mutex<VecDeque<Packet>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
+//static PACKETS: Lazy<Mutex<VecDeque<Packet>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
 static NEW_PACKET_EVENT: OnceCell<Arc<Sender<Packet>>> = OnceCell::new();
 static INIT: AtomicBool = AtomicBool::new(false);
 pub struct DirectoriesSpy;
@@ -97,13 +97,14 @@ impl DirectoriesSpy
             {
                 if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                 {
-                    let new_packet = Packet::new_empty(&founded_packet_name, &Date::now().format(utilites::DateFormat::SerializeReverse), &task);
+                    let new_packet = Packet::new_empty(&founded_packet_name, &task);
                     new_packet_found(new_packet).await;
                 }
             },
             CopyModifier::CopyOnly =>
             {
-                if let Some(packet) = Self::get_packet(&source_path, &task).await
+                let packet = Self::get_packet(&source_path, &task).await;
+                if !packet.is_err()
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                     {
@@ -112,12 +113,13 @@ impl DirectoriesSpy
                 }
                 else
                 {
-                    return;
+                    new_packet_found(packet).await;
                 }
             },
             CopyModifier::CopyExcept =>
             {
-                if let Some(packet) = Self::get_packet(&source_path, &task).await
+                let packet = Self::get_packet(&source_path, &task).await;
+                if !packet.is_err()
                 {
                     if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                     {
@@ -126,7 +128,7 @@ impl DirectoriesSpy
                 }
                 else
                 {
-                    return;
+                    new_packet_found(packet).await;
                 }
                 
             },
@@ -166,17 +168,9 @@ impl DirectoriesSpy
     }
 
     //TODO надо сделать этот пакет!
-    async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
+    async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
     {
-        let packet = Packet::parse(source_path, task);
-        if let Some(errors) = packet.get_error()
-        {
-            let err = format!("Ошибка обработки пакета {} -> {}", &source_path.display(),  errors);
-            error!("{}", &err);
-            new_packet_found(packet).await;
-            return None;
-        }
-        return Some(packet)
+        Packet::parse(source_path, task)
     }
 
     ///Отработали ли правила из текущей задачи
@@ -186,7 +180,7 @@ impl DirectoriesSpy
     {
         if task.autocleaning
         {
-            if let Some(dt) = packet.get_packet_info().as_ref().unwrap().packet_type.as_ref()
+            if let Some(dt) = packet.get_packet_info().packet_type.as_ref()
             {
                 if task.clean_types.contains(&dt)
                 {
@@ -219,12 +213,12 @@ impl DirectoriesSpy
 
     async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
     {
-        let packet_type = &packet.get_packet_info().as_ref().unwrap().packet_type;
+        let packet_type = &packet.get_packet_info().packet_type;
         if packet_type.is_none()
         {
             let err = format!("Ошибка обработки пакета {} -> тип пакета в схеме xml не найден", source_path.display());
             error!("{}", &err);
-            let pi = Packet::new_err(packet.get_packet_name(), &Date::now().format(utilites::DateFormat::SerializeReverse), task, err.as_str());
+            let pi = Packet::new_err(packet.get_packet_name(),  task, err.as_str());
             new_packet_found(pi).await;
             return false;
         }
@@ -237,13 +231,13 @@ impl DirectoriesSpy
 
     async fn source_uid_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
     {
-        let source_uid = packet.get_packet_info().as_ref().unwrap()
+        let source_uid = packet.get_packet_info()
                                         .sender_info.as_ref().and_then(|a| a.source_guid.as_ref());
         if source_uid.is_none()
         {
             let err = format!("Ошибка обработки пакета {} -> uid отправителя в пакете не найден", source_path.display());
             error!("{}", &err);
-            let pi = Packet::new_err(packet.get_packet_name(), &Date::now().format(utilites::DateFormat::SerializeReverse), task, err.as_str());
+            let pi = Packet::new_err(packet.get_packet_name(),  task, err.as_str());
             new_packet_found(pi).await;
             return false;
         }
@@ -287,36 +281,37 @@ impl DirectoriesSpy
 async fn new_packet_found(mut packet: Packet)
 {
     logger::debug!("Сервером отправлен новый пакет {:?}, {}", &packet, logger::backtrace!());
-    let sended = send_report(packet.get_packet_name(), packet.get_packet_info().as_ref(), packet.get_task()).await;
+    let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
-    let mut log = PACKETS.lock().await;
+    //let mut log = PACKETS.lock().await;
     if let Some(sender) = NEW_PACKET_EVENT.get()
     {
         let _ = sender.send(packet.clone()).await;
     }
-    log.push_front(packet);
-    log.truncate(LOG_LENGHT);
-    
-    //let lg = NEW_DOCS.get().unwrap().lock().await;
-    
-    //let _ = lg.send(packet);
+    //log.push_front(packet);
+    //log.truncate(LOG_LENGHT);
 }
-pub async fn get_full_log() -> VecDeque<Packet>
-{
-    let guard = PACKETS.lock().await;
-    guard.clone()
-}
+// pub async fn get_full_log() -> VecDeque<Packet>
+// {
+//     let guard = PACKETS.lock().await;
+//     guard.clone()
+// }
 
-async fn send_report(packet_name: &str, new_doc: Option<&PacketInfo>, task: &Task) -> bool
+async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) -> bool
 {
     if let Some(r_dir) = task.get_report_dir()
     {
-        if let Some(doc) = new_doc
+        if let Some(e) = new_packet.error.as_ref()
         {
-            let doc_uid = doc.requisites.as_ref().and_then(|a| a.document_guid.as_ref());
-            let source_uid = doc.sender_info.as_ref().and_then(|o| o.source_guid.as_ref());
-            let organization = doc.sender_info.as_ref().and_then(|o| o.organization.as_ref());
-            let addresse = doc.sender_info.as_ref().and_then(|o| o.addressee.as_ref());
+            logger::error!("Ошибка парсера {} в пакете {}, уведомление отправлено не будет", e, packet_name);
+            return false;
+        }
+        else
+        {
+            let doc_uid = new_packet.requisites.as_ref().and_then(|a| a.document_guid.as_ref());
+            let source_uid = new_packet.sender_info.as_ref().and_then(|o| o.source_guid.as_ref());
+            let organization = new_packet.sender_info.as_ref().and_then(|o| o.organization.as_ref());
+            let addresse = new_packet.sender_info.as_ref().and_then(|o| o.addressee.as_ref());
             if doc_uid.is_none()
             || source_uid.is_none()
             || organization.is_none()
@@ -335,11 +330,6 @@ async fn send_report(packet_name: &str, new_doc: Option<&PacketInfo>, task: &Tas
                 ).send(r_dir);
                 return true;
             }
-        }
-        else 
-        {
-            logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
-            return false;
         }
     }
     return false;

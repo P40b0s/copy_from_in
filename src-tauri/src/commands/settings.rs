@@ -25,14 +25,6 @@ pub async fn delete(payload: Task) -> Result<(), Error>
     http_service::post("settings/tasks/delete", &payload).await
 }
 
-#[tauri::command]
-pub async fn get_packets_list() -> Result<Vec<Packet>, Error>
-{
-    http_service::get::<Vec<Packet>>("packets/list").await
-}
-
-
-
 
 pub fn settings_plugin<R: Runtime>() -> TauriPlugin<R> 
 {
@@ -40,8 +32,7 @@ pub fn settings_plugin<R: Runtime>() -> TauriPlugin<R>
       .invoke_handler(tauri::generate_handler![
         get,
         update,
-        delete,
-        get_packets_list
+        delete
         ])
       .build()
 }

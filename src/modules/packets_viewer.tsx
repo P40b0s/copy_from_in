@@ -7,7 +7,7 @@ import
     ref,
   } from 'vue'
 
-import { NButton, NIcon, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
+import { NButton, NIcon, NPagination, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
@@ -155,7 +155,35 @@ export const PacketsViewer =  defineComponent({
         //     app_state_store.add_packet(test_error_packet2());
         //     app_state_store.add_packet(test_packet2());
         // }
-       
+
+        const current_page = ref(1);
+        const items_on_page = 20;
+        let current_offset = 0;
+        const complex = () =>
+        {
+            return h('div',
+            [
+                //h(list),
+                h(NPagination,
+                {
+                    itemCount: app_state_store.getState().appState.users_count,
+                    pageSizes: [items_on_page],
+                    showSizePicker: false,
+                    simple: true,
+                    page: current_page.value,
+                    onUpdatePage: async (page) => 
+                    {
+                        current_page.value = page;
+                        current_offset = page * items_on_page;
+                        await get_users(current_offset);
+                    },
+                },
+                {
+                    
+                })
+
+            ])
+        }
         const list = () =>
         {
             return h('div',

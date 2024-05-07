@@ -7,9 +7,9 @@ use crate::Error;
 
 pub async fn clear_dirs(state: Arc<AppState>) -> Result<u32, Error>
 {
-  let settings = state.get_settings().await;
-  let r = Settings::clear_packets(&settings)?;
-  Ok(r)
+    let settings = state.get_settings().await;
+    let r = Settings::clear_packets(&settings)?;
+    Ok(r)
 }
 
 pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>

@@ -3,7 +3,7 @@ use logger::{backtrace, debug, error};
 use settings::Task;
 use transport::{Contract, Packet};
 use service::Server;
-use crate::{copyer::DirectoriesSpy, Error};
+use crate::{copyer::DirectoriesSpy, state::AppState, Error};
 
 pub struct WebsocketServer;
 impl Server<Contract> for WebsocketServer{}
@@ -28,7 +28,7 @@ impl WebsocketServer
 }
 
 ///Стартуем сервер вебсокет для приема и отправки сообщений
-pub async fn start_ws_server(port: usize)
+pub async fn start_ws_server(port: usize, app_state: Arc<AppState>)
 {
     let addr = ["0.0.0.0:".to_owned(), port.to_string()].concat();
     WebsocketServer::start_server(&addr, |addr, msg|

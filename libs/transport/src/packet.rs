@@ -4,14 +4,15 @@ use logger::debug;
 use medo_parser::PacketInfo;
 use serde::{Deserialize, Serialize};
 use settings::Task;
+use utilites::Date;
 
 ///Эта структура будет ходить между клиентом - сервером
+/// все ошибки будут внутри packet_info.error
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Packet
 {
-    packet_info: Option<PacketInfo>,
-    error: Option<String>,
+    packet_info: PacketInfo,
     task: Task,
     pub name: String,
     pub parse_time: String,
@@ -25,33 +26,14 @@ impl Packet
         let packet_info = PacketInfo::parse(path);
         let name = packet_info.packet_directory.clone();
         let parse_time = packet_info.delivery_time.clone();
-        if let Some(e) = packet_info.error.clone()
+        Self
         {
-            debug!("Ошибка парсинга пакета {} -> {:?}", &e, &packet_info);
-            return Self
-            {
-                name,
-                parse_time,
-                report_sended: false,
-                task: task.clone(),
-                packet_info: None,
-                error: Some(e)
-            };
+            name,
+            parse_time,
+            report_sended: false,
+            task: task.clone(),
+            packet_info: packet_info,
         }
-        else 
-        {
-            return Self
-            {
-                name,
-                parse_time,
-                report_sended: false,
-                task: task.clone(),
-                packet_info: Some(packet_info),
-                error: None
-            };
-        }
-       
-        
     }
     pub fn new_packet(task: &Task, packet: PacketInfo) -> Self
     {
@@ -63,45 +45,58 @@ impl Packet
             parse_time,
             report_sended: false,
             task: task.clone(),
-            packet_info: Some(packet),
-            error: None
+            packet_info: packet,
         }
     }
-    pub fn new_err<S: ToString>(name: S, parse_time: S, task: &Task, error: S) -> Self
+    pub fn new_err<S: ToString>(name: S, task: &Task, error: S) -> Self
     {
+
+        let mut pi = PacketInfo::default();
+        pi.packet_directory = name.to_string();
+        pi.delivery_time = Self::time_now();
+        pi.error = Some(error.to_string());
         Self
         {
             name: name.to_string(),
-            parse_time: parse_time.to_string(),
+            parse_time: Self::time_now(),
             report_sended: false,
             task: task.clone(),
-            packet_info: None,
-            error: Some(error.to_string())
+            packet_info: pi,
         }
     }
-    pub fn new_empty<S: ToString>(name: S, parse_time: S, task: &Task) -> Self
+    fn time_now() -> String
     {
+        Date::now().format(utilites::DateFormat::Serialize)
+    }
+    pub fn new_empty<S: ToString>(name: S, task: &Task) -> Self
+    {
+        let mut pi = PacketInfo::default();
+        pi.packet_directory = name.to_string();
+        pi.delivery_time = Self::time_now();
         Self
         {
             name: name.to_string(),
-            parse_time: parse_time.to_string(),
+            parse_time: Self::time_now(),
             report_sended: false,
             task: task.clone(),
-            packet_info: None,
-            error: None
+            packet_info: pi,
         }
     }
     pub fn get_task(&self) -> &Task
     {
         &self.task
     }
-    pub fn get_packet_info(&self) -> &Option<PacketInfo>
+    pub fn get_packet_info(&self) -> &PacketInfo
     {
         &self.packet_info
     }
     pub fn get_error(&self) -> &Option<String>
     {
-        &self.error
+        &self.packet_info.error
+    }
+    pub fn is_err(&self) -> bool
+    {
+        self.packet_info.error.is_some()
     }
     pub fn get_packet_name(&self) -> &str
     {

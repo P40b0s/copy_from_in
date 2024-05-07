@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
-
 use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
 use hyper::server::conn::http1;
@@ -14,12 +13,12 @@ use tokio::net::TcpListener;
 use anyhow::Result;
 use transport::{BytesSerializer, Packet};
 use crate::state::AppState;
-use crate::{commands, WebsocketServer, APP_STATE};
+use super::WebsocketServer;
 
 type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 static NOTFOUND: &[u8] = b"this endpoint not found";
 
-pub async fn start_http_server(port: usize) -> Result<()>
+pub async fn start_http_server(port: usize, app_state: Arc<AppState>) -> Result<()>
 {
     let addr = ["0.0.0.0:".to_owned(), port.to_string()].concat();
     
@@ -31,6 +30,7 @@ pub async fn start_http_server(port: usize) -> Result<()>
             loop 
             {
                 let connected = listener.accept().await;
+                let app_state = Arc::clone(&app_state);
                 if let Ok((stream, addr)) = connected
                 {
                     let io = TokioIo::new(stream);
@@ -39,7 +39,7 @@ pub async fn start_http_server(port: usize) -> Result<()>
                         let service = service_fn(move |req|
                         {
                             info!("Поступил запрос от {} headers->{:?}", &addr, req.headers());
-                            response_examples(req)
+                            response_examples(req, Arc::clone(&app_state))
                         });
                         if let Err(err) = http1::Builder::new().serve_connection(io, service).await 
                         //еще настройки из https://docs.rs/hyper/latest/hyper/server/conn/http1/struct.Builder.html
@@ -52,15 +52,13 @@ pub async fn start_http_server(port: usize) -> Result<()>
                 {
                     error!("Ошибка подключения клиента к api {}", connected.err().unwrap().to_string());
                 }
-                
             }
         });
     Ok(())
 }
 
-async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBody>> 
+async fn response_examples(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let app_state = Arc::clone(&APP_STATE);
     match (req.method(), req.uri().path()) 
     {
         (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
@@ -69,10 +67,9 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
         (&Method::GET, "/packets/truncate") => truncate(app_state).await,
         (&Method::GET, "/packets/clean") => clean(app_state).await,
         (&Method::POST, "/packets/rescan") => rescan(req, app_state).await,
-        (&Method::GET, "/packets/list") => get_packets_list(app_state).await,
+        //(&Method::GET, "/packets/list") => get_packets_list(app_state).await,
         _ => 
         {
-            
             let err = format!("В Апи отсуствует эндпоинт {}", req.uri().path());
             logger::warn!("{}", &err);
             // Return 404 not found response.
@@ -85,7 +82,7 @@ async fn response_examples(req: Request<IncomingBody>) -> Result<Response<BoxBod
 }
 async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let settings = commands::settings::get(app_state).await?;
+    let settings = super::settings::get(app_state).await?;
     let bytes = settings.to_bytes()?;
     let body_data = to_body(bytes);
     let response = Response::builder()
@@ -96,24 +93,24 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
 }
 
 //что то тут непонятное передается
-async fn get_packets_list(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
-{
-    let log = commands::settings::get_log(app_state).await?;
-    logger::debug!("{:?}", log);
-    let bytes = log.to_bytes()?;
-    let body_data = to_body(bytes);
-    let response = Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/octet-stream")
-        .body(body_data)?;
-    Ok(response)
-}
+// async fn get_packets_list(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+// {
+//     let log = super::settings::get_log(app_state).await?;
+//     logger::debug!("{:?}", log);
+//     let bytes = log.to_bytes()?;
+//     let body_data = to_body(bytes);
+//     let response = Response::builder()
+//         .status(StatusCode::OK)
+//         .header(header::CONTENT_TYPE, "application/octet-stream")
+//         .body(body_data)?;
+//     Ok(response)
+// }
 
 async fn update_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
     let body = req.collect().await?.to_bytes();
     let task: Task = Task::from_bytes(&body)?;
-    if let Err(e) = commands::settings::update(task.clone(), app_state).await
+    if let Err(e) = super::settings::update(task.clone(), app_state).await
     {
         return error_responce(e);
     }
@@ -127,7 +124,7 @@ async fn delete_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
 {
     let body = req.collect().await?.to_bytes();
     let task: Task = Task::from_bytes(&body)?;
-    if let Err(e) = commands::settings::delete(task.clone(), app_state).await
+    if let Err(e) = super::settings::delete(task.clone(), app_state).await
     {
         return error_responce(e);
     }
@@ -138,7 +135,7 @@ async fn delete_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Re
 
 async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let cl = commands::service::clear_dirs(app_state).await;
+    let cl = super::service::clear_dirs(app_state).await;
     if let Err(e) = cl
     {
         return error_responce(e);
@@ -148,7 +145,7 @@ async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
 }
 async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {
-    let trunc = commands::service::truncate_tasks_excepts(app_state).await;
+    let trunc = super::service::truncate_tasks_excepts(app_state).await;
     if let Err(e) = trunc
     {
         return error_responce(e);
@@ -161,7 +158,7 @@ async fn rescan(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<
 {
     let body = req.collect().await?.to_bytes();
     let packet = Packet::from_bytes(&body)?;
-    if let Err(e) = commands::service::rescan_packet(packet, app_state).await
+    if let Err(e) = super::service::rescan_packet(packet, app_state).await
     {
         return error_responce(e);
     }
@@ -188,6 +185,7 @@ fn response_ok<T : BytesSerializer + Serialize>(obj: T) -> Result<Response<BoxBo
     Ok(resp)
 }
 
+
 fn response_ok_empty() -> Result<Response<BoxBody>>
 {
     let resp =  Response::builder()
@@ -195,7 +193,6 @@ fn response_ok_empty() -> Result<Response<BoxBody>>
     .header(header::CONTENT_TYPE, "application/json")
     .body(empty_body())?;
     Ok(resp)
-    
 }
 
 pub fn to_body(bytes: Bytes) -> BoxBody
@@ -240,4 +237,27 @@ fn error_responce(error: crate::Error) -> Result<Response<BoxBody>>
 // impl ToBody for Settings{}
 // impl ToBody for Task{}
 
-
+#[cfg(test)]
+mod tests
+{
+    use std::collections::HashMap;
+    use url::Url;
+    #[test]
+    fn test_uri()
+    {
+      
+        let uri = "http://192.168.0.1/foo/bar?offset=20".parse::<Url>().unwrap();
+        assert_eq!(uri.path(), "/foo/bar");
+        assert_eq!(uri.query(), Some("offset=20"));
+        assert!(uri.host().is_some());
+        let params: HashMap<String, String> = uri
+        .query()
+        .map(|v| {
+            url::form_urlencoded::parse(v.as_bytes())
+                .into_owned()
+                .collect()
+        })
+    .unwrap_or_else(HashMap::new);
+    assert_eq!(params.get("offset"), Some(&"20".to_owned()));
+    }
+}

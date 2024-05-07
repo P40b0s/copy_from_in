@@ -1,8 +1,7 @@
 mod directories_spy;
 mod service;
-pub use  {directories_spy::DirectoriesSpy, directories_spy::get_full_log, service::{PacketsCleaner, ExcludesCreator}};
-use medo_parser::Packet;
-use settings::Task;
+pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, ExcludesCreator}};
+
 mod io;
 mod serialize;
 

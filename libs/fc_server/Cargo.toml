@@ -40,6 +40,7 @@ clap= {version = "4.5.4", features = ["derive"]}
 clap_derive="4.5.4"
 async-channel="2.2.0"
 futures = "0.3.30"
+url="2.5.0"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 
 [dependencies.service]

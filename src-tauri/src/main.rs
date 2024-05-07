@@ -48,6 +48,7 @@ async fn main()
     .plugin(commands::date_plugin())
     .plugin(commands::settings_plugin())
     .plugin(commands::service_plugin())
+    .plugin(commands::packets_plugin())
     // .invoke_handler(tauri::generate_handler![
     //   //initialize_app_state,
     // ])

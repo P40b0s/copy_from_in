@@ -1,23 +1,17 @@
 mod error;
-mod ws;
-mod api;
 mod cli;
 mod packets_handler;
-use api::start_http_server;
 pub use error::Error;
 use packets_handler::start_packets_handler;
 pub use utilites;
-use ws::start_ws_server;
-pub use ws::WebsocketServer;
 mod copyer;
 mod state;
-mod commands;
+mod services;
 use std::sync::Arc;
 use copyer::DirectoriesSpy;
 use logger::StructLogger;
 use state::AppState;
 use once_cell::sync::Lazy;
-
 extern crate async_channel;
 static APP_STATE : Lazy<Arc<AppState>> = Lazy::new(|| Arc::new(AppState::default()));
 
@@ -27,9 +21,9 @@ async fn main()
 {
     StructLogger::initialize_logger();
     let params = cli::Cli::parse_args();
-    db::initialize_db();
-    let _ = start_http_server(params.http_port).await;
-    start_ws_server(params.ws_port).await;
+    db::initialize_db().await;
+    let _ = services::start_http_server(params.http_port, Arc::clone(&APP_STATE)).await;
+    services::start_ws_server(params.ws_port, Arc::clone(&APP_STATE)).await;
     start_packets_handler().await;
     loop
     {
