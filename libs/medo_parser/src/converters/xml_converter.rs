@@ -50,7 +50,7 @@ fn identification(value: &XmlParser, packet: &mut PacketInfo) -> bool
         //организация отправившая пакет и ее uid
         sender.organization = Some(organization.into_owned());
         sender.source_guid = Some(source.get_uid().into_owned());
-        sender.medo_addessee = match value.get_medo_addressee()
+        sender.medo_addressee = match value.get_medo_addressee()
         {
             Some(e) => Some(e.into_owned()),
             None => 

@@ -35,7 +35,7 @@ impl TryFrom<&PacketInfo> for AddresseTable
         
         let id = value.sender_info.as_ref().and_then(|s| s.source_guid.as_ref().cloned()).ok_or("id организации отправителя не найден".to_owned())?;
         let organization = value.sender_info.as_ref().and_then(|s| s.organization.as_ref().cloned()).ok_or("наименование организации отправителя не найдено".to_owned())?;
-        let medo_addresse = value.sender_info.as_ref().and_then(|s| s.medo_addessee.as_ref().cloned());
+        let medo_addresse = value.sender_info.as_ref().and_then(|s| s.medo_addressee.as_ref().cloned());
         //Сбор контактных данных
         let executor = value.sender_info.as_ref().and_then(|e| e.executor.as_ref().cloned());
         let mut contacts: Vec<ContactInfo> = vec![];

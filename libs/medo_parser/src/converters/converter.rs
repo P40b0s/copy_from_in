@@ -75,6 +75,7 @@ impl From<Packet> for PacketInfo
             info.error = Some(err.into_owned());
         }
         info.update_key = Date::now().format(DateFormat::Serialize);
+        
         // if info.default_pdf.is_some()
         // {
         //     let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());

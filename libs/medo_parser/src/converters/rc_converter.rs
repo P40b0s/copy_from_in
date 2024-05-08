@@ -16,23 +16,19 @@ impl UniversalConverter for RcParser
         //15.10.2022
         if let Some(date) = self.regdate.as_ref()
         {
-            if let Some(date) = Date::convert_dot_date(date)
+            if let Some(date) = Date::parse(date)
             {
-                req.sign_date = Some(date);
+                req.sign_date = Some(date.format(utilites::DateFormat::Serialize));
             }
         }
         req.annotation =  self.content_2.clone();
         to.requisites = Some(req);
         let s = SenderInfo 
         {
-            medo_addessee : Some("неизвестно".to_owned()),
+            medo_addressee : Some("неизвестно".to_owned()),
             organization : Some("неизвестно".to_owned()),
             source_guid : Some("00000000-0000-0000-0000-000000000000".to_owned()),
-            addressee: None,
-            executor: None,
-            person: None,
-            department: None,
-            post: None
+            ..SenderInfo::default()
         };
         to.sender_info = Some(s);
         logger::error!("В пакете rc отсутсвуют свойства отправителя {}", &to.packet_directory);

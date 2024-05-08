@@ -26,59 +26,59 @@ pub trait DatesHelper
 {
     
     
-    fn convert_dot_date(date: &String) -> Option<String>
-    {
-        for cap in RC_DATE_REGEX.captures_iter(date)
-        {
-            let day = cap.get(1).unwrap();
-            let month = cap.get(2).unwrap();
-            let year = cap.get(3).unwrap();
-            let day: u32 = day.as_str().parse().unwrap();
-            let month: u32 = month.as_str().parse().unwrap();
-            let year: u32 = year.as_str().parse().unwrap();
-            let date = Date::new_date(day, month, year);
-            return Some(date.format(DateFormat::Serialize));
-        }
-        logger::error!("Ошибка разбора даты {date}, неверный формат");
-        return None;
-    }
+    // fn convert_dot_date(date: &String) -> Option<String>
+    // {
+    //     for cap in RC_DATE_REGEX.captures_iter(date)
+    //     {
+    //         let day = cap.get(1).unwrap();
+    //         let month = cap.get(2).unwrap();
+    //         let year = cap.get(3).unwrap();
+    //         let day: u32 = day.as_str().parse().unwrap();
+    //         let month: u32 = month.as_str().parse().unwrap();
+    //         let year: u32 = year.as_str().parse().unwrap();
+    //         let date = Date::new_date(day, month, year);
+    //         return Some(date.format(DateFormat::Serialize));
+    //     }
+    //     logger::error!("Ошибка разбора даты {date}, неверный формат");
+    //     return None;
+    // }
     ///72097 от 23.01.2023
     fn extract_mj_requisites(annotation: &String) -> Option<(String, String)>
     {
         for cap in MJ_DATE_REGEX.captures_iter(annotation)
         {
             let number = cap.get(1).unwrap().as_str().to_owned();
-            let dot_date = Self::convert_dot_date(annotation).unwrap();
+            let dot_date = Date::parse(annotation).unwrap();
             logger::info!("Обнаружены данные министерства юстиции  {} {}", &number, &dot_date);
-            return Some((number, dot_date));
+            return Some((number, dot_date.format(DateFormat::Serialize)));
         }   
         return None;
     }
-    fn convert_system_time(dt: SystemTime) -> Option<String>
-    {
-        let mut offset: OffsetDateTime = dt.into();
-        let dur = Duration::hours(3);
-        if let Ok(utc_offset_result) = UtcOffset::from_whole_seconds(dur.as_seconds_f32().round() as i32)
-        {
-            offset = offset.to_offset(utc_offset_result);
-        }
-        let dt_format = DTFORMAT;
-        let format = format_description::parse(
-            &dt_format,
-        ).ok()?;
-        let off = offset.format(&format);
-        match off
-        {
-            Ok(off) => {
-                return Some(off);
-            },
-            Err(e) => 
-            {
-                error!("Ошибка преобразования даты: {:?}, {}", dt, e.to_string());
-                return None;
-            }
-        };
-    }
+    // fn convert_system_time(dt: SystemTime) -> Option<String>
+    // {
+    //     let mut offset: OffsetDateTime = dt.into();
+    //     let dur = Duration::hours(3);
+    //     if let Ok(utc_offset_result) = UtcOffset::from_whole_seconds(dur.as_seconds_f32().round() as i32)
+    //     {
+    //         offset = offset.to_offset(utc_offset_result);
+    //     }
+    //     let dt_format = DTFORMAT;
+    //     let format = format_description::parse(
+    //         &dt_format,
+    //     ).ok()?;
+    //     let off = offset.format(&format);
+    //     match off
+    //     {
+    //         Ok(off) => {
+    //             return Some(off);
+    //         },
+    //         Err(e) => 
+    //         {
+    //             error!("Ошибка преобразования даты: {:?}, {}", dt, e.to_string());
+    //             return None;
+    //         }
+    //     };
+    // }
 }
 
 impl DatesHelper for Date{}

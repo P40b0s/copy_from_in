@@ -125,12 +125,30 @@ pub struct SenderInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub addressee: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub medo_addessee: Option<String>,
+    pub medo_addressee: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub source_guid: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub executor: Option<Executor>
+    pub executor: Option<Executor>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub icon: Option<String>
 }
+impl SenderInfo
+{
+    pub fn is_null(&self) -> bool
+    {
+        self.organization.is_none()
+        &&  self.person.is_none()
+        &&  self.department.is_none()
+        &&  self.post.is_none()
+        &&  self.addressee.is_none()
+        &&  self.medo_addressee.is_none()
+        &&  self.source_guid.is_none()
+        &&  self.executor.is_none()  
+        &&  self.icon.is_none()
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Executor
@@ -156,9 +174,10 @@ impl Default for SenderInfo
             department: None,
             post: None,
             addressee: None,
-            medo_addessee: None,
+            medo_addressee: None,
             source_guid: None,
-            executor: None
+            executor: None,
+            icon: None
         }
     }
 }

@@ -6,8 +6,10 @@ use serde_json::json;
 use settings::Task;
 use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
 use uuid::Uuid;
-use super::{connection::get_connection, from_json, operations::{CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}};
+use crate::AddresseTable;
 
+use super::{connection::get_connection, from_json, operations::{CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}};
+#[derive(Debug)]
 pub struct PacketsTable
 {
     id: String,
@@ -156,6 +158,10 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
+        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
+        {
+            addreesses.add_or_replace().await;
+        }
         Ok(())
     }
    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<PacketsTable>> 
@@ -216,6 +222,10 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
+        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
+        {
+            addreesses.add_or_replace().await;
+        }
         Ok(())
     }
     async fn add_or_ignore(&'a self) -> anyhow::Result<()>
@@ -258,6 +268,10 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
+        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
+        {
+            addreesses.add_or_replace().await;
+        }
         Ok(())
     }
 }
@@ -294,6 +308,8 @@ impl PacketsTable
 #[cfg(test)]
 mod tests
 {
+    use crate::PacketsTable;
+
 
     // use super::{Operations, Selector, QuerySelector};
     // #[tokio::test]
@@ -334,12 +350,13 @@ mod tests
     //     //let _ = super::DiseasesTable::delete(&d).await;
     //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
     // }
-    // #[tokio::test]
-    // async fn test_add_user()
-    // {
-    //     super::initialize().await;
-       
-    // }
+    #[tokio::test]
+    async fn test_add_user()
+    {
+        logger::StructLogger::initialize_logger();
+        let paging : Vec<String> = PacketsTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
+        logger::debug!("{:?}", paging);
+    }
 
     // #[tokio::test]
     // async fn test_json_select()

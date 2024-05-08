@@ -1,6 +1,6 @@
 use std::{borrow::Cow, path::{Path, PathBuf}};
 use serde::{Serialize, Deserialize};
-use utilites::Date;
+use utilites::{Date, DateFormat};
 use crate::{get_entries, helpers::DatesHelper, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -171,7 +171,7 @@ impl Packet
         }
         if let Ok(created) = self.path.as_ref().unwrap().metadata().and_then(|m|m.created())
         {
-            self.packet_date_time = Date::convert_system_time(created);
+            self.packet_date_time = Some(Date::from_system_time(created).format(DateFormat::Serialize));
         }
 
         let base_dir = base_dir.unwrap();

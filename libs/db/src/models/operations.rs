@@ -196,7 +196,8 @@ pub fn from_json<V: for<'a> serde::de::Deserialize<'a>, S : AsRef<str>>(row: &Sq
     let sender_info: Option<String> = row.try_get(row_name.as_ref()).ok()?;
     if let Some(r) = sender_info
     {
-        Some(serde_json::from_str::<V>(&r).unwrap())
+        let val = serde_json::from_str::<V>(&r).ok()?;
+        Some(val)
     }
     else
     {
