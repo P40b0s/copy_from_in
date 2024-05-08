@@ -1,6 +1,6 @@
 
-mod packet;
-pub use packet::PacketsTable;
+mod packet_table;
+pub use packet_table::PacketsTable;
 mod connection;
 mod contact_info;
 mod operations;
@@ -11,7 +11,7 @@ pub use addresse::AddresseTable;
 use std::slice::Iter;
 
 use connection::get_connection;
-use medo_parser::{Requisites, SenderInfo, PacketInfo};
+use transport::{Requisites, SenderInfo, PacketInfo};
 
 ///Создание если не существует база данных
 pub async fn initialize_db()

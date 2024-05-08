@@ -6,7 +6,7 @@ use std::borrow::Cow;
 // use serde::{Serialize, Deserialize};
 // use serde_json::json;
 use logger::backtrace;
-use medo_parser::{Ack, PacketInfo, Requisites, SenderInfo};
+use transport::{Ack, PacketInfo, Requisites, SenderInfo};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
@@ -275,7 +275,7 @@ impl FromRow<'_, SqliteRow> for AddresseTable
     }
 }
 
-impl<'a> Operations<'a, AddresseTable> for AddresseTable
+impl<'a> Operations<'a> for AddresseTable
 {
     fn table_name() -> &'static str 
     {
@@ -301,7 +301,7 @@ impl<'a> Operations<'a, AddresseTable> for AddresseTable
         icon
         FROM ", Self::table_name()].concat()
     }
-    async fn update(addr: &AddresseTable) -> anyhow::Result<()>
+    async fn update(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["UPDATE ", Self::table_name(),
@@ -311,18 +311,18 @@ impl<'a> Operations<'a, AddresseTable> for AddresseTable
         icon = $5
         WHERE id = $1"].concat();
         sqlx::query(&sql)
-        .bind(&addr.id)
-        .bind(&addr.medo_addresse)
-        .bind(&json!(&addr.contact_info))
-        .bind(&addr.icon)
+        .bind(&self.id)
+        .bind(&self.medo_addresse)
+        .bind(&json!(&self.contact_info))
+        .bind(&self.icon)
         .execute(&mut c).await?;
         Ok(())
     }
-   async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<AddresseTable>> 
+   async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>> 
    {
         let mut c = get_connection().await?;
         let query = selector.query();
-        let mut res = sqlx::query_as::<_, AddresseTable>(&query.0);
+        let mut res = sqlx::query_as::<_, Self>(&query.0);
         if let Some(params) = query.1
         {
             for p in params
@@ -336,33 +336,33 @@ impl<'a> Operations<'a, AddresseTable> for AddresseTable
         Ok(r)
    }
 
-    async fn add_or_replace(addr: &AddresseTable) -> anyhow::Result<()>
+    async fn add_or_replace(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
         " (id, organization, medo_addresse, contact_info, icon) 
         VALUES ($1, $2, $3, $4, $5)"].concat();
         sqlx::query(&sql)
-        .bind(&addr.id)
-        .bind(&addr.organization)
-        .bind(&addr.medo_addresse)
-        .bind(&json!(&addr.contact_info))
-        .bind(&addr.icon)
+        .bind(&self.id)
+        .bind(&self.organization)
+        .bind(&self.medo_addresse)
+        .bind(&json!(&self.contact_info))
+        .bind(&self.icon)
         .execute(&mut c).await?;
         Ok(())
     }
-    async fn add_or_ignore(addr: &AddresseTable) -> anyhow::Result<()>
+    async fn add_or_ignore(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
         " (id, organization, medo_addresse, contact_info, icon) 
         VALUES ($1, $2, $3, $4, $5)"].concat();
         sqlx::query(&sql)
-        .bind(&addr.id)
-        .bind(&addr.organization)
-        .bind(&addr.medo_addresse)
-        .bind(&json!(&addr.contact_info))
-        .bind(&addr.icon)
+        .bind(&self.id)
+        .bind(&self.organization)
+        .bind(&self.medo_addresse)
+        .bind(&json!(&self.contact_info))
+        .bind(&self.icon)
         .execute(&mut c).await?;
         Ok(())
     }

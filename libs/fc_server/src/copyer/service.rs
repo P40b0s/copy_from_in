@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use medo_parser::Packet;
 use settings::{Settings, Task};
+use transport::Packet;
 
 use crate::{copyer::io::get_files, Error};
 
@@ -22,7 +22,7 @@ pub trait PacketsCleaner
                     for d in &dirs
                     {
                         let source_path = Path::new(t.get_source_dir()).join(d);
-                        let packet = Packet::parse(&source_path);
+                        let packet = Packet::parse(&source_path, t);
                         if let Some(e) = packet.get_error()
                         {
                             let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();
@@ -40,11 +40,9 @@ pub trait PacketsCleaner
                         }
                         else 
                         {
-                            if let Some(pt) = packet.get_packet_type()
+                            if let Some(pt) = packet.get_packet_info().packet_type.as_ref()
                             {
-                                let pt = pt.into_owned();
-                                //logger::info!("{} {:?}", &pt, t.clean_types);
-                                if t.clean_types.contains(&pt)
+                                if t.clean_types.contains(pt)
                                 {
                                     let _ = std::fs::remove_dir_all(&source_path);
                                     let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();

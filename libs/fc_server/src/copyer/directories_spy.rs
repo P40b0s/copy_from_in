@@ -1,6 +1,6 @@
 use std::{self, collections::{HashMap, VecDeque}, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info};
-use medo_parser::{DeliveryTicketPacket, PacketInfo};
+use transport::{DeliveryTicketPacket, PacketInfo};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier,Settings, Task};
 use tokio::sync::Mutex;
@@ -167,7 +167,7 @@ impl DirectoriesSpy
         //}
     }
 
-    //TODO надо сделать этот пакет!
+
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
     {
         Packet::parse(source_path, task)
@@ -248,7 +248,7 @@ impl DirectoriesSpy
         false
     }
 
-    ///проверяем новые пакеты у тасков с вышедшим таймером, получаем список тасков у которых найдены новые пакеты
+    ///проверяем новые пакеты у тасков с истекшим таймером, получаем список тасков у которых найдены новые пакеты
     async fn scan_dir(task: Arc<Task>) -> Vec<(Arc<Task>, String)>
     {
         let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
@@ -283,19 +283,11 @@ async fn new_packet_found(mut packet: Packet)
     logger::debug!("Сервером отправлен новый пакет {:?}, {}", &packet, logger::backtrace!());
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
-    //let mut log = PACKETS.lock().await;
     if let Some(sender) = NEW_PACKET_EVENT.get()
     {
         let _ = sender.send(packet.clone()).await;
     }
-    //log.push_front(packet);
-    //log.truncate(LOG_LENGHT);
 }
-// pub async fn get_full_log() -> VecDeque<Packet>
-// {
-//     let guard = PACKETS.lock().await;
-//     guard.clone()
-// }
 
 async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) -> bool
 {
@@ -312,12 +304,26 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
             let source_uid = new_packet.sender_info.as_ref().and_then(|o| o.source_guid.as_ref());
             let organization = new_packet.sender_info.as_ref().and_then(|o| o.organization.as_ref());
             let addresse = new_packet.sender_info.as_ref().and_then(|o| o.addressee.as_ref());
+            let mut err: Vec<&str> = Vec::with_capacity(4);
             if doc_uid.is_none()
-            || source_uid.is_none()
-            || organization.is_none()
-            || addresse.is_none()
             {
-                logger::error!("В пакете {} не распознаны необходимые свойства для отправки уведомления о доставке, уведомление отправлено не будет", packet_name);
+                err.push("uid документа");
+            }
+            if source_uid.is_none()
+            {
+                err.push("uid отправителя");
+            }
+            if organization.is_none()
+            {
+                err.push("наименование организации отправителя");
+            }
+            if addresse.is_none()
+            {
+                err.push("адрес МЭДО отправителя");
+            }
+            if err.len() > 0
+            {
+                logger::error!("Недостаточно информации ({}) для отправки уведомления о доставке по пакету `{}`, уведомление отправлено не будет", err.join("/"), packet_name);
                 return false;
             } 
             else

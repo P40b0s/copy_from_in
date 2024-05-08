@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::sync::Arc;
 use logger::{debug, error};
-use medo_parser::PacketInfo;
 use settings::{FileMethods, Task};
 use transport::Packet;
 use crate::copyer::ExcludesCreator;
@@ -13,3 +12,4 @@ use crate::Error;
     
 //     Ok(log)
 // }
+//TODO во время селекта надо вставлять туда таск по имени

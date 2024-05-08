@@ -1,15 +1,15 @@
 
 mod contract;
-mod new_document;
 mod packet;
-use medo_parser::PacketInfo;
-pub use new_document::NewDocument;
 pub use packet::Packet;
 use anyhow::{Result, Context};
 use bytes::Bytes;
 pub use contract::Contract;
 use settings::{Settings, Task};
 use serde::{Serialize, Deserialize};
+pub use medo_parser::DeliveryTicketPacket;
+pub use medo_parser::MedoParser;
+pub use medo_parser::{Ack, PacketInfo, Executor, Requisites, SenderInfo, MinistryOfJustice};
 
 ///Трейт для сериализации\десериализации данных через http
 /// надо вынести его в отдельный функционал и не мешать с websocket? может его в вебсокет и отправить? тем более фючи совпадают и ящики тоже

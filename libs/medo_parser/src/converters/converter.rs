@@ -12,6 +12,7 @@ impl From<&Packet> for PacketInfo
 {
     fn from(value: &Packet) -> Self
     {
+        
         let mut info = PacketInfo::default();
         if let Some(files) = value.get_packet_files()
         {
@@ -36,11 +37,12 @@ impl From<&Packet> for PacketInfo
             info.error = Some(err.into_owned());
         }
         info.update_key = Date::now().format(DateFormat::Serialize);
-        if info.default_pdf.is_some()
-        {
-            let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
-            info.pdf_hash = utilites::Hasher::hash_from_path(path);
-        }
+        //FIXME исправлено, тут мы не можем зать полный путь к пакету
+        // if info.default_pdf.is_some()
+        // {
+        //     let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
+        //     info.pdf_hash = utilites::Hasher::hash_from_path(path);
+        // }
         info
     }
 }
@@ -73,11 +75,11 @@ impl From<Packet> for PacketInfo
             info.error = Some(err.into_owned());
         }
         info.update_key = Date::now().format(DateFormat::Serialize);
-        if info.default_pdf.is_some()
-        {
-            let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
-            info.pdf_hash = utilites::Hasher::hash_from_path(path);
-        }
+        // if info.default_pdf.is_some()
+        // {
+        //     let path = Path::new(&info.packet_directory).join(info.default_pdf.as_ref().unwrap());
+        //     info.pdf_hash = utilites::Hasher::hash_from_path(path);
+        // }
         info
     }
 }

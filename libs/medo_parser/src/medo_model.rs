@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use utilites::Date;
 
-use crate::Packet;
+use super::Packet;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -102,9 +102,9 @@ impl Default for PacketInfo
             acknowledgment: None,
             wrong_encoding: false,
             packet_type: None,
-            delivery_time: Date::now().format(utilites::DateFormat::SerializeReverse),
+            delivery_time: Date::now().format(utilites::DateFormat::Serialize),
             trace_message: None,
-            update_key: Date::now().format(utilites::DateFormat::SerializeReverse),
+            update_key: Date::now().format(utilites::DateFormat::Serialize),
             visible: true
         }
     }

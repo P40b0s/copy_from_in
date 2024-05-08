@@ -12,6 +12,7 @@ use utilites::Date;
 #[serde(rename_all = "camelCase")]
 pub struct Packet
 {
+    id: String,
     packet_info: PacketInfo,
     task: Task,
     pub name: String,
@@ -21,13 +22,23 @@ pub struct Packet
 
 impl Packet
 {
+    /// В этом методе дополнительно считаем хэш pdf файла  
+    /// основной метод прозрачно пробрасывается в  
+    /// `medo_parser::PacketInfo::parse()` -> `medo_parser::Packet::parse()`
     pub fn parse<P: AsRef<Path>>(path: P, task: &Task) -> Self
     {
-        let packet_info = PacketInfo::parse(path);
+        let path = Path::new(path.as_ref());
+        let mut packet_info = PacketInfo::parse(path);
+        if packet_info.default_pdf.is_some()
+        {
+            let path = Path::new(path).join(packet_info.default_pdf.as_ref().unwrap());
+            packet_info.pdf_hash = utilites::Hasher::hash_from_path(path);
+        }
         let name = packet_info.packet_directory.clone();
         let parse_time = packet_info.delivery_time.clone();
         Self
         {
+            id: Self::id(task.get_task_name(), &packet_info.packet_directory),
             name,
             parse_time,
             report_sended: false,
@@ -41,6 +52,7 @@ impl Packet
         let parse_time = packet.delivery_time.clone();
         Self
         {
+            id: Self::id(task.get_task_name(), &packet.packet_directory),
             name,
             parse_time,
             report_sended: false,
@@ -57,6 +69,7 @@ impl Packet
         pi.error = Some(error.to_string());
         Self
         {
+            id: Self::id(task.get_task_name(), &pi.packet_directory),
             name: name.to_string(),
             parse_time: Self::time_now(),
             report_sended: false,
@@ -66,7 +79,11 @@ impl Packet
     }
     fn time_now() -> String
     {
-        Date::now().format(utilites::DateFormat::SerializeReverse)
+        Date::now().format(utilites::DateFormat::Serialize)
+    }
+    fn id<S: AsRef<str>>(task_name: S, packet_dir: S) -> String
+    {
+        utilites::Hasher::hash_from_strings(&[task_name, packet_dir])
     }
     pub fn new_empty<S: ToString>(name: S, task: &Task) -> Self
     {
@@ -75,6 +92,7 @@ impl Packet
         pi.delivery_time = Self::time_now();
         Self
         {
+            id: Self::id(task.get_task_name(), &pi.packet_directory),
             name: name.to_string(),
             parse_time: Self::time_now(),
             report_sended: false,
@@ -105,5 +123,9 @@ impl Packet
     pub fn get_parse_time(&self) -> &str
     {
         &self.parse_time
+    }
+    pub fn get_id(&self) -> &str
+    {
+        &self.id
     }
 }

@@ -26,7 +26,6 @@ tokio-test= {version ="0.4.4"}
 uuid = {version = "1.8.0", features = ["v4"] }
 const_format = "0.2.32"
 settings = {path = "../settings"}
-medo_parser = {path = "../medo_parser"}
 db = {path = "../db"}
 transport = {path = "../transport"}
 crossbeam-channel="0.5.12"

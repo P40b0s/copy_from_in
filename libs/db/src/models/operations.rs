@@ -9,7 +9,7 @@ pub trait Id<'a>
     fn get_id(&'a self)-> Cow<str>;
 }
 
-pub trait Operations<'a, T: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin + Id<'a>>
+pub trait Operations<'a> where Self: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin + Id<'a>
 {
     fn table_name() -> &'static str;
     fn create_table() -> String;
@@ -21,21 +21,21 @@ pub trait Operations<'a, T: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin 
         .execute(&mut c).await?;
         Ok(())
     }
-    async fn delete(value: &'a T) ->  anyhow::Result<()>
+    async fn delete(&'a self) ->  anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["DELETE FROM ", &Self::table_name(), " WHERE id = $1"].concat();
         sqlx::query(&sql)
-        .bind(value.get_id().as_ref())
+        .bind(self.get_id().as_ref())
         .execute(&mut c).await?;
         Ok(())
     }
-    async fn update(value: &T) -> anyhow::Result<()>;
-    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<T>>
+    async fn update(&'a self) -> anyhow::Result<()>;
+    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>>
     {
         let mut c = get_connection().await?;
         let query = selector.query();
-        let mut res = sqlx::query_as::<_, T>(&query.0);
+        let mut res = sqlx::query_as::<_, Self>(&query.0);
         if let Some(params) = query.1
         {
             for p in params
@@ -120,8 +120,8 @@ pub trait Operations<'a, T: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin 
         .await?;
         Ok(r)
     }
-    async fn add_or_replace(value: &T) -> anyhow::Result<()>;
-    async fn add_or_ignore(value: &T) -> anyhow::Result<()>;
+    async fn add_or_replace(&'a self) -> anyhow::Result<()>;
+    async fn add_or_ignore(&'a self) -> anyhow::Result<()>;
     ///удаляет все id которых нет в списке
     ///WHERE id NOT IN ('...', '...')
     async fn delete_many_exclude_ids(ids: Vec<String>, user_id: Option<&'a str>) -> anyhow::Result<()>

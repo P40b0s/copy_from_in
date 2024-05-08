@@ -1,7 +1,7 @@
 use std::{borrow::Cow, ops::Deref};
 
 use logger::backtrace;
-use medo_parser::{Ack, PacketInfo, Requisites, SenderInfo};
+use transport::{Ack, PacketInfo, Requisites, SenderInfo, Packet};
 use serde_json::json;
 use settings::Task;
 use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
@@ -16,10 +16,9 @@ pub struct PacketsTable
 }
 impl PacketsTable
 {
-    pub fn new(packet_info: &PacketInfo, task_name: &str) -> Self
+    pub fn new(packet: &Packet) -> Self
     {
-        let hashed_id = utilites::Hasher::hash_from_strings(&[task_name, &packet_info.packet_directory]);
-        Self { id: hashed_id, packet_info: packet_info.to_owned(), task_name: task_name.to_owned()}
+        Self { id: packet.get_id().to_owned(), packet_info: packet.get_packet_info().to_owned(), task_name: packet.get_task().get_task_name().to_owned()}
     }
     
 }
@@ -30,7 +29,7 @@ impl<'a> Id<'a> for PacketsTable
 {
     fn get_id(&'a self)-> Cow<str> 
     {
-        Cow::from(self.id.to_string())
+        Cow::from(&self.id)
     }
 }
 
@@ -67,7 +66,7 @@ impl FromRow<'_, SqliteRow> for PacketsTable
     }
 }
 
-impl<'a> Operations<'a, PacketsTable> for PacketsTable
+impl<'a> Operations<'a> for PacketsTable
 {
     fn table_name() -> &'static str 
     {
@@ -118,7 +117,7 @@ impl<'a> Operations<'a, PacketsTable> for PacketsTable
         trace_message 
         FROM ", Self::table_name()].concat()
     }
-    async fn update(pi: &PacketsTable) -> anyhow::Result<()>
+    async fn update(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["UPDATE ", Self::table_name(),
@@ -140,22 +139,22 @@ impl<'a> Operations<'a, PacketsTable> for PacketsTable
         trace_message = $16
         WHERE id = $1"].concat();
         sqlx::query(&sql)
-        .bind(pi.id.to_string())
-        .bind(&pi.task_name)
-        .bind(&pi.packet_info.header_guid)
-        .bind(&pi.packet_info.packet_directory)
-        .bind(&pi.packet_info.packet_type)
-        .bind(&pi.packet_info.delivery_time)
-        .bind(&pi.packet_info.error)
-        .bind(&pi.packet_info.default_pdf)
-        .bind(&json!(&pi.packet_info.files))
-        .bind(&json!(&pi.packet_info.requisites))
-        .bind(&json!(&pi.packet_info.sender_info))
-        .bind(&pi.packet_info.pdf_hash)
-        .bind(&pi.packet_info.update_key)
-        .bind(&json!(&pi.packet_info.acknowledgment))
-        .bind(&pi.packet_info.visible)
-        .bind(&pi.packet_info.trace_message)
+        .bind(self.id.to_string())
+        .bind(&self.task_name)
+        .bind(&self.packet_info.header_guid)
+        .bind(&self.packet_info.packet_directory)
+        .bind(&self.packet_info.packet_type)
+        .bind(&self.packet_info.delivery_time)
+        .bind(&self.packet_info.error)
+        .bind(&self.packet_info.default_pdf)
+        .bind(&json!(&self.packet_info.files))
+        .bind(&json!(&self.packet_info.requisites))
+        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&self.packet_info.pdf_hash)
+        .bind(&self.packet_info.update_key)
+        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&self.packet_info.visible)
+        .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
         Ok(())
     }
@@ -177,7 +176,7 @@ impl<'a> Operations<'a, PacketsTable> for PacketsTable
         Ok(r)
    }
 
-    async fn add_or_replace(pi: &PacketsTable) -> anyhow::Result<()>
+    async fn add_or_replace(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
@@ -200,26 +199,26 @@ impl<'a> Operations<'a, PacketsTable> for PacketsTable
         trace_message) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"].concat();
         sqlx::query(&sql)
-        .bind(pi.id.to_string())
-        .bind(&pi.task_name)
-        .bind(&pi.packet_info.header_guid)
-        .bind(&pi.packet_info.packet_directory)
-        .bind(&pi.packet_info.packet_type)
-        .bind(&pi.packet_info.delivery_time)
-        .bind(&pi.packet_info.error)
-        .bind(&pi.packet_info.default_pdf)
-        .bind(&json!(&pi.packet_info.files))
-        .bind(&json!(&pi.packet_info.requisites))
-        .bind(&json!(&pi.packet_info.sender_info))
-        .bind(&pi.packet_info.pdf_hash)
-        .bind(&pi.packet_info.update_key)
-        .bind(&json!(&pi.packet_info.acknowledgment))
-        .bind(&pi.packet_info.visible)
-        .bind(&pi.packet_info.trace_message)
+        .bind(self.id.to_string())
+        .bind(&self.task_name)
+        .bind(&self.packet_info.header_guid)
+        .bind(&self.packet_info.packet_directory)
+        .bind(&self.packet_info.packet_type)
+        .bind(&self.packet_info.delivery_time)
+        .bind(&self.packet_info.error)
+        .bind(&self.packet_info.default_pdf)
+        .bind(&json!(&self.packet_info.files))
+        .bind(&json!(&self.packet_info.requisites))
+        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&self.packet_info.pdf_hash)
+        .bind(&self.packet_info.update_key)
+        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&self.packet_info.visible)
+        .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
         Ok(())
     }
-    async fn add_or_ignore(pi: &PacketsTable) -> anyhow::Result<()>
+    async fn add_or_ignore(&'a self) -> anyhow::Result<()>
     {
         let mut c = get_connection().await?;
         let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
@@ -242,22 +241,22 @@ impl<'a> Operations<'a, PacketsTable> for PacketsTable
         trace_message) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"].concat();
         sqlx::query(&sql)
-        .bind(pi.id.to_string())
-        .bind(&pi.task_name)
-        .bind(&pi.packet_info.header_guid)
-        .bind(&pi.packet_info.packet_directory)
-        .bind(&pi.packet_info.packet_type)
-        .bind(&pi.packet_info.delivery_time)
-        .bind(&pi.packet_info.error)
-        .bind(&pi.packet_info.default_pdf)
-        .bind(&json!(&pi.packet_info.files))
-        .bind(&json!(&pi.packet_info.requisites))
-        .bind(&json!(&pi.packet_info.sender_info))
-        .bind(&pi.packet_info.pdf_hash)
-        .bind(&pi.packet_info.update_key)
-        .bind(&json!(&pi.packet_info.acknowledgment))
-        .bind(&pi.packet_info.visible)
-        .bind(&pi.packet_info.trace_message)
+        .bind(self.id.to_string())
+        .bind(&self.task_name)
+        .bind(&self.packet_info.header_guid)
+        .bind(&self.packet_info.packet_directory)
+        .bind(&self.packet_info.packet_type)
+        .bind(&self.packet_info.delivery_time)
+        .bind(&self.packet_info.error)
+        .bind(&self.packet_info.default_pdf)
+        .bind(&json!(&self.packet_info.files))
+        .bind(&json!(&self.packet_info.requisites))
+        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&self.packet_info.pdf_hash)
+        .bind(&self.packet_info.update_key)
+        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&self.packet_info.visible)
+        .bind(&self.packet_info.trace_message)
         .execute(&mut c).await?;
         Ok(())
     }

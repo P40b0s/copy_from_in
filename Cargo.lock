@@ -1235,11 +1235,11 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
- "medo_parser",
  "serde",
  "serde_json",
  "settings",
  "sqlx",
+ "transport",
  "utilites",
  "uuid",
 ]
@@ -1644,7 +1644,6 @@ dependencies = [
  "hyper",
  "hyper-util",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
- "medo_parser",
  "once_cell",
  "serde",
  "serde_json",

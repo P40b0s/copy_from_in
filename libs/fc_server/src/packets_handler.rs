@@ -20,8 +20,8 @@ pub async fn start_packets_handler()
             logger::debug!("Сервером отправлен новый пакет {:?}, {}", &r, backtrace!());
             //точнее она там и так есть, надо просто ее протащить наверх при ошибке тоже добавлять в БД
             //TODO нужно сделать обычный id и добавить имя таска которым пакет был обработан
-            let p_table = PacketsTable::new(r.get_packet_info(), r.get_task().get_task_name());
-            let test = PacketsTable::add_or_replace(&p_table).await;
+            let p_table = PacketsTable::new(&r);
+            let test = p_table.add_or_replace().await;
             if test.is_err()
             {
                 logger::error!("{}", test.err().unwrap().to_string());
