@@ -10,7 +10,7 @@ use super::{connection::get_connection, from_json, operations::{CountRequest, Id
 
 pub struct PacketsTable
 {
-    id: uuid::Uuid,
+    id: String,
     packet_info: PacketInfo,
     task_name: String
 }
@@ -18,7 +18,8 @@ impl PacketsTable
 {
     pub fn new(packet_info: &PacketInfo, task_name: &str) -> Self
     {
-        Self { id: uuid::Uuid::new_v4(), packet_info: packet_info.to_owned(), task_name: task_name.to_owned()}
+        let hashed_id = utilites::Hasher::hash_from_strings(&[task_name, &packet_info.packet_directory]);
+        Self { id: hashed_id, packet_info: packet_info.to_owned(), task_name: task_name.to_owned()}
     }
     
 }
@@ -42,7 +43,7 @@ impl FromRow<'_, SqliteRow> for PacketsTable
         Ok(
         Self
         {
-            id: Uuid::parse_str(&id).unwrap(),
+            id,
             task_name: row.try_get("task_name")?,
             packet_info: PacketInfo
             {

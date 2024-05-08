@@ -66,7 +66,7 @@ impl Packet
     }
     fn time_now() -> String
     {
-        Date::now().format(utilites::DateFormat::Serialize)
+        Date::now().format(utilites::DateFormat::SerializeReverse)
     }
     pub fn new_empty<S: ToString>(name: S, task: &Task) -> Self
     {

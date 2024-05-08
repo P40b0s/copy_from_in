@@ -18,10 +18,8 @@ use super::{connection::get_connection, contact_info::ContactType, from_json, op
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddresseTable
 {
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub id: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub organization: Option<String>,
+    pub id: String,
+    pub organization: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub medo_addresse: Option<String>,
     pub contact_info: Vec<ContactInfo>,
@@ -29,18 +27,15 @@ pub struct AddresseTable
     pub icon: Option<String>,
 }
 
-impl From<&PacketInfo> for AddresseTable
+impl TryFrom<&PacketInfo> for AddresseTable
 {
-    fn from(value: &PacketInfo) -> Self 
+    type Error = String;
+    fn try_from(value: &PacketInfo) -> Result<Self, Self::Error> 
     {
-        let id = value.sender_info.as_ref().and_then(|s| s.source_guid.as_ref().cloned());
-        let organization = value.sender_info.as_ref().and_then(|s| s.organization.as_ref().cloned());
+        
+        let id = value.sender_info.as_ref().and_then(|s| s.source_guid.as_ref().cloned()).ok_or("id организации отправителя не найден".to_owned())?;
+        let organization = value.sender_info.as_ref().and_then(|s| s.organization.as_ref().cloned()).ok_or("наименование организации отправителя не найдено".to_owned())?;
         let medo_addresse = value.sender_info.as_ref().and_then(|s| s.medo_addessee.as_ref().cloned());
-        let mut notify: Vec<String> = vec![];
-        if medo_addresse.is_some()
-        {
-            notify.push(medo_addresse.as_ref().unwrap().clone())
-        }
         //Сбор контактных данных
         let executor = value.sender_info.as_ref().and_then(|e| e.executor.as_ref().cloned());
         let mut contacts: Vec<ContactInfo> = vec![];
@@ -53,7 +48,7 @@ impl From<&PacketInfo> for AddresseTable
             let cont = executor.contact_info.as_ref().unwrap_or(&def);
             if (org.len() + person.len() + post.len() + cont.len())  > 0
             {
-                let hash = utilites::Hasher::hash_from_string(&[org, person, post, cont]);
+                let hash = utilites::Hasher::hash_from_strings(&[org, person, post, cont]);
                 let mut ct: Vec<ContactType> = vec![];
                 if cont.len() > 0
                 {
@@ -77,33 +72,17 @@ impl From<&PacketInfo> for AddresseTable
                 contacts.push(contact);
             }
         }
-
-
-        AddresseTable
+        Ok(AddresseTable
         {
             id,
             organization,
             medo_addresse,
             icon: None,
             contact_info: contacts,
-        }
+        })
     }
 }
 
-impl Default for AddresseTable
-{
-    fn default() -> Self 
-    {
-        AddresseTable
-        {
-            id: None,
-            medo_addresse: None,
-            organization: None,
-            icon: None,
-            contact_info: vec![],
-        }
-    }
-}
 
 // impl AddresseTable
 // {
@@ -276,7 +255,7 @@ impl<'a> Id<'a> for AddresseTable
 {
     fn get_id(&'a self)-> Cow<str> 
     {
-        Cow::from(self.id.as_ref().unwrap())
+        Cow::from(&self.id)
     }
 }
 
@@ -306,7 +285,7 @@ impl<'a> Operations<'a, AddresseTable> for AddresseTable
     {  
         ["CREATE TABLE IF NOT EXISTS ", Self::table_name(), " (
             id TEXT PRIMARY KEY NOT NULL, 
-            organization TEXT, 
+            organization TEXT NOT NULL, 
             medo_addresse TEXT, 
             contact_info JSON DEFAULT('[]'),
             icon BLOB

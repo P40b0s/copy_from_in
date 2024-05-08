@@ -5855,9 +5855,9 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 [[package]]
 name = "utilites"
 version = "0.1.0"
-source = "git+https://github.com/P40b0s/help_utilites.git#ee9c87d2f52e19fd19c7a2306e617aea04bd4fe4"
+source = "git+https://github.com/P40b0s/help_utilites.git#11af8a7f98105ed7fa80e3187a22155751aab27d"
 dependencies = [
- "base64 0.13.1",
+ "base64ct",
  "blake2",
  "chrono",
  "hashbrown 0.14.5",
