@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 use bytes::Bytes;
+use db::PacketsTable;
 use http_body_util::{BodyExt, Full};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
@@ -11,7 +12,7 @@ use serde::Serialize;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
-use transport::{BytesSerializer, Packet};
+use transport::{BytesSerializer, Packet, Pagination};
 use crate::state::AppState;
 use super::WebsocketServer;
 
@@ -67,7 +68,7 @@ async fn response_examples(req: Request<IncomingBody>, app_state: Arc<AppState>)
         (&Method::GET, "/packets/truncate") => truncate(app_state).await,
         (&Method::GET, "/packets/clean") => clean(app_state).await,
         (&Method::POST, "/packets/rescan") => rescan(req, app_state).await,
-        //(&Method::GET, "/packets/list") => get_packets_list(app_state).await,
+        (&Method::POST, "/packets/list") => get_packets_list(req, app_state).await,
         _ => 
         {
             let err = format!("В Апи отсуствует эндпоинт {}", req.uri().path());
@@ -93,18 +94,38 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>>
 }
 
 //что то тут непонятное передается
-// async fn get_packets_list(app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
-// {
-//     let log = super::settings::get_log(app_state).await?;
-//     logger::debug!("{:?}", log);
-//     let bytes = log.to_bytes()?;
-//     let body_data = to_body(bytes);
-//     let response = Response::builder()
-//         .status(StatusCode::OK)
-//         .header(header::CONTENT_TYPE, "application/octet-stream")
-//         .body(body_data)?;
-//     Ok(response)
-// }
+async fn get_packets_list(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
+{
+    let body = req.collect().await?.to_bytes();
+    let paging = Pagination::from_bytes(&body)?;
+    let data = PacketsTable::get_with_offset(paging.row, paging.offset, None).await;
+    if let Err(e) = data
+    {
+        return error_responce(crate::error::Error::Other(e));
+    }
+    let table_data = data.unwrap();
+    let guard = app_state.settings.lock().await;
+    let tasks = guard.tasks.clone();
+    let mut complex_data: Vec<Packet> = Vec::with_capacity(table_data.capacity());
+    for d in table_data
+    {
+        if let Some(task) = tasks.iter().find(|f| f.get_task_name() == d.get_task_name())
+        {
+            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended()));
+        }
+        else
+        {
+            logger::error!("Задачи {} не существует в текущих настройках программы! Невозможно связять запись БД {}", d.get_task_name(), d.get_id());
+        }
+    }
+    let bytes = complex_data.to_bytes()?;
+    let body_data = to_body(bytes);
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, "application/octet-stream")
+        .body(body_data)?;
+    Ok(response)
+}
 
 async fn update_task(req: Request<IncomingBody>, app_state: Arc<AppState>) -> Result<Response<BoxBody>> 
 {

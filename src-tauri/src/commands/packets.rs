@@ -8,13 +8,13 @@ use crate::http_service;
 use crate::Error;
 
 
-// #[tauri::command]
-// pub async fn get(Pagination {row, offset} : Pagination) -> Result<Vec<User>, Error>
-// {
-//     logger::info!("pagination row:{} offset:{}", row,offset);
-//     let users = UsersTable::get_users_with_offset(row, offset, None).await?;
-//     Ok(users)
-// }
+#[tauri::command]
+pub async fn get(Pagination {row, offset} : Pagination) -> Result<Vec<User>, Error>
+{
+    logger::info!("pagination row:{} offset:{}", row,offset);
+    let users = UsersTable::get_users_with_offset(row, offset, None).await?;
+    Ok(users)
+}
 #[tauri::command]
 pub async fn get_packets_list2() -> Result<Vec<Packet>, Error>
 {

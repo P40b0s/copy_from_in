@@ -100,6 +100,18 @@ impl Packet
             packet_info: pi,
         }
     }
+    pub fn new_from_db<S: ToString>(task: Task, id: S, packet: &PacketInfo, report_sended: bool) -> Self
+    {
+        Self
+        {
+            id: id.to_string(),
+            name: packet.packet_directory.clone(),
+            parse_time: packet.delivery_time.clone(),
+            report_sended,
+            task: task,
+            packet_info: packet.clone(),
+        }
+    }
     pub fn get_task(&self) -> &Task
     {
         &self.task

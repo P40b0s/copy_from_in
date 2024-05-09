@@ -47,6 +47,7 @@ pub struct PacketInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub header_guid : Option<String>,
     pub packet_directory: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub packet_type: Option<String>,
     ///Время создания локальной директории
     ///(фактически когда пакет пришел к нам)

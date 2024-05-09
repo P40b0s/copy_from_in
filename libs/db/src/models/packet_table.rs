@@ -8,21 +8,37 @@ use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
 use uuid::Uuid;
 use crate::AddresseTable;
 
-use super::{connection::get_connection, from_json, operations::{CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}};
+use super::{connection::get_connection, from_json, operations::{to_json, CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}};
 #[derive(Debug)]
 pub struct PacketsTable
 {
     id: String,
     packet_info: PacketInfo,
-    task_name: String
+    task_name: String,
+    report_sended: bool
 }
 impl PacketsTable
 {
     pub fn new(packet: &Packet) -> Self
     {
-        Self { id: packet.get_id().to_owned(), packet_info: packet.get_packet_info().to_owned(), task_name: packet.get_task().get_task_name().to_owned()}
+        Self { id: packet.get_id().to_owned(), packet_info: packet.get_packet_info().to_owned(), task_name: packet.get_task().get_task_name().to_owned(), report_sended: packet.report_sended}
     }
-    
+    pub fn get_id(&self) -> &str
+    {
+        &self.id
+    }
+    pub fn get_packet_info(&self) -> &PacketInfo
+    {
+        &self.packet_info
+    }
+    pub fn get_task_name(&self) -> &str
+    {
+        &self.task_name
+    }
+    pub fn report_is_sended(&self) -> bool
+    {
+        self.report_sended
+    }
 }
 
 
@@ -46,6 +62,7 @@ impl FromRow<'_, SqliteRow> for PacketsTable
         {
             id,
             task_name: row.try_get("task_name")?,
+            report_sended: row.try_get("report_sended")?,
             packet_info: PacketInfo
             {
                 header_guid: row.try_get("header_id")?,
@@ -62,7 +79,7 @@ impl FromRow<'_, SqliteRow> for PacketsTable
                 acknowledgment: from_json(row, "acknowledgment"),
                 trace_message: row.try_get("trace_message")?,
                 update_key: row.try_get("update_key")?,
-                visible: row.try_get("visible")?
+                visible: row.try_get("visible")?,
             }
         })
     }
@@ -92,7 +109,8 @@ impl<'a> Operations<'a> for PacketsTable
             acknowledgment JSON,
             update_key TEXT NOT NULL,
             visible INTEGER NOT NULL DEFAULT 1,
-            trace_message TEXT
+            trace_message TEXT,
+            report_sended INTEGER NOT NULL DEFAULT 0,
             );"].concat()
     }
     fn full_select() -> String 
@@ -116,7 +134,8 @@ impl<'a> Operations<'a> for PacketsTable
         update_key,
         acknowledgment,
         visible,
-        trace_message 
+        trace_message,
+        report_sended 
         FROM ", Self::table_name()].concat()
     }
     async fn update(&'a self) -> anyhow::Result<()>
@@ -138,7 +157,8 @@ impl<'a> Operations<'a> for PacketsTable
         update_key = $13,
         acknowledgment = $14,
         visible = $15,
-        trace_message = $16
+        trace_message = $16,
+        report_sended = $17
         WHERE id = $1"].concat();
         sqlx::query(&sql)
         .bind(self.id.to_string())
@@ -149,18 +169,19 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.delivery_time)
         .bind(&self.packet_info.error)
         .bind(&self.packet_info.default_pdf)
-        .bind(&json!(&self.packet_info.files))
-        .bind(&json!(&self.packet_info.requisites))
-        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&to_json(&self.packet_info.files))
+        .bind(&to_json(&self.packet_info.requisites))
+        .bind(&to_json(&self.packet_info.sender_info))
         .bind(&self.packet_info.pdf_hash)
         .bind(&self.packet_info.update_key)
-        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
+        .bind(&self.report_sended)
         .execute(&mut c).await?;
         if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         {
-            addreesses.add_or_replace().await;
+            let _ = addreesses.add_or_replace().await;
         }
         Ok(())
     }
@@ -174,7 +195,6 @@ impl<'a> Operations<'a> for PacketsTable
             for p in params
             {
                 res = res.bind(p);
-                
             }
         };
         let r = res.fetch_all(&mut c)
@@ -202,8 +222,9 @@ impl<'a> Operations<'a> for PacketsTable
         update_key,
         acknowledgment,
         visible,
-        trace_message) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"].concat();
+        trace_message,
+        report_sended) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
         sqlx::query(&sql)
         .bind(self.id.to_string())
         .bind(&self.task_name)
@@ -213,18 +234,19 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.delivery_time)
         .bind(&self.packet_info.error)
         .bind(&self.packet_info.default_pdf)
-        .bind(&json!(&self.packet_info.files))
-        .bind(&json!(&self.packet_info.requisites))
-        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&to_json(&self.packet_info.files))
+        .bind(&to_json(&self.packet_info.requisites))
+        .bind(&to_json(&self.packet_info.sender_info))
         .bind(&self.packet_info.pdf_hash)
         .bind(&self.packet_info.update_key)
-        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
+        .bind(&self.report_sended)
         .execute(&mut c).await?;
         if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         {
-            addreesses.add_or_replace().await;
+            let _ = addreesses.add_or_replace().await;
         }
         Ok(())
     }
@@ -248,8 +270,9 @@ impl<'a> Operations<'a> for PacketsTable
         update_key,
         acknowledgment,
         visible,
-        trace_message) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)"].concat();
+        trace_message,
+        report_sended) 
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
         sqlx::query(&sql)
         .bind(self.id.to_string())
         .bind(&self.task_name)
@@ -259,18 +282,19 @@ impl<'a> Operations<'a> for PacketsTable
         .bind(&self.packet_info.delivery_time)
         .bind(&self.packet_info.error)
         .bind(&self.packet_info.default_pdf)
-        .bind(&json!(&self.packet_info.files))
-        .bind(&json!(&self.packet_info.requisites))
-        .bind(&json!(&self.packet_info.sender_info))
+        .bind(&to_json(&self.packet_info.files))
+        .bind(&to_json(&self.packet_info.requisites))
+        .bind(&to_json(&self.packet_info.sender_info))
         .bind(&self.packet_info.pdf_hash)
         .bind(&self.packet_info.update_key)
-        .bind(&json!(&self.packet_info.acknowledgment))
+        .bind(&to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(&self.packet_info.trace_message)
+        .bind(&self.report_sended)
         .execute(&mut c).await?;
         if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         {
-            addreesses.add_or_replace().await;
+            let _ = addreesses.add_or_replace().await;
         }
         Ok(())
     }

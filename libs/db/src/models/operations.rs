@@ -14,132 +14,130 @@ pub trait Operations<'a> where Self: for<'r> sqlx::FromRow<'r, SqliteRow> + Send
     fn table_name() -> &'static str;
     fn create_table() -> String;
     fn full_select() -> String;
-    async fn create() ->  anyhow::Result<()>
+    fn create() ->  impl std::future::Future<Output = anyhow::Result<()>> + Send
     {
-        let mut c = get_connection().await?;
-        sqlx::query(&Self::create_table())
-        .execute(&mut c).await?;
-        Ok(())
-    }
-    async fn delete(&'a self) ->  anyhow::Result<()>
-    {
-        let mut c = get_connection().await?;
-        let sql = ["DELETE FROM ", &Self::table_name(), " WHERE id = $1"].concat();
-        sqlx::query(&sql)
-        .bind(self.get_id().as_ref())
-        .execute(&mut c).await?;
-        Ok(())
-    }
-    async fn update(&'a self) -> anyhow::Result<()>;
-    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>>
-    {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut res = sqlx::query_as::<_, Self>(&query.0);
-        if let Some(params) = query.1
+        async move
         {
-            for p in params
+            let mut c = get_connection().await?;
+            sqlx::query(&Self::create_table())
+            .execute(&mut c).await?;
+            Ok(())
+        }
+    }
+    fn delete(&'a self) ->  impl std::future::Future<Output = anyhow::Result<()>> + Send
+    {
+        let id = self.get_id().into_owned();
+        async move
+        {
+            let mut c = get_connection().await?;
+            let sql = ["DELETE FROM ", &Self::table_name(), " WHERE id = $1"].concat();
+            sqlx::query(&sql)
+            .bind(id)
+            .execute(&mut c).await?;
+            Ok(())
+        }
+    }
+    fn update(&'a self) -> impl std::future::Future<Output = anyhow::Result<()>> + Send;
+    fn select<Q: QuerySelector<'a>  + Send + Sync>(selector: &Q) -> impl std::future::Future<Output = anyhow::Result<Vec<Self>>> + Send
+    {
+        async move
+        {
+            let mut c = get_connection().await?;
+            let query = selector.query();
+            let mut res = sqlx::query_as::<_, Self>(&query.0);
+            if let Some(params) = query.1
             {
-                res = res.bind(p);
-            }
-        };
-        let r = res.fetch_all(&mut c)
-        .await?;
-        Ok(r)
+                for p in params
+                {
+                    res = res.bind(p);
+                }
+            };
+            let r = res.fetch_all(&mut c)
+            .await?;
+            Ok(r)
+        }
     }
 
-    // Теперь возник вопрос с лайфтаймами....
-    // функция трейта:
-    // ```rust
-    // async fn execute<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<()>
-    // ```
-    // ```rust
-    // pub trait QuerySelector<'a> where Self: Sized
-    // ```
-    // имплементирую трейт, создаю экземпляр и передаю как параметр в функцию execute
-    // ```rust
-    // impl<'a> QuerySelector<'a> for Selector<'a>
-    // ```
-    // execute одна из функций трейта:
-    // ```rust
-    // pub trait Operations<'a, T: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin + Id<'a>>
-    // ```
-    // если реализую еще одну функцию прямо в трейте и пишу ```Self::execute(&sql).await?;```
-    // то получаю какую-то не особо понятную ошибку с временем жизни, понятно что в фунцию передается трейт не с тем временем жизни что нужно, а что нужно непонятно
-    // если execute вызывать из реализации трейта то все в поряке...
-    // error: implementation of `operations::Operations` is not general enough
-    // = note: `operations::QuerySelector<'1>` would have to be implemented for the type `operations::Selector<'0>`, for any two lifetimes `'0` and `'1`...
-    // = note: ...but `operations::QuerySelector<'2>` is actually implemented for the type `operations::Selector<'2>`, for some specific lifetime `'2`
-
-    async fn execute<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<()>
+    fn execute<Q: QuerySelector<'a>  + Send + Sync>(selector: &Q) -> impl std::future::Future<Output = anyhow::Result<()>> + Send
     {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut exe = sqlx::query(&query.0);
-        if let Some(params) = query.1
+        async move
         {
-            for p in params
+            let mut c = get_connection().await?;
+            let query = selector.query();
+            let mut exe = sqlx::query(&query.0);
+            if let Some(params) = query.1
             {
-                exe = exe.bind(p);
-            }
-        };
-        exe.execute(&mut c).await?;
-        Ok(())
+                for p in params
+                {
+                    exe = exe.bind(p);
+                }
+            };
+            exe.execute(&mut c).await?;
+            Ok(())
+        }
     }
-    async fn select_special_type<Q: QuerySelector<'a>,
-    O: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin>(selector: &Q) -> anyhow::Result<Vec<O>>
+    fn select_special_type<Q: QuerySelector<'a> + Send + Sync,
+    O: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin + Sync>(selector: &Q) -> impl std::future::Future<Output = anyhow::Result<Vec<O>>> + Send
     {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut res = sqlx::query_as::<_, O>(&query.0);
-        if let Some(params) = query.1
+        async move
         {
-            for p in params
+            let mut c = get_connection().await?;
+            let query = selector.query();
+            let mut res = sqlx::query_as::<_, O>(&query.0);
+            if let Some(params) = query.1
             {
-                res = res.bind(p);
-            }
-        };
-        let r = res.fetch_all(&mut c)
-        .await?;
-        Ok(r)
+                for p in params
+                {
+                    res = res.bind(p);
+                }
+            };
+            let r = res.fetch_all(&mut c)
+            .await?;
+            Ok(r)
+        }
     }
-    async fn get_one<Q: QuerySelector<'a>,
-    R: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin>(selector: &Q) -> anyhow::Result<R>
+    fn get_one<Q: QuerySelector<'a> + Sync + Send,
+    R: for<'r> sqlx::FromRow<'r, SqliteRow> + Send + Unpin + Sync>(selector: &Q) -> impl std::future::Future<Output = anyhow::Result<R>> + Send
     {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut res = sqlx::query_as::<_, R>(&query.0);
-        if let Some(params) = query.1
+        async move
         {
-            for p in params
+            let mut c = get_connection().await?;
+            let query = selector.query();
+            let mut res = sqlx::query_as::<_, R>(&query.0);
+            if let Some(params) = query.1
             {
-                res = res.bind(p);
-            }
-        };
-        let r = res.fetch_one(&mut c)
-        .await?;
-        Ok(r)
+                for p in params
+                {
+                    res = res.bind(p);
+                }
+            };
+            let r = res.fetch_one(&mut c)
+            .await?;
+            Ok(r)
+        }
     }
-    async fn add_or_replace(&'a self) -> anyhow::Result<()>;
-    async fn add_or_ignore(&'a self) -> anyhow::Result<()>;
+    fn add_or_replace(&'a self) -> impl std::future::Future<Output = anyhow::Result<()>> + Send;
+    fn add_or_ignore(&'a self) -> impl std::future::Future<Output = anyhow::Result<()>> + Send;
     ///удаляет все id которых нет в списке
     ///WHERE id NOT IN ('...', '...')
-    async fn delete_many_exclude_ids(ids: Vec<String>, user_id: Option<&'a str>) -> anyhow::Result<()>
+    fn delete_many_exclude_ids(ids: Vec<String>, user_id: Option<&'a str>) -> impl std::future::Future<Output = anyhow::Result<()>> + Send
     {
-       
-        let del = ["DELETE FROM ", Self::table_name()].concat();
-        let mut sql = Selector::new(&del)
-        .where_not_in(&ids);
-        if let Some(uid) = user_id 
-        {
-            sql = sql.and("user_id", "=", &uid);
+       async move 
+       {
+            let del = ["DELETE FROM ", Self::table_name()].concat();
+            let mut sql = Selector::new(&del)
+            .where_not_in(&ids);
+            if let Some(uid) = user_id 
+            {
+                sql = sql.and("user_id", "=", &uid);
+            }
+            let mut c = get_connection().await?;
+            let query = sql.query();
+            let exe = sqlx::query(&query.0);
+            exe.execute(&mut c).await?;
+            //FIXME Self::execute глючит по лайфтаймам незнаю пока как иправить...
+            Ok(())
         }
-        let mut c = get_connection().await?;
-        let query = sql.query();
-        let exe = sqlx::query(&query.0);
-        exe.execute(&mut c).await?;
-        //FIXME Self::execute глючит по лайфтаймам незнаю пока как иправить...
-        Ok(())
     }
     
     
@@ -179,30 +177,37 @@ pub struct Selector<'a>
     limit: Option<&'a u32>,
     offset: Option<&'a u32>,
 }
-///Основные параметры нашей таблицы<br>
-/// к сожалению константу нельзя соединять с константой поэтому имя заблицы придется дублировать во всех константах
-// pub trait SelectQuery
-// {
-//     ///Полное тело запроса SELECT 1, 2, 3 from table
-//     const SELECT_BODY: &'static str;
-//     ///имя таблицы, чтобы можно было его использовать при запросах
-//     const TABLE_NAME: &'static str;
-//     ///Код создания таблицы
-//     const CREATE_TABLE: &'static str;
-// }
 
+/// None вернется если:  
+/// - строка с таким именем не найдена  
+/// - значение null  
+/// - ошибка десерилизации объекта
 pub fn from_json<V: for<'a> serde::de::Deserialize<'a>, S : AsRef<str>>(row: &SqliteRow, row_name: S) -> Option<V>
 {
-    let sender_info: Option<String> = row.try_get(row_name.as_ref()).ok()?;
-    if let Some(r) = sender_info
+    let value: Option<String> = row.try_get(row_name.as_ref()).ok()?;
+    if let Some(result) = value.as_ref()
     {
-        let val = serde_json::from_str::<V>(&r).ok()?;
+        //проверяем на null (возможно и на пустую строку надо)
+        if result == "null" || result == "NULL"  || result == "Null"
+        {
+            return None;
+        }
+        let val = serde_json::from_str::<V>(result).ok()?;
         Some(val)
     }
     else
     {
         None
     }
+}
+
+pub fn to_json<V: Serialize>(value: &V) -> Option<String>
+{
+    if let Ok(res) = serde_json::ser::to_string(value)
+    {
+        return Some(res);
+    }
+    None   
 }
 
 pub trait QuerySelector<'a> where Self: Sized
