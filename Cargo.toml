@@ -11,8 +11,7 @@ members = [
     "libs/settings", 
     "libs/fc_server",
     "libs/transport",
-    "libs/pdf",
-    "libs/db"
+    "libs/pdf"
 ]
 default-members = ["src-tauri"]
 

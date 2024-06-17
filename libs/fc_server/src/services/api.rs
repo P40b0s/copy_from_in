@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 use bytes::Bytes;
-use db::PacketsTable;
+use db_service::Id;
 use http_body_util::{BodyExt, Full};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
@@ -13,6 +13,7 @@ use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
 use transport::{BytesSerializer, Packet, Pagination};
+use crate::db::PacketTable;
 use crate::state::AppState;
 use super::WebsocketServer;
 
@@ -98,7 +99,7 @@ async fn get_packets_list(req: Request<IncomingBody>, app_state: Arc<AppState>) 
 {
     let body = req.collect().await?.to_bytes();
     let paging = Pagination::from_bytes(&body)?;
-    let data = PacketsTable::get_with_offset(paging.row, paging.offset, None).await;
+    let data = PacketTable::get_with_offset(paging.row, paging.offset, None).await;
     if let Err(e) = data
     {
         return error_responce(crate::error::Error::Other(e));

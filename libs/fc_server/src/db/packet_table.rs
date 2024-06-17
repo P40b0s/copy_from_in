@@ -1,31 +1,31 @@
 use std::{borrow::Cow, ops::Deref};
-
+use db_service::{from_json, get_connection, query, to_json, CountRequest, FromRow, Id, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqliteRow};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo, Packet};
 use serde_json::json;
 use settings::Task;
-use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
 use uuid::Uuid;
-use crate::AddresseTable;
+use super::addresse_table::AddresseTable;
 
-use super::{connection::get_connection, from_json, operations::{to_json, CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}};
 #[derive(Debug)]
-pub struct PacketsTable
+pub struct PacketTable
 {
     id: String,
     packet_info: PacketInfo,
     task_name: String,
     report_sended: bool
 }
-impl PacketsTable
+impl PacketTable
 {
     pub fn new(packet: &Packet) -> Self
     {
-        Self { id: packet.get_id().to_owned(), packet_info: packet.get_packet_info().to_owned(), task_name: packet.get_task().get_task_name().to_owned(), report_sended: packet.report_sended}
-    }
-    pub fn get_id(&self) -> &str
-    {
-        &self.id
+        Self 
+        { 
+            id: packet.get_id().to_owned(),
+            packet_info: packet.get_packet_info().to_owned(),
+            task_name: packet.get_task().get_task_name().to_owned(),
+            report_sended: packet.report_sended
+        }
     }
     pub fn get_packet_info(&self) -> &PacketInfo
     {
@@ -43,17 +43,17 @@ impl PacketsTable
 
 
 
-impl<'a> Id<'a> for PacketsTable
+impl<'a> Id<'a> for PacketTable
 {
-    fn get_id(&'a self)-> Cow<str> 
+    fn get_id(&'a self)-> Uuid
     {
-        Cow::from(&self.id)
+        Uuid::parse_str(&self.id).unwrap()
     }
 }
 
-impl FromRow<'_, SqliteRow> for PacketsTable
+impl FromRow<'_, SqliteRow> for PacketTable
 {
-    fn from_row(row: &SqliteRow) -> sqlx::Result<Self> 
+    fn from_row(row: &SqliteRow) -> Result<Self> 
     {
         let id: String =  row.try_get("id")?;
         let files = serde_json::from_str::<Vec<String>>(row.try_get("files")?).unwrap();
@@ -85,11 +85,15 @@ impl FromRow<'_, SqliteRow> for PacketsTable
     }
 }
 
-impl<'a> Operations<'a> for PacketsTable
+impl<'a> Operations<'a> for PacketTable
 {
     fn table_name() -> &'static str 
     {
-       "packets"
+       "medo"
+    }
+    fn base_name() -> &'static str 
+    {
+        "packets"
     }
     fn create_table() -> String 
     {  
@@ -140,7 +144,7 @@ impl<'a> Operations<'a> for PacketsTable
     }
     async fn update(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["UPDATE ", Self::table_name(),
         " SET 
         task_name = $2
@@ -160,7 +164,7 @@ impl<'a> Operations<'a> for PacketsTable
         trace_message = $16,
         report_sended = $17
         WHERE id = $1"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(self.id.to_string())
         .bind(&self.task_name)
         .bind(&self.packet_info.header_guid)
@@ -185,26 +189,26 @@ impl<'a> Operations<'a> for PacketsTable
         }
         Ok(())
     }
-   async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<PacketsTable>> 
-   {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut res = sqlx::query_as::<_, PacketsTable>(&query.0);
-        if let Some(params) = query.1
-        {
-            for p in params
-            {
-                res = res.bind(p);
-            }
-        };
-        let r = res.fetch_all(&mut c)
-        .await?;
-        Ok(r)
-   }
+//    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<PacketTable>> 
+//    {
+//         let mut c = get_connection().await?;
+//         let query = selector.query();
+//         let mut res = query_as::<_, PacketTable>(&query.0);
+//         if let Some(params) = query.1
+//         {
+//             for p in params
+//             {
+//                 res = res.bind(p);
+//             }
+//         };
+//         let r = res.fetch_all(&mut c)
+//         .await?;
+//         Ok(r)
+//    }
 
     async fn add_or_replace(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
         " (
         id,
@@ -225,7 +229,7 @@ impl<'a> Operations<'a> for PacketsTable
         trace_message,
         report_sended) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(self.id.to_string())
         .bind(&self.task_name)
         .bind(&self.packet_info.header_guid)
@@ -252,7 +256,7 @@ impl<'a> Operations<'a> for PacketsTable
     }
     async fn add_or_ignore(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
         " (
         id,
@@ -273,7 +277,7 @@ impl<'a> Operations<'a> for PacketsTable
         trace_message,
         report_sended) 
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(self.id.to_string())
         .bind(&self.task_name)
         .bind(&self.packet_info.header_guid)
@@ -300,7 +304,7 @@ impl<'a> Operations<'a> for PacketsTable
     }
 }
 
-impl PacketsTable
+impl PacketTable
 {
     pub async fn packets_count() -> anyhow::Result<u32>
     {
@@ -312,7 +316,7 @@ impl PacketsTable
     //TODO добавить выборку по параметрам а не тупо всех подряд, будет и отсеивание по имени и еще по чему то
     ///`rows` - количество записей получаемых из базы данных<br>
     /// `offset` - с какой позиции начинать
-    pub async fn get_with_offset(rows: u32, offset: u32, params: Option<Vec<(&str, &str)>>) -> anyhow::Result<Vec<PacketsTable>> 
+    pub async fn get_with_offset(rows: u32, offset: u32, params: Option<Vec<(&str, &str)>>) -> anyhow::Result<Vec<PacketTable>> 
     {
         let ids_offset_selector = Selector::new_concat(&["SELECT id FROM ", Self::table_name()])
         .add_params(params)
@@ -332,7 +336,7 @@ impl PacketsTable
 #[cfg(test)]
 mod tests
 {
-    use crate::PacketsTable;
+    use super::PacketTable;
 
 
     // use super::{Operations, Selector, QuerySelector};
@@ -378,7 +382,7 @@ mod tests
     async fn test_add_user()
     {
         logger::StructLogger::initialize_logger();
-        let paging : Vec<String> = PacketsTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
+        let paging : Vec<String> = PacketTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
         logger::debug!("{:?}", paging);
     }
 

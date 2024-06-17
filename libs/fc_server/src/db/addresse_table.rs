@@ -1,19 +1,10 @@
-use std::borrow::Cow;
-
-// use super::{contact_info::{ContactInfo, ContactType}, from_json, get_connection};
-// use medo_parser::PacketInfo;
-// //use rusqlite::{Result, params, Error, ToSql, Rows, Params};
-// use serde::{Serialize, Deserialize};
-// use serde_json::json;
+use db_service::{from_json, get_connection, query, query_as, SqliteRow, to_json, CountRequest, FromRow, Id, Operations, QuerySelector, Result, Row, Selector, SortingOrder};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
-use sqlx::{Row, sqlite::SqliteRow, FromRow, Execute};
+use uuid::Uuid;
 
-use super::{connection::get_connection, contact_info::ContactType, from_json, operations::{to_json, CountRequest, Id, IdSelector, Operations, QuerySelector, Selector, SortingOrder}, ContactInfo};
-//id TEXT PRIMARY KEY NOT NULL, 
-
+use super::contact_info::{ContactInfo, ContactType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddresseTable
@@ -22,7 +13,7 @@ pub struct AddresseTable
     pub organization: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub medo_addresse: Option<String>,
-    pub contact_info: Vec<ContactInfo>,
+    pub contact_info: Vec<super::contact_info::ContactInfo>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub icon: Option<String>,
 }
@@ -88,16 +79,16 @@ impl TryFrom<&PacketInfo> for AddresseTable
 
 impl<'a> Id<'a> for AddresseTable
 {
-    fn get_id(&'a self)-> Cow<str> 
+    fn get_id(&'a self)-> Uuid
     {
-        Cow::from(&self.id)
+        Uuid::parse_str(&self.id).unwrap()
     }
 }
 
 
 impl FromRow<'_, SqliteRow> for AddresseTable
 {
-    fn from_row(row: &SqliteRow) -> sqlx::Result<Self> 
+    fn from_row(row: &SqliteRow) -> Result<Self> 
     {
         Ok(Self 
         {
@@ -112,6 +103,10 @@ impl FromRow<'_, SqliteRow> for AddresseTable
 
 impl<'a> Operations<'a> for AddresseTable
 {
+    fn base_name() -> &'static str 
+    {
+        "medo"
+    }
     fn table_name() -> &'static str 
     {
        "addresses"
@@ -138,14 +133,14 @@ impl<'a> Operations<'a> for AddresseTable
     }
     async fn update(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["UPDATE ", Self::table_name(),
         " SET organization = $2,
         medo_addresse = $3,
         contact_info = $4,
         icon = $5
         WHERE id = $1"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(&self.id)
         .bind(&self.medo_addresse)
         .bind(&to_json(&self.contact_info))
@@ -153,31 +148,31 @@ impl<'a> Operations<'a> for AddresseTable
         .execute(&mut c).await?;
         Ok(())
     }
-   async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>> 
-   {
-        let mut c = get_connection().await?;
-        let query = selector.query();
-        let mut res = sqlx::query_as::<_, Self>(&query.0);
-        if let Some(params) = query.1
-        {
-            for p in params
-            {
-                res = res.bind(p);
+//    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>> 
+//    {
+//         let mut c = get_connection(base_name()).await?;
+//         let query = selector.query();
+//         let mut res = sqlx::query_as::<_, Self>(&query.0);
+//         if let Some(params) = query.1
+//         {
+//             for p in params
+//             {
+//                 res = res.bind(p);
                 
-            }
-        };
-        let mut r = res.fetch_all(&mut c)
-        .await?;
-        Ok(r)
-   }
+//             }
+//         };
+//         let mut r = res.fetch_all(&mut c)
+//         .await?;
+//         Ok(r)
+//    }
 
     async fn add_or_replace(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
         " (id, organization, medo_addresse, contact_info, icon) 
         VALUES ($1, $2, $3, $4, $5)"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(&self.id)
         .bind(&self.organization)
         .bind(&self.medo_addresse)
@@ -188,11 +183,11 @@ impl<'a> Operations<'a> for AddresseTable
     }
     async fn add_or_ignore(&'a self) -> anyhow::Result<()>
     {
-        let mut c = get_connection().await?;
+        let mut c = get_connection(Self::base_name()).await?;
         let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
         " (id, organization, medo_addresse, contact_info, icon) 
         VALUES ($1, $2, $3, $4, $5)"].concat();
-        sqlx::query(&sql)
+        query(&sql)
         .bind(&self.id)
         .bind(&self.organization)
         .bind(&self.medo_addresse)
@@ -201,6 +196,7 @@ impl<'a> Operations<'a> for AddresseTable
         .execute(&mut c).await?;
         Ok(())
     }
+    
 }
 
 impl AddresseTable

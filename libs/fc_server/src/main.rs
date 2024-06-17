@@ -7,6 +7,7 @@ pub use utilites;
 mod copyer;
 mod state;
 mod services;
+mod db;
 use std::sync::Arc;
 use copyer::DirectoriesSpy;
 use logger::StructLogger;

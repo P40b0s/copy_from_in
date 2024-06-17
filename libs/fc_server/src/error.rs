@@ -1,7 +1,6 @@
 use futures::FutureExt;
 use settings::ValidationError;
 
-// create the error type that represents all errors possible in our program
 #[derive(Debug, thiserror::Error)]
 pub enum Error 
 {

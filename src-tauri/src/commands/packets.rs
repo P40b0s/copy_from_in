@@ -3,16 +3,16 @@ use logger::debug;
 use settings::Task;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::Runtime;
-use transport::Packet;
+use transport::{Packet, Pagination};
 use crate::http_service;
 use crate::Error;
 
 
 #[tauri::command]
-pub async fn get(Pagination {row, offset} : Pagination) -> Result<Vec<User>, Error>
+pub async fn get(Pagination {row, offset} : Pagination) -> Result<Vec<Packet>, Error>
 {
     logger::info!("pagination row:{} offset:{}", row,offset);
-    let users = UsersTable::get_users_with_offset(row, offset, None).await?;
+    let users = PacketTable::get_users_with_offset(row, offset, None).await?;
     Ok(users)
 }
 #[tauri::command]
