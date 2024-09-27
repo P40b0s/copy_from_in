@@ -1,4 +1,4 @@
-use db_service::{from_json, get_connection, query, query_as, SqliteRow, to_json, CountRequest, FromRow, Id, Operations, QuerySelector, Result, Row, Selector, SortingOrder};
+use db_service::{from_json, get_connection, query, query_as, SqliteRow, to_json, CountRequest, FromRow, Operations, QuerySelector, Result, Row, Selector, SortingOrder};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo};
 use serde::{Deserialize, Serialize};
@@ -75,17 +75,6 @@ impl TryFrom<&PacketInfo> for AddresseTable
 }
 
 
-
-
-impl<'a> Id<'a> for AddresseTable
-{
-    fn get_id(&'a self)-> Uuid
-    {
-        Uuid::parse_str(&self.id).unwrap()
-    }
-}
-
-
 impl FromRow<'_, SqliteRow> for AddresseTable
 {
     fn from_row(row: &SqliteRow) -> Result<Self> 
@@ -103,6 +92,10 @@ impl FromRow<'_, SqliteRow> for AddresseTable
 
 impl<'a> Operations<'a> for AddresseTable
 {
+    fn get_id(&self) -> &str
+    {
+        &self.id
+    }
     fn base_name() -> &'static str 
     {
         "medo"

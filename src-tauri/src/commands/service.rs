@@ -21,7 +21,7 @@ pub async fn truncate_tasks_excepts() -> Result<u32, Error>
 #[tauri::command]
 pub async fn ws_server_online() -> Result<bool, Error>
 {
-  Ok(WebsocketClient::is_connected())
+  Ok(WebsocketClient::is_connected().await)
 }
 #[tauri::command]
 pub async fn rescan_packet(payload: Packet) -> Result<(), Error>

@@ -42,17 +42,17 @@ pub async fn update(payload: Task, state: Arc<AppState>) -> Result<(), Error>
     Ok(())
 }
 
-pub async fn delete(payload: Task, state: Arc<AppState>) -> Result<(), Error>
+pub async fn delete(task_name: &str, state: Arc<AppState>) -> Result<(), Error>
 {
     let mut sett = state.settings.lock().await;
-    debug!("Запрос удаления задачи {:?}",  &payload);
-    if let Some(i) = sett.tasks.iter().position(|p| p.get_task_name() == payload.get_task_name())
+    debug!("Запрос удаления задачи {:?}",  task_name);
+    if let Some(i) = sett.tasks.iter().position(|p| p.get_task_name() == task_name)
     {
         sett.tasks.remove(i);
     }
     let _save_state = sett.save(settings::Serializer::Toml).map_err(|e| Error::SettingsValidation(e));
     drop(sett);
-    let concat_path = [payload.get_task_name(), ".task"].concat();
+    let concat_path = [task_name, ".task"].concat();
     let file_name = Path::new(&concat_path);
     let path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
     let _ = std::fs::remove_file(path);

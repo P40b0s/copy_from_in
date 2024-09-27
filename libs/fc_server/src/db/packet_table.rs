@@ -1,5 +1,5 @@
 use std::{borrow::Cow, ops::Deref};
-use db_service::{from_json, get_connection, query, to_json, CountRequest, FromRow, Id, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqliteRow};
+use db_service::{from_json, get_connection, query, to_json, CountRequest, FromRow, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqliteRow};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo, Packet};
 use serde_json::json;
@@ -41,16 +41,6 @@ impl PacketTable
     }
 }
 
-
-
-impl<'a> Id<'a> for PacketTable
-{
-    fn get_id(&'a self)-> Uuid
-    {
-        Uuid::parse_str(&self.id).unwrap()
-    }
-}
-
 impl FromRow<'_, SqliteRow> for PacketTable
 {
     fn from_row(row: &SqliteRow) -> Result<Self> 
@@ -87,13 +77,17 @@ impl FromRow<'_, SqliteRow> for PacketTable
 
 impl<'a> Operations<'a> for PacketTable
 {
+    fn get_id(&self) -> &str
+    {
+        &self.id
+    }
     fn table_name() -> &'static str 
     {
-       "medo"
+       "packets"
     }
     fn base_name() -> &'static str 
     {
-        "packets"
+        "medo"
     }
     fn create_table() -> String 
     {  
@@ -114,7 +108,7 @@ impl<'a> Operations<'a> for PacketTable
             update_key TEXT NOT NULL,
             visible INTEGER NOT NULL DEFAULT 1,
             trace_message TEXT,
-            report_sended INTEGER NOT NULL DEFAULT 0,
+            report_sended INTEGER NOT NULL DEFAULT 0
             );"].concat()
     }
     fn full_select() -> String 
@@ -330,6 +324,12 @@ impl PacketTable
         .sort(SortingOrder::Asc("delivery_time"));
         let packets = Self::select(&selector).await?;
         Ok(packets)
+    }
+
+    pub async fn select_all() -> anyhow::Result<Vec<PacketTable>> 
+    {
+        let selector = Selector::new(PacketTable::full_select());
+        PacketTable::select(&selector).await
     }
 }
 

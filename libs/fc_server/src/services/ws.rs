@@ -17,9 +17,9 @@ impl WebsocketServer
     {
         Self::broadcast_message_to_all(Contract::TaskUpdated(task)).await;  
     }
-    pub async fn task_delete_event(task: Task)
+    pub async fn task_delete_event(task_name: &str)
     {
-        Self::broadcast_message_to_all(Contract::TaskDeleted(task)).await;  
+        Self::broadcast_message_to_all(Contract::TaskDeleted(task_name.to_owned())).await;  
     }
     pub async fn send_error_msg(addr: &SocketAddr, error: Error)
     {

@@ -4,12 +4,12 @@ use settings::Task;
 
 use crate::Packet;
 
-impl service::Converter for Contract{}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Contract
 {
     TaskUpdated(Task),
-    TaskDeleted(Task),
+    ///Task.Name
+    TaskDeleted(String),
     NewPacket(Packet),
     Error(String),
     ErrorConversion(String)
