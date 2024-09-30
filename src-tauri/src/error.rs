@@ -5,31 +5,33 @@ use settings::ValidationError;
 pub enum Error 
 {
   #[error(transparent)]
+  DeserializeError(#[from] serde_json::Error),
+  #[error(transparent)]
   Io(#[from] std::io::Error),
-  Other(#[from] anyhow::Error),
-  SettingsValidation(Vec<ValidationError>),
-  ServiceErrors(Vec<String>),
-  HyperError(#[from] hyper::Error),
-  HttpError(#[from] hyper::http::Error),
-  RequestError(String)
+  #[error(transparent)]
+  UtilitesError(#[from] utilites::error::Error),
+  #[error("Ошибка, сервер ответил кодом `{0}` вместо кода `{1}`")]
+  ///1 - ожидаемый код ответа сервера
+  ///2 - полученный код от сервера
+  StatusCodeError(u16, u16),
 }
 
-impl std::fmt::Display for Error
-{
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
-  {
-    match self 
-    {
-      Error::Io(io) => f.write_str(&io.to_string()),
-      Error::Other(oth) => f.write_str(&oth.to_string()),
-      Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
-      Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
-      Error::HyperError(e) => f.write_str(&e.to_string()),
-      Error::HttpError(e) => f.write_str(&e.to_string()),
-      Error::RequestError(e) => f.write_str(e),
-    }
-  }
-}
+// impl std::fmt::Display for Error
+// {
+//   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+//   {
+//     match self 
+//     {
+//       Error::Io(io) => f.write_str(&io.to_string()),
+//       Error::Other(oth) => f.write_str(&oth.to_string()),
+//       Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
+//       Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
+//       Error::HyperError(e) => f.write_str(&e.to_string()),
+//       Error::HttpError(e) => f.write_str(&e.to_string()),
+//       Error::RequestError(e) => f.write_str(e),
+//     }
+//   }
+// }
 
 fn vec_to_str(val : &Vec<ValidationError>) -> String
 {

@@ -40,6 +40,9 @@ async-channel="2.3.1"
 futures = "0.3.30"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 db_service = {git = "https://github.com/P40b0s/db_service.git", commit="f7407e6"}
+tonic = "0.12.3"
+prost = "0.13.3"
+
 
 
 [dependencies.service]

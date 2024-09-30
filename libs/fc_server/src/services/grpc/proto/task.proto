@@ -1,0 +1,36 @@
+syntax = "proto3";
+package task;
+
+
+message Filter {
+    repeated string document_types = 1 [packed = true];
+    repeated string document_uids = 2 [packed = true];
+}
+
+enum CopyModifier {
+    CopyAll = 0;
+    CopyOnly = 1;
+    CopyExcept = 2;
+}
+
+message Task {
+    string name = 1;
+    string description = 2;
+    string source_dir = 3;
+    string target_dir = 4;
+    string report_dir = 5;
+    uint64 timer = 6;
+    bool delete_after_copy = 7;
+    CopyModifier copy_modifier = 8;
+    bool is_active = 9;
+    repeated string clean_types = 10 [packed = true];
+    bool generate_exclude_file = 11;
+    string color = 12;
+    bool sound = 13;
+    bool autocleaning = 14;
+    Filter filters = 15;
+}
+
+message DeleteTask {
+    string name = 1;
+}

@@ -9,6 +9,8 @@ pub struct Cli
   #[arg(long)]
   host: String,
   #[arg(long)]
+  api_path: String,
+  #[arg(long)]
   ws_port: usize,
   #[arg(long)]
   api_port: usize,
@@ -17,7 +19,7 @@ impl Default for Cli
 {
   fn default() -> Self 
   {
-    Self { host: "127.0.0.1".to_owned(), api_port: 3009, ws_port: 3010}
+    Self { host: "127.0.0.1".to_owned(), api_path: "/api/v1/".to_owned(), api_port: 3009, ws_port: 3010}
   }
 }
 impl Cli
@@ -43,6 +45,10 @@ impl Cli
   pub fn api_addr(&self) -> String
   {
     [&self.host, ":", &self.api_port.to_string()].concat()
+  }
+  pub fn current_api_path(&self) -> String
+  {
+    ["http://", &self.host, ":", &self.api_port.to_string(), &self.api_path].concat()
   }
   pub fn ws_addr(&self) -> String
   {
