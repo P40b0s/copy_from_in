@@ -302,7 +302,7 @@ mod tests
     #[test]
     fn test_document_render()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         let rendered_pdf = render_document(path, None, |status|
         {
@@ -314,7 +314,7 @@ mod tests
     #[test]
     fn test_thumbs_render()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         render_thumbnails(path, None, |status|
         {
@@ -326,7 +326,7 @@ mod tests
     #[test]
     fn test_page_render()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         render_document(path, Some(22), |status|
         {
@@ -338,7 +338,7 @@ mod tests
     #[test]
     fn test_wrong_page_render()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         let rendered_pdf = render_document(path, Some(23), |status|
         {
@@ -358,7 +358,7 @@ mod async_tests
 
     async fn test_async_render()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         super::render_document(path, None, |status|
         {

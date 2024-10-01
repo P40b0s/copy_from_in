@@ -8,7 +8,7 @@ import
   } from 'vue'
 import { NAvatar, NButton, NSpin, NTooltip, useNotification} from 'naive-ui';
 import { clean_ico, cut_ico, offline_ico, online_ico} from '../services/svg.ts';
-import { service } from '../services/tauri/commands.ts';
+import { commands_service } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';
@@ -111,7 +111,7 @@ setup ()
                 {
                     
                     in_work.value = true;
-                    const result = await service.clean_dirs();
+                    const result = await commands_service.clean_dirs();
                     console.log(result);
                     if (result.is_ok())
                     {
@@ -162,7 +162,7 @@ setup ()
                 onClick: async (c) =>
                 {
                     in_work.value = true;
-                    const result = await service.truncate_tasks_excepts();
+                    const result = await commands_service.truncate_tasks_excepts();
                     if (result.is_ok())
                     {
                         naive_notify(notify_inj, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");

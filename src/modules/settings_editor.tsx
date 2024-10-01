@@ -11,7 +11,7 @@ import
 import { open } from '@tauri-apps/api/dialog';
 import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
-import { settings } from '../services/tauri/commands.ts';
+import { commands_settings } from '../services/tauri/commands.ts';
 import { events } from '../services/tauri/events.ts';
 import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin, WarningSharp } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
@@ -95,7 +95,7 @@ export const SettingsEditor =  defineComponent({
         const is_new_task = ref(false);
         const get_tasks = async () =>
         {
-            let s = await settings.load_settings()
+            let s = await commands_settings.load_settings()
             if (s.is_ok())
             {
                 tasks.value = s.get_value();
@@ -134,6 +134,7 @@ export const SettingsEditor =  defineComponent({
             (selected_task.value as Task).generate_exclude_file = false;
             tasks.value[saved].generate_exclude_file = false;
         })
+        
         const delete_event = events.task_deleted(async (task) => 
         {
             const new_task = task.payload;
@@ -168,8 +169,7 @@ export const SettingsEditor =  defineComponent({
 
         const copy_modifers = (): Array<SelectOption | SelectGroupOption> =>
         {
-           
-                return [
+            return [
                 {
                     label: "Копировать все",
                     value: 'CopyAll',
@@ -186,7 +186,6 @@ export const SettingsEditor =  defineComponent({
                     disabled: false
                 },
             ]
-            
         }
       
         const list = () =>
@@ -316,7 +315,7 @@ export const SettingsEditor =  defineComponent({
                 {
                     if(selected_task.value != undefined)
                     {
-                        const result = await settings.save_task(selected_task.value);
+                        const result = await commands_settings.save_task(selected_task.value);
                         if (result.is_err())
                         {
                             save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
@@ -421,7 +420,7 @@ export const SettingsEditor =  defineComponent({
                 {
                     //const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
                     //tasks.value.splice(current_task, 1);
-                    let dl = await settings.delete_task(selected_task.value as Task)
+                    let dl = await commands_settings.delete_task(selected_task.value as Task)
                     if (dl.is_err())
                     {
                         naive_notify(notify, 'error', "Ошибка удаления задачи " + selected_task.value?.name, () => 

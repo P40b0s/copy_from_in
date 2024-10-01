@@ -101,7 +101,7 @@ mod tests
     #[test]
     fn test_task_cleaner()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let s = Settings::load(Serializer::Toml).unwrap();
         let r = s.truncate_excludes();
         println!("{:?} => {}", s, r);
@@ -109,7 +109,7 @@ mod tests
     #[test]
     fn test_packets_cleaner()
     {
-        logger::StructLogger::initialize_logger();
+        logger::StructLogger::new_default();
         let s = Settings::load(Serializer::Toml).unwrap();
         let r = Settings::clear_packets(&s);
         assert!(r.as_ref().unwrap() == &31);

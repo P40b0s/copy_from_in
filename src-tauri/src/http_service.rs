@@ -158,6 +158,16 @@ impl PacketService
         let result = serde_json::from_slice::<Vec<Packet>>(&result)?;
         Ok(result)
     }
+    pub async fn count(&self) -> Result<u32>
+    {
+        // let client = get_client(&self.api_path);
+        // let client = client.add_path("packets/count");
+        // let result = client.get().await?;
+        // let result = code_error_check(result, 200)?;
+        // let result = serde_json::from_slice::<u32>(&result)?;
+        let result = get(&self.api_path, "packets/count").await?;
+        Ok(result)
+    }
 
     // pub async fn get_packets_list2() -> Result<Vec<Packet>, Error>
     // {

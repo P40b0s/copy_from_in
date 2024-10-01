@@ -10,7 +10,7 @@ use crate::state::AppState;
 use crate::Error;
 
 #[tauri::command]
-pub async fn get(state: State<'_, AppState>) -> Result<Vec<Task>, Error>
+pub async fn get(state: State<'_, Arc<AppState>>) -> Result<Vec<Task>, Error>
 {
     debug!("Запрос списка тасков");
     let res = state.settings_service.get().await?;
@@ -18,7 +18,7 @@ pub async fn get(state: State<'_, AppState>) -> Result<Vec<Task>, Error>
 }
 
 #[tauri::command]
-pub async fn update(payload: Task, state: State<'_, AppState>) -> Result<(), Error>
+pub async fn update(payload: Task, state: State<'_, Arc<AppState>>) -> Result<(), Error>
 {
     debug!("Попытка сохранить задачу {:?}", payload);
     let _ = state.settings_service.update(payload).await?;
@@ -26,7 +26,7 @@ pub async fn update(payload: Task, state: State<'_, AppState>) -> Result<(), Err
 }
 
 #[tauri::command]
-pub async fn delete(payload: Task, state: State<'_, AppState>) -> Result<(), Error>
+pub async fn delete(payload: Task, state: State<'_, Arc<AppState>>) -> Result<(), Error>
 {
     let _ = state.settings_service.delete(payload).await?;
     Ok(())

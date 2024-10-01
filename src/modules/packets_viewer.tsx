@@ -5,6 +5,7 @@ import
     defineAsyncComponent,
     CSSProperties,
     ref,
+    onMounted,
   } from 'vue'
 
 import { NButton, NIcon, NPagination, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
@@ -14,7 +15,7 @@ import { StatusCard } from './status_card.tsx';
 import { background, envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
 import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
-import { service, settings } from '../services/tauri/commands.ts';
+import { commands_packets, commands_service } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 
 
@@ -145,7 +146,7 @@ export const PacketsViewerAsync = defineAsyncComponent({
 
 
 export const PacketsViewer =  defineComponent({
-    setup () 
+    setup() 
     {
         const notify = useNotification();
         //для тестирования
@@ -158,7 +159,25 @@ export const PacketsViewer =  defineComponent({
 
         const current_page = ref(1);
         const items_on_page = 20;
+        const total_count = ref(0);
         let current_offset = 0;
+        onMounted(async ()=>
+        {
+            total_count.value = await get_pages_count();
+        })
+        const get_pages_count = async () : Promise<number> =>
+        {
+            const c = await commands_packets.get_count();
+            if (c.is_ok())
+            {
+                return c.get_value();
+            }
+            else
+            {
+                console.log(c.get_error());
+                return 0;
+            }
+        }
         const complex = () =>
         {
             return h('div',
@@ -166,7 +185,7 @@ export const PacketsViewer =  defineComponent({
                 //h(list),
                 h(NPagination,
                 {
-                    itemCount: app_state_store.getState().appState.users_count,
+                    itemCount: total_count.value,
                     pageSizes: [items_on_page],
                     showSizePicker: false,
                     simple: true,
@@ -175,7 +194,8 @@ export const PacketsViewer =  defineComponent({
                     {
                         current_page.value = page;
                         current_offset = page * items_on_page;
-                        await get_users(current_offset);
+                        total_count.value = await get_pages_count();
+                        await commands_packets.get_packets_list(items_on_page, current_offset);
                     },
                 },
                 {
@@ -378,7 +398,7 @@ export const PacketsViewer =  defineComponent({
                         size: 'large',
                         onClick: async (e) =>
                         {
-                            const res = await service.rescan_packet(packet)
+                            const res = await commands_service.rescan_packet(packet)
                             if (res.is_err())
                                 naive_notify(notify, 'error', "Ошибка запроса пересканирования пакета " + packet.name, res.get_error());
                             else

@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 use bytes::Bytes;
-use db_service::{Operations, QuerySelector, Selector};
+use db_service::{Operations, QuerySelector, Selector, SqlOperations};
 use http_body_util::{BodyExt, Full};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
@@ -19,7 +19,6 @@ use crate::db::PacketTable;
 use crate::state::AppState;
 use super::WebsocketServer;
 
-
 impl From<crate::Error> for Result<Response<BoxBody>, crate::Error>
 {
     fn from(value: crate::Error) -> Self 
@@ -27,6 +26,7 @@ impl From<crate::Error> for Result<Response<BoxBody>, crate::Error>
         Ok(error_response(value.to_string(), StatusCode::BAD_REQUEST))
     }
 }
+
 //type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 static NOTFOUND: &[u8] = b"this endpoint not found";
 
@@ -70,13 +70,14 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
 {
     let resp = match (req.method(), req.uri().path()) 
     {
-        (&Method::GET, "/settings/tasks") => get_tasks(app_state).await,
-        (&Method::PUT, "/settings/tasks/update") => update_task(req, app_state).await,
-        (&Method::DELETE, "/settings/tasks/delete") => delete_task(req, app_state).await,
-        (&Method::GET, "/packets/truncate") => truncate(app_state).await,
-        (&Method::GET, "/packets/clean") => clean(app_state).await,
-        (&Method::POST, "/packets/rescan") => rescan(req, app_state).await,
-        (&Method::GET, "/packets") => get_packets(req, app_state).await,
+        (&Method::GET, "/api/v1/settings/tasks") => get_tasks(app_state).await,
+        (&Method::PUT, "/api/v1/settings/tasks/update") => update_task(req, app_state).await,
+        (&Method::DELETE, "/api/v1/settings/tasks/delete") => delete_task(req, app_state).await,
+        (&Method::GET, "/api/v1/packets/truncate") => truncate(app_state).await,
+        (&Method::GET, "/api/v1/packets/clean") => clean(app_state).await,
+        (&Method::POST, "/api/v1/packets/rescan") => rescan(req, app_state).await,
+        (&Method::GET, "/api/v1/packets") => get_packets(req, app_state).await,
+        (&Method::GET, "/api/v1/packets/count") => get_packets_count(app_state).await,
         _ => 
         {
             let err = ["Эндпоинт ", req.uri().path(), " отсутсвует в схеме API"].concat();
@@ -107,6 +108,12 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate:
     Ok(json_response(&settings))
 }
 
+async fn get_packets_count(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let count = PacketTable::packets_count(app_state.get_db_pool()).await?;
+    Ok(ok_response(count.to_string()))
+}
+
 /// get "/packets/list"  
 /// get "/packets/list?limit=20&offset=200"
 async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
@@ -122,7 +129,7 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
                 row: limit.unwrap().parse().unwrap(),
                 offset: offset.unwrap().parse().unwrap()
             };
-            PacketTable::get_with_offset(paging.row, paging.offset, None).await
+            PacketTable::get_with_offset(paging.row, paging.offset, app_state.get_db_pool(), None).await
         }
         else 
         {
@@ -131,7 +138,7 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     }
     else 
     {
-        PacketTable::select_all().await
+        PacketTable::select_all(app_state.get_db_pool()).await
     };
     if let Err(e) = data
     {
@@ -156,6 +163,7 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     }
     Ok(json_response(&complex_data))
 }
+
 
 /// put "/settings/tasks"
 /// в обратку сообщаем всем клиентам через websocket

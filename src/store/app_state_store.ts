@@ -3,7 +3,7 @@ import { AppState } from '../models/app_state';
 import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2, timeToString } from '../services/date';
 import Store from './abstract_store';
 import { events} from '../services/tauri/events';
-import { service, settings } from '../services/tauri/commands'
+import { commands_service, commands_settings } from '../services/tauri/commands'
 import { IPacket } from '../models/types';
 import { error_sound, new_packet_notify_sound } from '../services/sounds';
 
@@ -25,7 +25,7 @@ class AppStateStore extends Store<IGlobalAppState>
 {
   protected data(): IGlobalAppState
   {
-    this.get_packets_log();
+    //this.get_packets_log();
     this.listen_log();
     this.check_online_intervally();
     return new GlobalAppState();
@@ -41,26 +41,26 @@ class AppStateStore extends Store<IGlobalAppState>
 
   async check_online()
   {
-    const result = await service.ws_server_online()
+    const result = await commands_service.ws_server_online()
     if (result.is_ok())
     {
       this.state.server_is_online = result.get_value();
     }
   }
 
-  async get_packets_log()
-  {
-    const packets = await settings.get_packets_list();
-    if (packets.is_err())
-    {
-      console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
-      this.state.current_log = [];
-    }
-    else
-    {
-      this.state.current_log = packets.get_value();
-    }
-  }
+  // async get_packets_log()
+  // {
+  //   const packets = await commands_settings.get_packets_list();
+  //   if (packets.is_err())
+  //   {
+  //     console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
+  //     this.state.current_log = [];
+  //   }
+  //   else
+  //   {
+  //     this.state.current_log = packets.get_value();
+  //   }
+  // }
   async listen_log()
   {
     await events.packets_update((doc) => 
@@ -90,17 +90,3 @@ class AppStateStore extends Store<IGlobalAppState>
 const store = new AppStateStore();
 
 export default store;
-
-const get_packets_log = async (): Promise<IPacket[]> =>
-{
-  const packets = await settings.get_packets_list();
-  if (packets.is_err())
-  {
-    console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
-    return [];
-  }
-  else
-  {
-    return packets.get_value();
-  }
-}

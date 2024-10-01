@@ -6,6 +6,8 @@ pub enum Error
 {
   #[error(transparent)]
   Io(#[from] std::io::Error),
+  #[error(transparent)]
+  DbError(#[from] db_service::DbError),
   Other(#[from] anyhow::Error),
   SettingsValidation(Vec<ValidationError>),
   ServiceErrors(Vec<String>),
@@ -26,6 +28,7 @@ impl std::fmt::Display for Error
       Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
       Error::HyperError(e) => f.write_str(&e.to_string()),
       Error::FileTimeCopyError(e) => f.write_str(&e),
+      Error::DbError(e) => f.write_str(&e.to_string()),
     }
   }
 }
@@ -42,6 +45,7 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::ServiceErrors(e) => async move { Err(Error::ServiceErrors(e)) }.boxed(),
       Error::HyperError(e) => async move { Err(Error::HyperError(e)) }.boxed(),
       Error::FileTimeCopyError(e) => async move { Err(Error::FileTimeCopyError(e)) }.boxed(),
+      Error::DbError(e) => async move { Err(Error::DbError(e)) }.boxed(),
     }
   }
 }

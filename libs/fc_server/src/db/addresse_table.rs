@@ -1,4 +1,6 @@
-use db_service::{from_json, get_connection, query, query_as, SqliteRow, to_json, CountRequest, FromRow, Operations, QuerySelector, Result, Row, Selector, SortingOrder};
+use std::sync::Arc;
+
+use db_service::{from_json, get_fields_for_update, query, query_as, to_json, CountRequest, DbError, FromRow, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo};
 use serde::{Deserialize, Serialize};
@@ -90,103 +92,75 @@ impl FromRow<'_, SqliteRow> for AddresseTable
     }
 }
 
-impl<'a> Operations<'a> for AddresseTable
+impl<'a> SqlOperations<'a> for AddresseTable
 {
-    fn get_id(&self) -> &str
+    fn get_id(&'a self) -> &'a str
     {
         &self.id
-    }
-    fn base_name() -> &'static str 
-    {
-        "medo"
     }
     fn table_name() -> &'static str 
     {
        "addresses"
     }
+    fn table_fields() -> &'a[&'static str]
+    {
+        &[
+            "id", //0
+            "organization", //1
+            "medo_addresse", //2
+            "contact_info", //3
+            "icon", //4
+        ]
+    }
     fn create_table() -> String 
     {  
         ["CREATE TABLE IF NOT EXISTS ", Self::table_name(), " (
-            id TEXT PRIMARY KEY NOT NULL, 
-            organization TEXT NOT NULL, 
-            medo_addresse TEXT, 
-            contact_info JSON DEFAULT('[]'),
-            icon BLOB
+            ", Self::table_fields()[0], " TEXT PRIMARY KEY NOT NULL, 
+            ", Self::table_fields()[1], " TEXT NOT NULL, 
+            ", Self::table_fields()[2], " TEXT, 
+            ", Self::table_fields()[3], " JSON DEFAULT('[]'),
+            ", Self::table_fields()[4], " BLOB
             );"].concat()
     }
-    fn full_select() -> String 
-    {
-        ["SELECT 
-        id, 
-        organization, 
-        medo_addresse,
-        contact_info,
-        icon
-        FROM ", Self::table_name()].concat()
-    }
-    async fn update(&'a self) -> anyhow::Result<()>
-    {
-        let mut c = get_connection(Self::base_name()).await?;
-        let sql = ["UPDATE ", Self::table_name(),
-        " SET organization = $2,
-        medo_addresse = $3,
-        contact_info = $4,
-        icon = $5
-        WHERE id = $1"].concat();
-        query(&sql)
-        .bind(&self.id)
-        .bind(&self.medo_addresse)
-        .bind(&to_json(&self.contact_info))
-        .bind(&self.icon)
-        .execute(&mut c).await?;
-        Ok(())
-    }
-//    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<Self>> 
-//    {
-//         let mut c = get_connection(base_name()).await?;
-//         let query = selector.query();
-//         let mut res = sqlx::query_as::<_, Self>(&query.0);
-//         if let Some(params) = query.1
-//         {
-//             for p in params
-//             {
-//                 res = res.bind(p);
-                
-//             }
-//         };
-//         let mut r = res.fetch_all(&mut c)
-//         .await?;
-//         Ok(r)
-//    }
 
-    async fn add_or_replace(&'a self) -> anyhow::Result<()>
+    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
     {
-        let mut c = get_connection(Self::base_name()).await?;
-        let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
-        " (id, organization, medo_addresse, contact_info, icon) 
-        VALUES ($1, $2, $3, $4, $5)"].concat();
+        let update_set = get_fields_for_update(Self::table_fields());
+        let sql = ["UPDATE ", Self::table_name(),
+        " SET ", &update_set ," WHERE ", Self::table_fields()[0]," = $1"].concat();
+
         query(&sql)
-        .bind(&self.id)
+        .bind(self.id.to_string())
         .bind(&self.organization)
         .bind(&self.medo_addresse)
-        .bind(&to_json(&self.contact_info))
-        .bind(&self.icon)
-        .execute(&mut c).await?;
+        .bind(to_json(&self.contact_info))
+        .bind(self.icon.as_ref())
+        .execute(&*pool).await?;
         Ok(())
     }
-    async fn add_or_ignore(&'a self) -> anyhow::Result<()>
+
+    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
     {
-        let mut c = get_connection(Self::base_name()).await?;
-        let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
-        " (id, organization, medo_addresse, contact_info, icon) 
-        VALUES ($1, $2, $3, $4, $5)"].concat();
+        let sql = Self::insert_or_replace_query();
         query(&sql)
-        .bind(&self.id)
+        .bind(self.id.to_string())
         .bind(&self.organization)
         .bind(&self.medo_addresse)
-        .bind(&to_json(&self.contact_info))
-        .bind(&self.icon)
-        .execute(&mut c).await?;
+        .bind(to_json(&self.contact_info))
+        .bind(self.icon.as_ref())
+        .execute(&*pool).await?;
+        Ok(())
+    }
+    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    {
+        let sql = Self::insert_or_ignore_query();
+        query(&sql)
+        .bind(self.id.to_string())
+        .bind(&self.organization)
+        .bind(&self.medo_addresse)
+        .bind(to_json(&self.contact_info))
+        .bind(self.icon.as_ref())
+        .execute(&*pool).await?;
         Ok(())
     }
     
@@ -194,11 +168,11 @@ impl<'a> Operations<'a> for AddresseTable
 
 impl AddresseTable
 {
-    pub async fn count() -> anyhow::Result<u32>
+    pub async fn count(pool: Arc<SqlitePool>) -> Result<u32, DbError>
     {
         let q = ["SELECT COUNT(*) as count FROM ", Self::table_name()].concat();
         let selector = Selector::new(&q);
-        let count: CountRequest = Self::get_one(&selector).await?;
+        let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count)
     }
 }

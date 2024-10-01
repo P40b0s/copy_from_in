@@ -36,7 +36,7 @@ const ABSOLUTE_PATH : &str = "/hard/xar/medo_testdata/0";
 #[test]
 fn test_ltr()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let eror_enc = Path::new(ABSOLUTE_PATH)
     .join("ltrs")
     .join("error_encoding.ltr");
@@ -121,7 +121,7 @@ fn test_ltr()
 #[test]
 fn strange_error_ltr()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let xz_error = Path::new(ABSOLUTE_PATH)
     .join("54334177")
     .join("envelope.ltr");
@@ -135,7 +135,7 @@ fn strange_error_ltr()
 #[test]
 fn test_all_ltrs()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let dirs = Path::new(ABSOLUTE_PATH);
     let dirs_count = 100;
     let mut processed = 0;
@@ -174,7 +174,7 @@ fn test_all_ltrs()
 //в общем будет видно потом
 fn win_1251_file()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("54146104")
     .join("document.xml");
@@ -195,7 +195,7 @@ fn win_1251_file()
 //в общем будет видно потом
 fn xz_encoding()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("53865418")
     .join("document.xml");
@@ -218,7 +218,7 @@ fn xz_encoding()
 #[test]
 fn xz_encoding_packet()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("53865418");
 
@@ -241,7 +241,7 @@ fn xz_encoding_packet()
 //в общем будет видно потом
 fn test_parse_container_2_5()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("54146104");
     let mut packet = Packet::parse(&win);
@@ -257,7 +257,7 @@ fn test_parse_container_2_5()
 #[test]
 fn test_parse_container_2_7_1()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("СФ_53596025_1_1");
     let packet = Packet::parse(&win);
@@ -280,7 +280,7 @@ fn test_parse_container_2_7_1()
 ///   "error": "Ошибка в сериализаторе serde: /home/dev/medo_testdata/medo/0/27466149/container/passport.xml, missing field `description`"
 fn test_packet_27466149()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/27466149");
     let mut packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -297,7 +297,7 @@ fn test_packet_27466149()
 ///задвоение в поле destination, наконец то решено!
 fn test_packet_53294501()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/53294501");
     let packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -312,7 +312,7 @@ fn test_packet_53294501()
 #[test]
 fn test_acknowledgment()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/1/52691083");
     let mut packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -328,7 +328,7 @@ fn test_acknowledgment()
 
 fn test_all_dirs()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let mut bench = Instant::now();
     let path = Path::new(ABSOLUTE_PATH)
     .join("in_docs");
@@ -392,7 +392,7 @@ fn test_all_dirs_as_packets()
 {
     let errors_path = "/hard/xar/medo_testdata/errors";
     let c_in_data = Path::new("/hard/xar/medo_testdata/medo/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let bench = Instant::now();
     //let path = Path::new(ABSOLUTE_PATH)
     //.join("in_docs");
@@ -425,7 +425,7 @@ fn test_all_dirs_as_packets()
 #[test]
 fn test_rc_files()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let errors_path = "/hard/xar/medo_testdata/errors";
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
     let  packet = Packet::parse(&d);
@@ -450,7 +450,7 @@ fn test_converting_rc()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "//hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -476,7 +476,7 @@ fn test_converting_2_7_1()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/projects/fullstack/complite_in_parser/test_data/in_docs/271/53580416_1");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -502,7 +502,7 @@ fn test_converting_ack()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/52690151");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -529,7 +529,7 @@ fn test_wrong_xml()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/29943971 - копия");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -555,7 +555,7 @@ fn test_converting_2_5()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/54139378");
     let mut packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -579,7 +579,7 @@ fn test_converting_2_5()
 #[test]
 fn test_convert_system_time()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let dt = std::time::SystemTime::now();
     let converted = Date::from_system_time(dt);
     logger::debug!("{}", converted);
@@ -595,7 +595,7 @@ fn test_duplicate_field()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     //let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/error_duplicate_fields/2");
     let mut packet = Packet::parse(&d);
     if packet.get_error().is_none()

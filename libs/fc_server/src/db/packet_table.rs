@@ -1,5 +1,5 @@
-use std::{borrow::Cow, ops::Deref};
-use db_service::{from_json, get_connection, query, to_json, CountRequest, FromRow, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqliteRow};
+use std::{borrow::Cow, ops::Deref, sync::Arc};
+use db_service::{from_json, get_fields_for_update, query, to_json, CountRequest, DbError, FromRow, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
 use logger::backtrace;
 use transport::{Ack, PacketInfo, Requisites, SenderInfo, Packet};
 use serde_json::json;
@@ -75,9 +75,9 @@ impl FromRow<'_, SqliteRow> for PacketTable
     }
 }
 
-impl<'a> Operations<'a> for PacketTable
+impl<'a> SqlOperations<'a> for PacketTable
 {
-    fn get_id(&self) -> &str
+    fn get_id(&'a self) -> &'a str
     {
         &self.id
     }
@@ -85,251 +85,158 @@ impl<'a> Operations<'a> for PacketTable
     {
        "packets"
     }
-    fn base_name() -> &'static str 
+    fn table_fields() -> &'a[&'static str]
     {
-        "medo"
+        &[
+            "id", //0
+            "task_name", //1
+            "header_id", //2
+            "directory", //3
+            "packet_type", //4
+            "delivery_time", //5
+            "error", //6
+            "default_pdf", //7
+            "pdf_hash", //8
+            "files", //9
+            "requisites", //10
+            "sender_info", //11
+            "acknowledgment", //12
+            "update_key", //13
+            "visible", //14
+            "trace_message", //15
+            "report_sended" //16
+        ]
     }
     fn create_table() -> String 
     {  
         ["CREATE TABLE IF NOT EXISTS ", Self::table_name(), " (
-            id TEXT PRIMARY KEY NOT NULL,
-            task_name TEXT NOT NULL,
-            header_id TEXT, 
-            directory TEXT NOT NULL, 
-            packet_type TEXT,
-            delivery_time TEXT NOT NULL,
-            error TEXT,
-            default_pdf TEXT, 
-            pdf_hash TEXT,
-            files JSON DEFAULT('[]'),
-            requisites JSON,
-            sender_info JSON,
-            acknowledgment JSON,
-            update_key TEXT NOT NULL,
-            visible INTEGER NOT NULL DEFAULT 1,
-            trace_message TEXT,
-            report_sended INTEGER NOT NULL DEFAULT 0
+            ", Self::table_fields()[0], " TEXT PRIMARY KEY NOT NULL,
+            ", Self::table_fields()[1], " TEXT NOT NULL,
+            ", Self::table_fields()[2], " TEXT, 
+            ", Self::table_fields()[3], " TEXT NOT NULL, 
+            ", Self::table_fields()[4], " TEXT,
+            ", Self::table_fields()[5], " TEXT NOT NULL,
+            ", Self::table_fields()[6], " TEXT,
+            ", Self::table_fields()[7], " TEXT, 
+            ", Self::table_fields()[8], " TEXT,
+            ", Self::table_fields()[9], " JSON DEFAULT('[]'),
+            ", Self::table_fields()[10], " JSON,
+            ", Self::table_fields()[11], " JSON,
+            ", Self::table_fields()[12], " JSON,
+            ", Self::table_fields()[13], " TEXT NOT NULL,
+            ", Self::table_fields()[14], " INTEGER NOT NULL DEFAULT 1,
+            ", Self::table_fields()[15], " TEXT,
+            ", Self::table_fields()[16], " INTEGER NOT NULL DEFAULT 0
             );"].concat()
     }
-    fn full_select() -> String 
+    
+    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
     {
-        //SELECT header_id, directory, packet_type, delivery_time, error, default_pdf, 
-        //files, requisites, sender_info, pdf_hash, update_key,
-        // acknowledgment, visible, trace_message FROM packets";
-        ["SELECT 
-        id,
-        task_name,
-        header_id, 
-        directory, 
-        packet_type,
-        delivery_time,
-        error,
-        default_pdf,
-        files,
-        requisites,
-        sender_info,
-        pdf_hash,
-        update_key,
-        acknowledgment,
-        visible,
-        trace_message,
-        report_sended 
-        FROM ", Self::table_name()].concat()
-    }
-    async fn update(&'a self) -> anyhow::Result<()>
-    {
-        let mut c = get_connection(Self::base_name()).await?;
+        let update_set = get_fields_for_update(Self::table_fields());
         let sql = ["UPDATE ", Self::table_name(),
-        " SET 
-        task_name = $2
-        header_id = $3
-        directory = $4,
-        packet_type = $5,
-        delivery_time = $6,
-        error = $7,
-        default_pdf = $8,
-        files = $9,
-        requisites = $10,
-        sender_info = $11,
-        pdf_hash = $12,
-        update_key = $13,
-        acknowledgment = $14,
-        visible = $15,
-        trace_message = $16,
-        report_sended = $17
-        WHERE id = $1"].concat();
-        query(&sql)
-        .bind(self.id.to_string())
-        .bind(&self.task_name)
-        .bind(&self.packet_info.header_guid)
-        .bind(&self.packet_info.packet_directory)
-        .bind(&self.packet_info.packet_type)
-        .bind(&self.packet_info.delivery_time)
-        .bind(&self.packet_info.error)
-        .bind(&self.packet_info.default_pdf)
-        .bind(&to_json(&self.packet_info.files))
-        .bind(&to_json(&self.packet_info.requisites))
-        .bind(&to_json(&self.packet_info.sender_info))
-        .bind(&self.packet_info.pdf_hash)
-        .bind(&self.packet_info.update_key)
-        .bind(&to_json(&self.packet_info.acknowledgment))
-        .bind(&self.packet_info.visible)
-        .bind(&self.packet_info.trace_message)
-        .bind(&self.report_sended)
-        .execute(&mut c).await?;
-        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
-        {
-            let _ = addreesses.add_or_replace().await;
-        }
-        Ok(())
-    }
-//    async fn select<Q: QuerySelector<'a>>(selector: &Q) -> anyhow::Result<Vec<PacketTable>> 
-//    {
-//         let mut c = get_connection().await?;
-//         let query = selector.query();
-//         let mut res = query_as::<_, PacketTable>(&query.0);
-//         if let Some(params) = query.1
-//         {
-//             for p in params
-//             {
-//                 res = res.bind(p);
-//             }
-//         };
-//         let r = res.fetch_all(&mut c)
-//         .await?;
-//         Ok(r)
-//    }
+        " SET ", &update_set ," WHERE ", Self::table_fields()[0]," = $1"].concat();
 
-    async fn add_or_replace(&'a self) -> anyhow::Result<()>
-    {
-        let mut c = get_connection(Self::base_name()).await?;
-        let sql = ["INSERT OR REPLACE INTO ", Self::table_name(), 
-        " (
-        id,
-        task_name,
-        header_id,
-        directory,
-        packet_type,
-        delivery_time,
-        error,
-        default_pdf,
-        files,
-        requisites,
-        sender_info,
-        pdf_hash,
-        update_key,
-        acknowledgment,
-        visible,
-        trace_message,
-        report_sended) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
         query(&sql)
         .bind(self.id.to_string())
-        .bind(&self.task_name)
-        .bind(&self.packet_info.header_guid)
-        .bind(&self.packet_info.packet_directory)
-        .bind(&self.packet_info.packet_type)
+        .bind(self.get_task_name())
+        .bind(self.packet_info.header_guid.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(&self.packet_info.error)
-        .bind(&self.packet_info.default_pdf)
-        .bind(&to_json(&self.packet_info.files))
-        .bind(&to_json(&self.packet_info.requisites))
-        .bind(&to_json(&self.packet_info.sender_info))
-        .bind(&self.packet_info.pdf_hash)
+        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.default_pdf.as_ref())
+        .bind(self.packet_info.pdf_hash.as_ref())
+        .bind(to_json(&self.packet_info.files))
+        .bind(to_json(&self.packet_info.requisites))
+        .bind(to_json(&self.packet_info.sender_info))
+        .bind(to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.update_key)
-        .bind(&to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
-        .bind(&self.packet_info.trace_message)
-        .bind(&self.report_sended)
-        .execute(&mut c).await?;
+        .bind(self.packet_info.trace_message.as_ref())
+        .bind(self.report_is_sended())
+        .execute(&*pool).await?;
         if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         {
-            let _ = addreesses.add_or_replace().await;
+            let _ = addreesses.add_or_replace(Arc::clone(&pool)).await;
         }
         Ok(())
     }
-    async fn add_or_ignore(&'a self) -> anyhow::Result<()>
+    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
     {
-        let mut c = get_connection(Self::base_name()).await?;
-        let sql = ["INSERT OR IGNORE INTO ", Self::table_name(), 
-        " (
-        id,
-        task_name,
-        header_id,
-        directory,
-        packet_type,
-        delivery_time,
-        error,
-        default_pdf,
-        files,
-        requisites,
-        sender_info,
-        pdf_hash,
-        update_key,
-        acknowledgment,
-        visible,
-        trace_message,
-        report_sended) 
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)"].concat();
+        let sql = Self::insert_or_replace_query();
         query(&sql)
         .bind(self.id.to_string())
-        .bind(&self.task_name)
-        .bind(&self.packet_info.header_guid)
-        .bind(&self.packet_info.packet_directory)
-        .bind(&self.packet_info.packet_type)
+        .bind(self.get_task_name())
+        .bind(self.packet_info.header_guid.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(&self.packet_info.error)
-        .bind(&self.packet_info.default_pdf)
-        .bind(&to_json(&self.packet_info.files))
-        .bind(&to_json(&self.packet_info.requisites))
-        .bind(&to_json(&self.packet_info.sender_info))
-        .bind(&self.packet_info.pdf_hash)
+        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.default_pdf.as_ref())
+        .bind(self.packet_info.pdf_hash.as_ref())
+        .bind(to_json(&self.packet_info.files))
+        .bind(to_json(&self.packet_info.requisites))
+        .bind(to_json(&self.packet_info.sender_info))
+        .bind(to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.update_key)
-        .bind(&to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
-        .bind(&self.packet_info.trace_message)
-        .bind(&self.report_sended)
-        .execute(&mut c).await?;
-        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
-        {
-            let _ = addreesses.add_or_replace().await;
-        }
+        .bind(self.packet_info.trace_message.as_ref())
+        .bind(self.report_is_sended())
+        .execute(&*pool).await?;
+        Ok(())
+    }
+    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    {
+        let sql = Self::insert_or_ignore_query();
+        query(&sql)
+        .bind(self.id.to_string())
+        .bind(self.get_task_name())
+        .bind(self.packet_info.header_guid.as_ref())
+        .bind(&self.packet_info.delivery_time)
+        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.default_pdf.as_ref())
+        .bind(self.packet_info.pdf_hash.as_ref())
+        .bind(to_json(&self.packet_info.files))
+        .bind(to_json(&self.packet_info.requisites))
+        .bind(to_json(&self.packet_info.sender_info))
+        .bind(to_json(&self.packet_info.acknowledgment))
+        .bind(&self.packet_info.update_key)
+        .bind(&self.packet_info.visible)
+        .bind(self.packet_info.trace_message.as_ref())
+        .bind(self.report_is_sended())
+        .execute(&*pool).await?;
         Ok(())
     }
 }
 
 impl PacketTable
 {
-    pub async fn packets_count() -> anyhow::Result<u32>
+    pub async fn packets_count(pool: Arc<SqlitePool>) -> Result<u32, DbError>
     {
         //let q = ["SELECT COUNT(*) as count FROM ", Self::table_name()].concat();
         let selector = Selector::new_concat(&["SELECT COUNT(*) as count FROM ", Self::table_name()]);
-        let count: CountRequest = Self::get_one(&selector).await?;
+        let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count)
     }
     //TODO добавить выборку по параметрам а не тупо всех подряд, будет и отсеивание по имени и еще по чему то
     ///`rows` - количество записей получаемых из базы данных<br>
     /// `offset` - с какой позиции начинать
-    pub async fn get_with_offset(rows: u32, offset: u32, params: Option<Vec<(&str, &str)>>) -> anyhow::Result<Vec<PacketTable>> 
+    pub async fn get_with_offset(rows: u32, offset: u32, pool: Arc<SqlitePool>, params: Option<Vec<(&str, &str)>>) -> Result<Vec<PacketTable>, DbError>
     {
         let ids_offset_selector = Selector::new_concat(&["SELECT id FROM ", Self::table_name()])
         .add_params(params)
         .sort(SortingOrder::Asc("delivery_time"))
         .limit(&rows)
         .offset(&offset);
-        let users_ids: Vec<IdSelector> = Self::select_special_type(&ids_offset_selector).await?;
+        let users_ids: Vec<IdSelector> = Self::select_special_type(&ids_offset_selector, Arc::clone(&pool)).await?;
         let id_in = users_ids.into_iter().map(|m| m.0).collect::<Vec<String>>();
         let selector = Selector::new(&Self::full_select())
         .where_in(&id_in)
         .sort(SortingOrder::Asc("delivery_time"));
-        let packets = Self::select(&selector).await?;
+        let packets = Self::select(&selector, pool).await?;
         Ok(packets)
     }
 
-    pub async fn select_all() -> anyhow::Result<Vec<PacketTable>> 
+    pub async fn select_all(pool: Arc<SqlitePool>) -> Result<Vec<PacketTable>, DbError> 
     {
         let selector = Selector::new(PacketTable::full_select());
-        PacketTable::select(&selector).await
+        PacketTable::select(&selector, pool).await
     }
 }
 
@@ -378,13 +285,13 @@ mod tests
     //     //let _ = super::DiseasesTable::delete(&d).await;
     //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
     // }
-    #[tokio::test]
-    async fn test_add_user()
-    {
-        logger::StructLogger::initialize_logger();
-        let paging : Vec<String> = PacketTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
-        logger::debug!("{:?}", paging);
-    }
+    // #[tokio::test]
+    // async fn test_add_user()
+    // {
+    //     logger::StructLogger::initialize_logger();
+    //     let paging : Vec<String> = PacketTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
+    //     logger::debug!("{:?}", paging);
+    // }
 
     // #[tokio::test]
     // async fn test_json_select()

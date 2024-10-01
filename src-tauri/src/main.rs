@@ -39,27 +39,23 @@ async fn main()
     };
     let state = Arc::new(app_state);
     tauri::Builder::default()
-    .manage(Arc::clone(&state))
     .setup(|app| 
         {
-        
-        let handle = Arc::new(app.app_handle());
-        let _ = HANDLE.set(handle);
-        tauri::async_runtime::spawn(async move 
-        {
-            //start_ws_service(ws_addr).await;
-        });
-        Ok(())
+          let handle = Arc::new(app.app_handle());
+          let _ = HANDLE.set(handle);
+          tauri::async_runtime::spawn(async move 
+          {
+              //start_ws_service(ws_addr).await;
+          });
+          Ok(())
         })
-        .plugin(commands::date_plugin())
-        .plugin(commands::settings_plugin(Arc::clone(&state)))
-        .plugin(commands::service_plugin(Arc::clone(&state)))
-        .plugin(commands::packets_plugin(Arc::clone(&state)))
-        // .invoke_handler(tauri::generate_handler![
-        //   //initialize_app_state,
-        // ])
-        .run(tauri::generate_context!())
-        .expect("Ошибка запуска приложения!");
+    .plugin(commands::date_plugin())
+    .plugin(commands::settings_plugin(Arc::clone(&state)))
+    .plugin(commands::service_plugin(Arc::clone(&state)))
+    .plugin(commands::packets_plugin(Arc::clone(&state)))
+    .manage(Arc::clone(&state))
+    .run(tauri::generate_context!())
+    .expect("Ошибка запуска приложения!");
 }
 
 // fn new_packet_found<R: tauri::Runtime>(packet: NewPacketInfo, manager: Arc<impl Manager<R>>) 

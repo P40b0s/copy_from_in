@@ -2,12 +2,14 @@ mod packet_table;
 mod addresse_table;
 mod contact_info;
 
-pub use addresse_table::AddresseTable;
-pub use packet_table::PacketTable;
-pub use db_service::{Operations, Selector};
+use std::sync::Arc;
 
-pub async fn initialize_db()
+pub use addresse_table::AddresseTable;
+use db_service::{SqlOperations, SqlitePool};
+pub use packet_table::PacketTable;
+
+pub async fn initialize_db(pool: Arc<SqlitePool>)
 {
-    packet_table::PacketTable::create().await;
-    addresse_table::AddresseTable::create().await;
+    let _ = packet_table::PacketTable::create(Arc::clone(&pool)).await;
+    let _ = addresse_table::AddresseTable::create(Arc::clone(&pool)).await;
 }
