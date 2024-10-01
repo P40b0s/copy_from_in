@@ -8,7 +8,7 @@ import
     onMounted,
   } from 'vue'
 
-import { NButton, NIcon, NPagination, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
+import { NButton, NIcon, NPagination, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
@@ -161,9 +161,14 @@ export const PacketsViewer =  defineComponent({
         const items_on_page = 20;
         const total_count = ref(0);
         let current_offset = 0;
+        const packets = ref<IPacket[]>([]);
         onMounted(async ()=>
         {
             total_count.value = await get_pages_count();
+            let r = await commands_packets.get_packets_list(items_on_page, current_offset);
+            if(r.is_ok())
+                packets.value = r.get_value();
+                    
         })
         const get_pages_count = async () : Promise<number> =>
         {
@@ -182,7 +187,7 @@ export const PacketsViewer =  defineComponent({
         {
             return h('div',
             [
-                //h(list),
+                h(list),
                 h(NPagination,
                 {
                     itemCount: total_count.value,
@@ -195,7 +200,9 @@ export const PacketsViewer =  defineComponent({
                         current_page.value = page;
                         current_offset = page * items_on_page;
                         total_count.value = await get_pages_count();
-                        await commands_packets.get_packets_list(items_on_page, current_offset);
+                        let r = await commands_packets.get_packets_list(items_on_page, current_offset);
+                        if(r.is_ok())
+                            packets.value = r.get_value();
                     },
                 },
                 {
@@ -219,7 +226,18 @@ export const PacketsViewer =  defineComponent({
                     backgroundImage: background
                 }   as CSSProperties
             },
-            virtual_list()
+            h(NScrollbar,
+                {
+                   style:{
+                    maxHeight: '600px'
+                   } as CSSProperties
+                },
+                {
+                    default:() => packets.value.map(p =>
+                    {
+                        return doc_status(p);
+                    })
+                })
             );
         }
         const doc_status = (packet: IPacket) =>
@@ -576,19 +594,43 @@ export const PacketsViewer =  defineComponent({
                     } as CSSProperties,
                     trigger: 'hover',
                     itemSize: 80,
-                    items: app_state_store.getState().current_log
+                    items: packets.value
                 },
                 {
                     default:({ item }: {item: IPacket}) => 
                     {
+                        console.error(item);
                         return doc_status(item);
                     }
                 })
             }
-        return {list}
+            const packets_list = () =>
+            {
+                
+                return h(NVirtualList,
+                    {
+                        style:
+                        {
+                            maxHeight: "600px",
+                            minHeight: '900px',
+                            padding: '10px'
+                        } as CSSProperties,
+                        trigger: 'hover',
+                        itemSize: 80,
+                        items: packets.value
+                    },
+                    {
+                        default:({ item }: {item: IPacket}) => 
+                        {
+                            console.error(item);
+                            return doc_status(item);
+                        }
+                    })
+                }
+        return {list, complex}
     },
     render ()
     {
-        return this.list()
+        return this.complex()
     }
 })
