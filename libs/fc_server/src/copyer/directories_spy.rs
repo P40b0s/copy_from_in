@@ -303,7 +303,7 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
             let doc_uid = new_packet.requisites.as_ref().and_then(|a| a.document_guid.as_ref());
             let source_uid = new_packet.sender_info.as_ref().and_then(|o| o.source_guid.as_ref());
             let organization = new_packet.sender_info.as_ref().and_then(|o| o.organization.as_ref());
-            let addresse = new_packet.sender_info.as_ref().and_then(|o| o.addressee.as_ref());
+            let addresse = new_packet.sender_info.as_ref().and_then(|o| o.medo_addressee.as_ref());
             let mut err: Vec<&str> = Vec::with_capacity(4);
             if doc_uid.is_none()
             {

@@ -68,7 +68,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
                 pdf_hash: row.try_get("pdf_hash")?,
                 acknowledgment: from_json(row, "acknowledgment"),
                 trace_message: row.try_get("trace_message")?,
-                update_key: row.try_get("update_key")?,
+                update_key: "".to_string(),
                 visible: row.try_get("visible")?,
             }
         })
@@ -101,10 +101,9 @@ impl<'a> SqlOperations<'a> for PacketTable
             "requisites", //10
             "sender_info", //11
             "acknowledgment", //12
-            "update_key", //13
-            "visible", //14
-            "trace_message", //15
-            "report_sended" //16
+            "visible", //13
+            "trace_message", //14
+            "report_sended" //15
         ]
     }
     fn create_table() -> String 
@@ -123,10 +122,9 @@ impl<'a> SqlOperations<'a> for PacketTable
             ", Self::table_fields()[10], " JSON,
             ", Self::table_fields()[11], " JSON,
             ", Self::table_fields()[12], " JSON,
-            ", Self::table_fields()[13], " TEXT NOT NULL,
-            ", Self::table_fields()[14], " INTEGER NOT NULL DEFAULT 1,
-            ", Self::table_fields()[15], " TEXT,
-            ", Self::table_fields()[16], " INTEGER NOT NULL DEFAULT 0
+            ", Self::table_fields()[13], " INTEGER NOT NULL DEFAULT 1,
+            ", Self::table_fields()[14], " TEXT,
+            ", Self::table_fields()[15], " INTEGER NOT NULL DEFAULT 0
             );"].concat()
     }
     
@@ -140,6 +138,8 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
+        .bind(&self.packet_info.packet_directory)
+        .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
         .bind(self.packet_info.error.as_ref())
         .bind(self.packet_info.default_pdf.as_ref())
@@ -148,7 +148,6 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(to_json(&self.packet_info.requisites))
         .bind(to_json(&self.packet_info.sender_info))
         .bind(to_json(&self.packet_info.acknowledgment))
-        .bind(&self.packet_info.update_key)
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
@@ -166,6 +165,8 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
+        .bind(&self.packet_info.packet_directory)
+        .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
         .bind(self.packet_info.error.as_ref())
         .bind(self.packet_info.default_pdf.as_ref())
@@ -174,7 +175,6 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(to_json(&self.packet_info.requisites))
         .bind(to_json(&self.packet_info.sender_info))
         .bind(to_json(&self.packet_info.acknowledgment))
-        .bind(&self.packet_info.update_key)
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
@@ -188,6 +188,8 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
+        .bind(&self.packet_info.packet_directory)
+        .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
         .bind(self.packet_info.error.as_ref())
         .bind(self.packet_info.default_pdf.as_ref())
@@ -196,7 +198,6 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(to_json(&self.packet_info.requisites))
         .bind(to_json(&self.packet_info.sender_info))
         .bind(to_json(&self.packet_info.acknowledgment))
-        .bind(&self.packet_info.update_key)
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
@@ -214,6 +215,7 @@ impl PacketTable
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count)
     }
+
     //TODO добавить выборку по параметрам а не тупо всех подряд, будет и отсеивание по имени и еще по чему то
     ///`rows` - количество записей получаемых из базы данных<br>
     /// `offset` - с какой позиции начинать
@@ -243,89 +245,18 @@ impl PacketTable
 #[cfg(test)]
 mod tests
 {
+    use db_service::to_json;
+    use transport::PacketInfo;
+
     use super::PacketTable;
 
-
-    // use super::{Operations, Selector, QuerySelector};
-    // #[tokio::test]
-    // async fn test_add_user()
-    // {
-    //     super::initialize().await;
-    //     let id = "d428fc2b-db42-4737-a211-414ffc41809d".to_string();
-    //     let dict_str = "fa77873a-92f7-42d1-9a19-a79e862b3fc1".to_owned();
-    //     let user = User
-    //     {
-    //         id: id.clone(),
-    //         name1: "Тест_2".into(),
-    //         name2: "Тестович_2".into(),
-    //         surname: "Тестов_2".into(),
-    //         san_ticket_number: "123321123".into(),
-    //         bornsday: "24.05.1983".into(),
-    //         post: Dictionary{id: dict_str.clone(), name: "123".into()},
-    //         department: Dictionary{id: dict_str.clone(), name: "123".into()},
-    //         rank: Dictionary{id: dict_str.clone(), name: "123".into()},
-    //         live_place: "Тестовое место жительства".into(),
-    //         phones: vec![
-    //             Phones{ phone_type: "тестовый".into(), phone_number: "32123".into(), is_main: false }
-    //         ],
-    //         tests: vec![
-    //             DiseaseTest{ is_active: true, date: Date::new(2024, 1, 1).unwrap().val }
-    //         ],
-    //         diseases: vec![],
-    //         statuses: vec![]
-    //     };
-    //     let _  = super::UsersTable::create().await;
-    //     let _ = super::UsersTable::add_or_replace(&user).await;
-    //     let selector_1 = Selector::new(&super::UsersTable::full_select())
-    //     .add_param("u.id", &id);
-    //     println!("{}", selector_1.query().0);
-    //     let select = super::UsersTable::select(&selector_1).await.unwrap();
-    //     println!("{:?}", &select);
-    //     assert!(select.len() == 1);
-    //     //let _ = super::DiseasesTable::delete(&d).await;
-    //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
-    // }
-    // #[tokio::test]
-    // async fn test_add_user()
-    // {
-    //     logger::StructLogger::initialize_logger();
-    //     let paging : Vec<String> = PacketTable::get_with_offset(3, 0, None).await.unwrap().into_iter().map(|m| m.packet_info.delivery_time).collect();
-    //     logger::debug!("{:?}", paging);
-    // }
-
-    // #[tokio::test]
-    // async fn test_json_select()
-    // {
-    //     super::initialize().await;
-    //     let selector_1 = Selector::new(&super::UsersTable::full_select())
-    //     .add_json_param("phones->'is_main'", &false);
-    //     println!("{}", selector_1.query().0);
-    //     let select = super::UsersTable::select(&selector_1).await.unwrap();
-    //     println!("{:?}", &select);
-    //     assert!(select.len() == 1);
-    //     //let _ = super::DiseasesTable::delete(&d).await;
-    //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
-    // }
-
-    // #[tokio::test]
-    // async fn test_diseases_user_select()
-    // {
-    //     logger::StructLogger::initialize_logger();
-    //     let _ = super::initialize().await;
-    //     let select = UsersTable::get_current_diseases_users().await.unwrap();
-    //     assert!(select.len() == 1);
-    //     //let _ = super::DiseasesTable::delete(&d).await;
-    //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
-    // }
-    // #[tokio::test]
-    // async fn test_vacations_user_select()
-    // {
-    //     let _ = super::initialize().await;
-    //     let select = UsersTable::get_users_status().await.unwrap();
-    //     assert!(select.len() == 3);
-    //     //let _ = super::DiseasesTable::delete(&d).await;
-    //     //assert!(super::DiseasesTable::select(&selector_1).await.unwrap().len() == 0);
-    // }
+    #[test]
+   fn test_json_null()
+   {
+    let s : Option<PacketInfo> = None;
+    let json = to_json(&s);
+    println!("{:?}", json);
+   }
 
 }
 
