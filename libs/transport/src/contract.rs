@@ -7,9 +7,15 @@ use crate::Packet;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Contract
 {
+    ///Закончился процесс очистки пакетов
+    CleanComplete(u32),
+    ///Начать процесс очитки пакетов
+    CleanStart,
+    ///таска апдейтнулась
     TaskUpdated(Task),
-    ///Task.Name
+    ///таска удалена
     TaskDeleted(String),
+    ///поступил новый пакет
     NewPacket(Packet),
     Error(String),
     ErrorConversion(String)

@@ -1,73 +1,80 @@
-use std::path::Path;
+use std::{path::Path, sync::{atomic::AtomicBool, Arc}, thread, time::Duration};
 
 use settings::{Settings, Task};
+use tokio::runtime::Runtime;
 use transport::Packet;
 
-use crate::{copyer::io::get_files, Error};
+use crate::{copyer::io::get_files, services::WebsocketServer, state::AppState, Error};
 
 use super::io::get_dirs;
-
+static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 pub trait PacketsCleaner
 {
+    
     ///нам нужно вернуть только колчество удаленных пакетов, ошибки нас не интересуют
-    fn clear_packets(settings: &Settings) -> Result<u32, Error>
+    /// + вернуть надо через websocket и не ждать ответа, это можеть быть долго
+    async fn clean_packets(app_state: Arc<AppState>)
     {
-        let mut count = 0;
-        for t in &settings.tasks
+        if !CLEAN_IN_PROGRESS.load(std::sync::atomic::Ordering::Relaxed)
         {
-            if t.clean_types.len() > 0
-            {   
-                if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
+            CLEAN_IN_PROGRESS.store(true, std::sync::atomic::Ordering::Relaxed);
+            let settings = app_state.get_settings().await;
+            let _ = tokio::task::spawn(async move 
+            {
+                let runtime = Runtime::new().expect("Ошибка создания рантайма!");
+                let _ = runtime.spawn(async move 
                 {
-                    for d in &dirs
+                    let mut count = 0;
+                    for t in &settings.tasks
                     {
-                        let source_path = Path::new(t.get_source_dir()).join(d);
-                        let packet = Packet::parse(&source_path, t);
-                        if let Some(e) = packet.get_error()
-                        {
-                            let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();
-                            logger::warn!("{}", &wrn);
-                            if let Some(files) = get_files(&source_path)
+                        if t.clean_types.len() > 0
+                        {   
+                            if let Some(dirs) = super::io::get_dirs(t.get_source_dir()) 
                             {
-                                if files.is_empty()
+                                for d in &dirs
                                 {
-                                    let _ = std::fs::remove_dir_all(&source_path);
-                                    let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
-                                    logger::info!("{}", inf);
-                                    count+=1;
+                                    let source_path = Path::new(t.get_source_dir()).join(d);
+                                    let packet = Packet::parse(&source_path, t);
+                                    if let Some(e) = packet.get_error()
+                                    {
+                                        let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();
+                                        logger::warn!("{}", &wrn);
+                                        if let Some(files) = get_files(&source_path)
+                                        {
+                                            if files.is_empty()
+                                            {
+                                                let _ = std::fs::remove_dir_all(&source_path);
+                                                let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
+                                                logger::info!("{}", inf);
+                                                count+=1;
+                                            }
+                                        }
+                                    }
+                                    else 
+                                    {
+                                        if let Some(pt) = packet.get_packet_info().packet_type.as_ref()
+                                        {
+                                            if t.clean_types.contains(pt)
+                                            {
+                                                let _ = std::fs::remove_dir_all(&source_path);
+                                                let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
+                                                logger::info!("{}", inf);
+                                                count+=1;
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        }
-                        else 
-                        {
-                            if let Some(pt) = packet.get_packet_info().packet_type.as_ref()
-                            {
-                                if t.clean_types.contains(pt)
-                                {
-                                    let _ = std::fs::remove_dir_all(&source_path);
-                                    let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
-                                    logger::info!("{}", inf);
-                                    count+=1;
-                                }
-                            }
-                            // else 
-                            // {
-                            //     let err = ["Ошибка очистки пакета ", d, " тип пакета не найден в схеме xml не обнаружен"].concat();
-                            //     logger::warn!("{}", &err);
-                            //     errors.push(err);
-                            // }
                         }
                     }
-                }
-            }
+                    CLEAN_IN_PROGRESS.store(false, std::sync::atomic::Ordering::Relaxed);
+                    logger::info!("Очистка закончена, удалено {} пакетов", count);
+                    WebsocketServer::clean_task_complete(count).await;
+                });
+                
+            }).await;
         }
-        // if !errors.is_empty()
-        // {
-        //     return Err(Error::ServiceErrors(errors));
-        // }
-        {
-            return Ok(count);
-        }
+        
     }
 }
 
@@ -106,13 +113,13 @@ mod tests
         let r = s.truncate_excludes();
         println!("{:?} => {}", s, r);
     }
-    #[test]
-    fn test_packets_cleaner()
-    {
-        logger::StructLogger::new_default();
-        let s = Settings::load(Serializer::Toml).unwrap();
-        let r = Settings::clear_packets(&s);
-        assert!(r.as_ref().unwrap() == &31);
-        println!("{:?} => {}", s, r.unwrap());
-    }
+    // #[test]
+    // fn test_packets_cleaner()
+    // {
+    //     logger::StructLogger::new_default();
+    //     let s = Settings::load(Serializer::Toml).unwrap();
+    //     let r = Settings::clear_packets(&s);
+    //     assert!(r.as_ref().unwrap() == &31);
+    //     println!("{:?} => {}", s, r.unwrap());
+    // }
 }

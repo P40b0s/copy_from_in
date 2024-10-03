@@ -6,14 +6,15 @@ use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime, State};
 use transport::Packet;
 use crate::state::AppState;
+use crate::ws_serivice::WebsocketClient;
 use crate::Error;
 use crate::http_service;
 
 #[tauri::command]
-pub async fn clear_dirs(state: State<'_, Arc<AppState>>) -> Result<u32, Error>
+pub async fn clear_dirs(state: State<'_, Arc<AppState>>) -> Result<(), Error>
 {
-  let res = state.utilites_service.clear_dirs().await?;
-  Ok(res)
+  let _ = state.utilites_service.clear_dirs().await;
+  Ok(())
 }
 
 #[tauri::command]
@@ -26,8 +27,7 @@ pub async fn truncate_tasks_excepts(state: State<'_, Arc<AppState>>) -> Result<u
 #[tauri::command]
 pub async fn ws_server_online(state: tauri::State<'_, Arc<AppState>>) -> Result<bool, Error>
 {
-  //Ok(WebsocketClient::is_connected().await)
-  Ok(true)
+  Ok(WebsocketClient::is_connected().await)
 }
 #[tauri::command]
 pub async fn rescan_packet(payload: Packet, state: State<'_, Arc<AppState>>) -> Result<(), Error>

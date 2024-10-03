@@ -6,6 +6,7 @@ import
     CSSProperties,
     ref,
     onMounted,
+    onUnmounted,
   } from 'vue'
 
 import { NButton, NIcon, NPagination, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
@@ -17,6 +18,7 @@ import { Filter, IPacket, Task } from '../models/types.ts';
 import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
 import { commands_packets, commands_service } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
+import { events } from '../services/tauri/events.ts';
 
 
 const task_1 = (): Task => 
@@ -72,48 +74,48 @@ const task_2 = (): Task =>
     return task;
 }
 //тестовые данные
-const test_packet1 = () =>
-{
+// const test_packet1 = () =>
+// {
     
-    const p : IPacket = {
-        document:
-        {
-            organization: "Совет Федерации Федерального Собрания Российской Федерации",
-            organizationUid: '92834908230948209348209384',
-            docUid: '123234r2342342342342',
-            sourceMedoAddressee: '123@123.MEDO',
-            docType: "Постановление Совета Федерации Федерального Собрания Российской Федерации",
-            number: "299-СФ",
-            signDate: "2023-06-21",
-        },
-        reportSended: false,
-        name: "ошибочное название директории",
-        parseTime: "2024-12-24T00:00:00",
-        task: task_1()
-    }
-    return p;
-}
-const test_packet2 = () =>
-{
+//     const p : IPacket = {
+//         document:
+//         {
+//             organization: "Совет Федерации Федерального Собрания Российской Федерации",
+//             organizationUid: '92834908230948209348209384',
+//             docUid: '123234r2342342342342',
+//             sourceMedoAddressee: '123@123.MEDO',
+//             docType: "Постановление Совета Федерации Федерального Собрания Российской Федерации",
+//             number: "299-СФ",
+//             signDate: "2023-06-21",
+//         },
+//         reportSended: false,
+//         name: "ошибочное название директории",
+//         parseTime: "2024-12-24T00:00:00",
+//         task: task_1()
+//     }
+//     return p;
+// }
+// const test_packet2 = () =>
+// {
     
-    const p : IPacket = {
-        document:
-        {
-            organization: "Правительство Российской Федерации",
-            docType: "Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство",
-            organizationUid: '92834908230948209348209384',
-            docUid: '123234r2342342342342',
-            sourceMedoAddressee: '123@123.MEDO',
-            number: "299-РП",
-            signDate: "2023-06-21",
-        },
-        reportSended: true,
-        name: "ошибочное название директории",
-        parseTime: "2024-12-24T00:00:00",
-        task: task_2()
-    }
-    return p;
-}
+//     const p : IPacket = {
+//         document:
+//         {
+//             organization: "Правительство Российской Федерации",
+//             docType: "Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство Правительство",
+//             organizationUid: '92834908230948209348209384',
+//             docUid: '123234r2342342342342',
+//             sourceMedoAddressee: '123@123.MEDO',
+//             number: "299-РП",
+//             signDate: "2023-06-21",
+//         },
+//         reportSended: true,
+//         name: "ошибочное название директории",
+//         parseTime: "2024-12-24T00:00:00",
+//         task: task_2()
+//     }
+//     return p;
+// }
 const test_error_packet = () =>
 {
     const p : IPacket = {
@@ -149,14 +151,6 @@ export const PacketsViewer =  defineComponent({
     setup() 
     {
         const notify = useNotification();
-        //для тестирования
-        // for (let index = 0; index < 100; index++) {
-        //     app_state_store.add_packet(test_packet1());
-        //     app_state_store.add_packet(test_error_packet());
-        //     app_state_store.add_packet(test_error_packet2());
-        //     app_state_store.add_packet(test_packet2());
-        // }
-
         const current_page = ref(1);
         const items_on_page = 20;
         const total_count = ref(0);
@@ -169,6 +163,19 @@ export const PacketsViewer =  defineComponent({
             if(r.is_ok())
                 packets.value = r.get_value();
                     
+        })
+        const new_packet_event = events.packets_update(async (packet) => 
+        {
+            //TODO вставить в нулевую позицию отсортировать на бэке по убыванию даты доставки!
+            packets.value.push(packet.payload);
+            if(packets.value.length > items_on_page)
+                packets.value.pop();
+            
+            //naive_notify(notify, 'success', "Стартовала задача очистки пакетов", "", 2000);
+        })
+        onUnmounted(()=>
+        {
+            new_packet_event.then(u=> u.unsubscribe());
         })
         const get_pages_count = async () : Promise<number> =>
         {
@@ -476,8 +483,8 @@ export const PacketsViewer =  defineComponent({
                     default:() => "Ошибка отправки уведомления"
                 })
             }
-            const report_sended = packet.task.report_dir != "" && packet.reportSended && packet.document != undefined;
-            const error_sended = packet.task.report_dir != "" && !packet.reportSended && packet.document != undefined;
+            const report_sended = packet.task.report_dir != "" && packet.reportSended && packet.packetInfo != undefined;
+            const error_sended = packet.task.report_dir != "" && !packet.reportSended && packet.packetInfo != undefined;
 
             const icon = () =>
             {
@@ -514,10 +521,10 @@ export const PacketsViewer =  defineComponent({
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;
-            if(packet.document)
+            if(packet.packetInfo)
             {
-                const sign_date = packet.document.signDate ? new DateTime(packet.document.signDate) : undefined;
-                description = (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
+                const sign_date = packet.packetInfo.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
+                description = (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
                 return h('div',
                 {
                     style:
@@ -543,7 +550,7 @@ export const PacketsViewer =  defineComponent({
                         }),
                         default:() => "Реквизиты документа"
                     }),
-                    (packet.document.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.document.number ?? "")
+                    (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
                 ])
             }
             else if (packet.error)

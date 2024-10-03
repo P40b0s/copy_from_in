@@ -6,7 +6,13 @@ import { AbstractEvents, Plugin, Unlistener } from "./abstract";
 /**
  * задаем дженерик в виде литеральных типов, и создаем перечень эвентов
  */
-export class TauriEvents extends AbstractEvents<'packets_update' | 'error' | 'task_updated' | 'task_deleted'>
+export class TauriEvents extends AbstractEvents<
+  'packets_update' 
+| 'error' 
+| 'task_updated' 
+| 'task_deleted' 
+| 'clean_start' 
+| 'clean_complete'>
 {
     public async packets_update(func: (arg: event.Event<IPacket>) => void): Promise<Unlistener>
     {
@@ -23,6 +29,14 @@ export class TauriEvents extends AbstractEvents<'packets_update' | 'error' | 'ta
     public async task_deleted(func: (arg: event.Event<Task>) => void): Promise<Unlistener>
     {
         return await this.subscribe('task_deleted', func)
+    }
+    public async clean_start(func: (arg: event.Event<void>) => void): Promise<Unlistener>
+    {
+        return await this.subscribe('clean_start', func)
+    }
+    public async clean_complete(func: (arg: event.Event<number>) => void): Promise<Unlistener>
+    {
+        return await this.subscribe('clean_complete', func)
     }
 }
 const events = new TauriEvents();

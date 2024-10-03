@@ -5,10 +5,11 @@ use hyper_util::rt::TokioIo;
 use logger::error;
 use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
+use service::Client;
 use settings::Task;
 use transport::{BytesSerializer, Packet, Pagination};
 use tokio::net::TcpStream;
-use crate::Error;
+use crate::{ws_serivice::WebsocketClient, Error};
 use utilites::http::{Bytes, HyperClient, HeaderName, ACCEPT, USER_AGENT};
 type Result<T> = anyhow::Result<T, Error>;
 
@@ -112,7 +113,7 @@ impl UtilitesService
     {
         UtilitesService { api_path: path.to_owned() }
     }
-    pub async fn clear_dirs(&self) -> Result<u32>
+    pub async fn clear_dirs(&self)
     {
         // let client = get_client(&self.api_path);
         // let client = client.add_path("packets/clean");
@@ -120,8 +121,8 @@ impl UtilitesService
         // let tasks = code_error_check(tasks, 200)?;
         // let tasks = serde_json::from_slice::<u32>(&tasks)?;
         // Ok(tasks)
-        let result = get(&self.api_path, "packets/clean").await?;
-        Ok(result)
+        //let result = get(&self.api_path, "packets/clean").await?;
+        WebsocketClient::send_message(transport::Contract::CleanStart).await;
     }
 
     pub async fn truncate_tasks_excepts(&self) -> Result<u32>

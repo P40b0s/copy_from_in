@@ -25,7 +25,7 @@ class Service extends Plugin<'truncate_tasks_excepts' | 'clear_dirs' | 'ws_serve
     {
         return await this.get<R>('truncate_tasks_excepts');
     }
-    public async clean_dirs<R extends number>(): Promise<Result<R>>
+    public async clean_dirs<R extends void>(): Promise<Result<R>>
     {
         return await this.get<R>('clear_dirs');
     }

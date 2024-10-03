@@ -11,6 +11,7 @@ mod cli;
 pub use emits::TauriEmits;
 pub use error::Error;
 use state::AppState;
+use ws_serivice::start_ws_service;
 //use ws_serivice::start_ws_service;
 use std::{sync::Arc};
 pub use logger;
@@ -45,7 +46,7 @@ async fn main()
           let _ = HANDLE.set(handle);
           tauri::async_runtime::spawn(async move 
           {
-              //start_ws_service(ws_addr).await;
+              start_ws_service(ws_addr).await;
           });
           Ok(())
         })

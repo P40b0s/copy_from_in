@@ -1,5 +1,5 @@
 
-export class Requisites
+export interface Requisites
 {
     documentGuid?: string;
     actType?: string;
@@ -10,7 +10,7 @@ export class Requisites
     mj?: MinistryOfJustice;
 }
 
-export class PacketInfo
+export interface IPacketInfo
 {
     headerGuid? : string;
     packetDirectory?: string;
@@ -19,7 +19,6 @@ export class PacketInfo
     ///(фактически когда пакет пришел к нам)
     ///зависит от времени на сервере, тому что берет локальное время создания
     deliveryTime? : string;
-    wrongEncoding = false;
     error?: string;
     files?: string[];
     requisites?: Requisites;
@@ -27,13 +26,11 @@ export class PacketInfo
     defaultPdf?: string;
     pdfHash?: string;
     acknowledgment?: Ack;
-    visible = true;
-    updateKey: Date| string = "";
+    visible: boolean;
     traceMessage?: string;
-
 }
 
-export class SenderInfo
+export interface SenderInfo
 {
     organization?: string;
     person?: string;
@@ -46,7 +43,7 @@ export class SenderInfo
 }
 
 
-export class Executor
+export interface Executor
 {
     organization?: string;
     person?: string;
@@ -54,15 +51,15 @@ export class Executor
     contactInfo?: string;
 }
 
-export class MinistryOfJustice
+export interface MinistryOfJustice
 {
     number?: string;
     date?: string;
 }
 
-export class Ack
+export interface Ack
 {
     comment?: string;
-    accepted = false;
+    accepted: boolean;
     time?: string;
 }

@@ -1,23 +1,40 @@
 import { RendererElement, RendererNode, VNode } from "vue";
-
-export interface IDocument
-{
-    organization?: string,
-    organizationUid: string,
-    docType?: string,
-    sourceMedoAddressee?: string
-    docUid?: string
-    number?: string,
-    signDate?: string,
+import type { IPacketInfo } from './packet';
+// export interface IPacketInfo
+// {
+//     // organization?: string,
+//     // organizationUid: string,
+//     // docType?: string,
+//     // sourceMedoAddressee?: string
+//     // docUid?: string
+//     // number?: string,
+//     // signDate?: string,
+//     header_guid?: string,
+//     packet_directory: string,
+//     packet_type?: string,
+//     ///Время создания локальной директории
+//     ///(фактически когда пакет пришел к нам)
+//     ///зависит от времени на сервере, тому что берет локальное время создания
+//     delivery_time : string,
+//     wrong_encoding: boolean,
+//     error?: string,
+//     files: string[],
+//     requisites?: Requisites,
+//     sender_info?: SenderInfo,
+//     default_pdf?: string,
+//     pdf_hash?: string,
+//     acknowledgment?: Ack,
+//     trace_message?: string,
+//     visible: boolean,
    
-}
+// }
 // для всех
 // parseTime, name, organization, docType, number, signDate
 export interface IPacket
 {
     name: string,
     parseTime: string,
-    document?: IDocument,
+    packetInfo?: IPacketInfo,
     error?: string,
     task: Task,
     reportSended: boolean,

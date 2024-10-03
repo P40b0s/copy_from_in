@@ -1,3 +1,6 @@
+use std::sync::Arc;
+
+use tauri::AppHandle;
 use tokio::sync::Mutex;
 use settings::{FileMethods, Settings};
 
@@ -8,7 +11,7 @@ pub struct AppState
     //pub settings: Mutex<Settings>,
     pub settings_service: SettingsService,
     pub utilites_service: UtilitesService,
-    pub packet_service: PacketService
+    pub packet_service: PacketService,
 }
 
 

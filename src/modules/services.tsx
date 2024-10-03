@@ -5,6 +5,7 @@ import
     defineAsyncComponent,
     CSSProperties,
     ref,
+    onUnmounted,
   } from 'vue'
 import { NAvatar, NButton, NSpin, NTooltip, useNotification} from 'naive-ui';
 import { clean_ico, cut_ico, offline_ico, online_ico} from '../services/svg.ts';
@@ -12,6 +13,7 @@ import { commands_service } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';
+import { events } from '../services/tauri/events.ts';
 export const ServicesAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
@@ -20,8 +22,28 @@ export const ServicesAsync = defineAsyncComponent({
 export const Services =  defineComponent({
 setup () 
 {
-    const notify_inj = useNotification();
+    const notify = useNotification();
     const in_work = ref(false);
+    const clean_start_event = events.clean_start(async () => 
+    {
+        in_work.value = true;
+        naive_notify(notify, 'info', "Стартовала задача очистки пакетов", "", 2000);
+    })
+    const clean_complete_event = events.clean_complete(async (count) => 
+    {
+        in_work.value = false;
+        naive_notify(notify, 'success', "Очистка пакетов завершена, удалено " + count.payload + " пакетов", "", 2000);
+    })
+    const new_packet_event = events.packets_update(async (packet) => 
+    {
+        naive_notify(notify, 'info', `В ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 2000);
+    })
+    onUnmounted(()=>
+    {
+        clean_start_event.then(v=> v.unsubscribe());
+        clean_complete_event.then(u=> u.unsubscribe());
+        new_packet_event.then(u=> u.unsubscribe());
+    })
     const list = () =>
     {
         return h('div',
@@ -109,19 +131,8 @@ setup ()
                 disabled: in_work.value,
                 onClick: async (c) =>
                 {
-                    
                     in_work.value = true;
-                    const result = await commands_service.clean_dirs();
-                    console.log(result);
-                    if (result.is_ok())
-                    {
-                        naive_notify(notify_inj, 'success', "Очистка успешно завершена", "Найдено и удалено " + result.get_value() + " пакетов");
-                    }
-                    else
-                    {
-                        naive_notify(notify_inj, 'error', "Ошибка очистки", result.get_error());
-                    }
-                    in_work.value = false;
+                    await commands_service.clean_dirs();
                 },
                 style:
                 {
@@ -165,11 +176,11 @@ setup ()
                     const result = await commands_service.truncate_tasks_excepts();
                     if (result.is_ok())
                     {
-                        naive_notify(notify_inj, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");
+                        naive_notify(notify, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");
                     }
                     else
                     {
-                        naive_notify(notify_inj, 'error', "Ошибка обрезки файла задачи", result.get_error());
+                        naive_notify(notify, 'error', "Ошибка обрезки файла задачи", result.get_error());
                     }
                     in_work.value = false;
                 },

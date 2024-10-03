@@ -213,8 +213,8 @@ async fn delete_task(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
 
 async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
 {
-    let cl = super::service::clear_dirs(app_state).await?;
-    let response = ok_response(cl.to_string());
+    super::service::clean_packets(app_state).await;
+    let response = empty_response(StatusCode::OK);
     Ok(response)
 }
 async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 

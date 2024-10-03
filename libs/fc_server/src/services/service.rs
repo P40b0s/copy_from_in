@@ -1,15 +1,17 @@
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use settings::Settings;
+use tokio::runtime::Runtime;
+use tokio::task;
 use transport::Packet;
 use crate::copyer::PacketsCleaner;
 use crate::state::AppState;
 use crate::Error;
 
-pub async fn clear_dirs(state: Arc<AppState>) -> Result<u32, Error>
+
+pub async fn clean_packets(state: Arc<AppState>)
 {
-    let settings = state.get_settings().await;
-    let r = Settings::clear_packets(&settings)?;
-    Ok(r)
+    Settings::clean_packets(state).await;
 }
 
 pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>
