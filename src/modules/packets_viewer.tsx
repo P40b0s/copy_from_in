@@ -167,7 +167,7 @@ export const PacketsViewer =  defineComponent({
         const new_packet_event = events.packets_update(async (packet) => 
         {
             //TODO вставить в нулевую позицию отсортировать на бэке по убыванию даты доставки!
-            packets.value.push(packet.payload);
+            packets.value.splice(0, 0, packet.payload);
             if(packets.value.length > items_on_page)
                 packets.value.pop();
             
