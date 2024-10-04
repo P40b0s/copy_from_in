@@ -17,6 +17,8 @@ pub enum Contract
     TaskDeleted(String),
     ///поступил новый пакет
     NewPacket(Packet),
+    ///Необходимо обновить список пакетов на стороне клиента
+    NeedPacketsrefresh,
     Error(String),
     ErrorConversion(String)
 }

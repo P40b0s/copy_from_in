@@ -230,9 +230,20 @@ impl PacketTable
         let id_in = users_ids.into_iter().map(|m| m.0).collect::<Vec<String>>();
         let selector = Selector::new(&Self::full_select())
         .where_in(&id_in)
-        .sort(SortingOrder::Asc("delivery_time"));
+        .sort(SortingOrder::Desc("delivery_time"));
         let packets = Self::select(&selector, pool).await?;
         Ok(packets)
+    }
+    pub async fn truncate(task_name: &str, dirs: &[String], pool: Arc<SqlitePool>)
+    {
+        for d in dirs
+        {
+            let sql = ["DELETE FROM ", &Self::table_name(), " WHERE task_name = $1", " AND directory = $2" ].concat();
+            let _ = db_service::query(&sql)
+            .bind(task_name)
+            .bind(d)
+            .execute(&*pool).await;
+        }
     }
 
     pub async fn select_all(pool: Arc<SqlitePool>) -> Result<Vec<PacketTable>, DbError> 

@@ -12,7 +12,8 @@ export class TauriEvents extends AbstractEvents<
 | 'task_updated' 
 | 'task_deleted' 
 | 'clean_start' 
-| 'clean_complete'>
+| 'clean_complete'
+| 'need_packets_refresh'>
 {
     public async packets_update(func: (arg: event.Event<IPacket>) => void): Promise<Unlistener>
     {
@@ -38,6 +39,12 @@ export class TauriEvents extends AbstractEvents<
     {
         return await this.subscribe('clean_complete', func)
     }
+    public async need_packets_refresh(func: (arg: event.Event<void>) => void): Promise<Unlistener>
+    {
+        return await this.subscribe('need_packets_refresh', func)
+    }
+
+    
 }
 const events = new TauriEvents();
 export {events}

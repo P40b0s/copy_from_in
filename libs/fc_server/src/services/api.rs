@@ -207,7 +207,7 @@ async fn delete_task(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     //     return Ok(error_response(e.to_string(), StatusCode::BAD_REQUEST));
     // }
     // let response = ok_response([task.get_task_name(), " удален"].concat());
-    // WebsocketServer::task_delete_event(task).await;
+   
     // Ok(response)
 }
 

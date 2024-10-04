@@ -32,10 +32,10 @@ import type { IPacketInfo } from './packet';
 // parseTime, name, organization, docType, number, signDate
 export interface IPacket
 {
+    id: string;
     name: string,
     parseTime: string,
     packetInfo?: IPacketInfo,
-    error?: string,
     task: Task,
     reportSended: boolean,
 }

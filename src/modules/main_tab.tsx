@@ -3,18 +3,15 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    CSSProperties
+    CSSProperties,
+    Suspense
   } from 'vue'
 
 import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { PacketsViewer } from './packets_viewer.tsx';
+import Loader2 from './Loader/Loader2.vue';
 import { SettingsEditor } from './settings_editor.tsx';
-import { Services } from './services.tsx';
 
-export const MainTabAsync = defineAsyncComponent({
-    loader: () => import ('./main_tab.tsx'),
-    loadingComponent: h(NSpin)
-})
 
 export const MainTab =  defineComponent({
     setup (props) 
@@ -25,7 +22,8 @@ export const MainTab =  defineComponent({
             {
                 style:
                 {
-                    marginBottom: '0px'
+                    marginBottom: '0px',
+                    height: '100%'
                 } as CSSProperties
             },
             {
@@ -52,7 +50,11 @@ export const MainTab =  defineComponent({
                 justifyContent: 'space-evenly',
                 type: 'line',
                 size: 'large',
-                defaultValue: "log"
+                defaultValue: "log",
+                style:
+                {
+                      height: '100%'
+                }
             },
             {
                 default:() => [log_tab(), settings_tab()]
@@ -66,22 +68,19 @@ export const MainTab =  defineComponent({
             {
                 tab: 'Пакеты',
                 name: 'log',
-
+                style:
+                {
+                      height: '100%'
+                }
             },
             {
-                default:() => h(PacketsViewer)
-            }
-        )
-    }
-    const service_tab = () => 
-    {
-        return h(NTabPane,
-            {
-                tab: 'Сервис',
-                name: 'serv'
-            },
-            {
-                default:() => h(Services)
+                default:() =>
+                h(Suspense, 
+                null,
+                {
+                    default:()=> h(PacketsViewer),
+                    fallback:() => h(Loader2)
+                })
             }
         )
     }
@@ -90,10 +89,20 @@ export const MainTab =  defineComponent({
         return h(NTabPane,
             {
                 tab: 'Настройки',
-                name: 'set'
+                name: 'set',
+                style:
+                {
+                    height: '100%'
+                }
             },
             {
-                default:() => h(SettingsEditor)
+                default:() => 
+                h(Suspense, 
+                null,
+                {
+                    default:()=> h(SettingsEditor),
+                    fallback:() => h(Loader2)
+                })
             }
         )
     }

@@ -58,6 +58,32 @@ async fn post<B: Serialize + Clone>(payload: B, api_path: &str, uri_path: &str) 
     let _ = code_error_check(upd, 200)?;
     Ok(())
 }
+async fn patch<B: Serialize + Clone>(payload: B, api_path: &str, uri_path: &str) -> Result<()>
+{
+    let client = get_client(api_path);
+    let client = client.add_path(uri_path);
+    let upd = client.patch_with_body(payload).await?;
+    let _ = code_error_check(upd, 200)?;
+    Ok(())
+}
+async fn put<B: Serialize + Clone>(payload: B, api_path: &str, uri_path: &str) -> Result<()>
+{
+    let client = get_client(api_path);
+    let client = client.add_path(uri_path);
+    let upd = client.put_with_body(payload).await?;
+    let _ = code_error_check(upd, 200)?;
+    Ok(())
+}
+
+async fn delete<T>(api_path: &str, uri_path: &str, params: &[(&str, &str)]) -> Result<T> where T: for <'de> Deserialize<'de>
+{
+    let client = get_client(api_path);
+    let client = client.add_path(uri_path);
+    let result = client.delete(params).await?;
+    let result = code_error_check(result, 200)?;
+    let result = serde_json::from_slice::<T>(&result)?;
+    Ok(result)
+}
 
 
 
@@ -88,7 +114,7 @@ impl SettingsService
         // let client = client.add_path("settings/tasks/update");
         // let upd = client.post_with_body(payload).await?;
         // let _ = code_error_check(upd, 200)?;
-        post(payload, &self.api_path, "settings/tasks/update").await?;
+        put(payload, &self.api_path, "settings/tasks/update").await?;
         Ok(())
     }
     pub async fn delete(&self, payload: Task) -> Result<()>
@@ -97,7 +123,7 @@ impl SettingsService
         // let client = client.add_path("settings/tasks/delete");
         // let del = client.post_with_body(payload).await?;
         // let _ = code_error_check(del, 200)?;
-        post(payload, &self.api_path, "settings/tasks/delete").await?;
+        delete(&self.api_path, "settings/tasks/delete", &[("name", payload.get_task_name())]).await?;
         Ok(())
     }
 }

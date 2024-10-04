@@ -116,28 +116,6 @@ const task_2 = (): Task =>
 //     }
 //     return p;
 // }
-const test_error_packet = () =>
-{
-    const p : IPacket = {
-        name: "123error_packet",
-        parseTime: "2024-12-24T00:00:00",
-        error: "Ошибка распознавания пакета йв3242342!",
-        reportSended: false,
-        task: task_1()
-    }
-    return p;
-}
-const test_error_packet2 = () =>
-{
-    const p : IPacket = {
-        name: "err_packet",
-        parseTime: "2024-12-24T00:00:00",
-        reportSended: false,
-        error: "Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета! Ошибка распознавания пакета!",
-        task: task_2()
-    }
-    return p;
-}
 
 
 export const PacketsViewerAsync = defineAsyncComponent({
@@ -145,10 +123,9 @@ export const PacketsViewerAsync = defineAsyncComponent({
     loadingComponent: h(NSpin)
 })
 
-
-
+//Если компонент активен, то поддерживается добавление нового найденого пакета в список
 export const PacketsViewer =  defineComponent({
-    setup() 
+    async setup() 
     {
         const notify = useNotification();
         const current_page = ref(1);
@@ -156,26 +133,45 @@ export const PacketsViewer =  defineComponent({
         const total_count = ref(0);
         let current_offset = 0;
         const packets = ref<IPacket[]>([]);
-        onMounted(async ()=>
+        // onMounted(async ()=>
+        // {
+        //     total_count.value = await get_pages_count();
+        //     let r = await commands_packets.get_packets_list(items_on_page, current_offset);
+        //     if(r.is_ok())
+        //         packets.value = r.get_value();
+                    
+        // })
+        const get_packets = async () =>
         {
             total_count.value = await get_pages_count();
             let r = await commands_packets.get_packets_list(items_on_page, current_offset);
             if(r.is_ok())
                 packets.value = r.get_value();
-                    
-        })
+        }
         const new_packet_event = events.packets_update(async (packet) => 
         {
-            //TODO вставить в нулевую позицию отсортировать на бэке по убыванию даты доставки!
-            packets.value.splice(0, 0, packet.payload);
-            if(packets.value.length > items_on_page)
-                packets.value.pop();
-            
-            //naive_notify(notify, 'success', "Стартовала задача очистки пакетов", "", 2000);
+            const exist_index = packets.value.findIndex(f=>f.id == packet.payload.id);
+            if (exist_index >= 0)
+            {
+                packets.value.splice(exist_index, 1, packet.payload);
+            }
+            //куда то пропадают из списка 
+            //сначала появляется 4 а на его месте 5
+            else if(current_page.value == 1)
+            {
+                packets.value.splice(0, 0, packet.payload);
+                if(packets.value.length > items_on_page)
+                    packets.value.pop();
+            }
+        })
+        const update_packets_event = events.need_packets_refresh(async () => 
+        {
+            await get_packets();
         })
         onUnmounted(()=>
         {
             new_packet_event.then(u=> u.unsubscribe());
+            update_packets_event.then(u=> u.unsubscribe())
         })
         const get_pages_count = async () : Promise<number> =>
         {
@@ -190,6 +186,8 @@ export const PacketsViewer =  defineComponent({
                 return 0;
             }
         }
+
+        await get_packets();
         const complex = () =>
         {
             return h('div',
@@ -205,7 +203,7 @@ export const PacketsViewer =  defineComponent({
                     onUpdatePage: async (page) => 
                     {
                         current_page.value = page;
-                        current_offset = page * items_on_page;
+                        current_offset = (page - 1) * items_on_page;
                         total_count.value = await get_pages_count();
                         let r = await commands_packets.get_packets_list(items_on_page, current_offset);
                         if(r.is_ok())
@@ -228,6 +226,7 @@ export const PacketsViewer =  defineComponent({
                     flexDirection: 'column',
                     alignItems: 'left',
                     width: '100%',
+                    height: '100%',
                     //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
                     //backgroundSize: '50px 50px'
                     backgroundImage: background
@@ -236,7 +235,7 @@ export const PacketsViewer =  defineComponent({
             h(NScrollbar,
                 {
                    style:{
-                    maxHeight: '600px'
+                    maxHeight: '78vh',
                    } as CSSProperties
                 },
                 {
@@ -254,9 +253,9 @@ export const PacketsViewer =  defineComponent({
             return h(StatusCard,
             {
                 key: parse_date.to_string(DateFormat.SerializedDateTime),
-                avatar: packet.error ? error_ico : envelope_ico,
+                avatar: packet.packetInfo?.error ? error_ico : envelope_ico,
                 task_color: packet.task.color,
-                shadowbox_color: packet.error ? '#f6848487' : 'rgb(100, 165, 9)',
+                shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',
                 tooltip: packet.name
             },
             {
@@ -383,7 +382,7 @@ export const PacketsViewer =  defineComponent({
                                 }),
                                 packet.name,
                             ]),
-                            rescan_icon(packet)
+                            right_icons_panel(packet)
                         ]),
                         requisites_or_error(packet)
                     ])
@@ -391,7 +390,7 @@ export const PacketsViewer =  defineComponent({
             })
         }
 
-        const rescan_icon = (packet: IPacket) =>
+        const right_icons_panel = (packet: IPacket) =>
         {
             const disabled = ref(false);
             return  h('div',
@@ -414,7 +413,7 @@ export const PacketsViewer =  defineComponent({
                     {
                         style:
                         {
-                            visibility: packet.error ? 'visible' : 'collapse',
+                            visibility: packet.packetInfo?.error ? 'visible' : 'collapse',
                             marginRight: '2px',
                             
                         } as CSSProperties,
@@ -425,9 +424,16 @@ export const PacketsViewer =  defineComponent({
                         {
                             const res = await commands_service.rescan_packet(packet)
                             if (res.is_err())
+                            {
                                 naive_notify(notify, 'error', "Ошибка запроса пересканирования пакета " + packet.name, res.get_error());
+                            }
                             else
-                            disabled.value = true;
+                            {
+                                disabled.value = true;
+                                //const index = packets.value.findIndex(f=> f.packetInfo?.headerGuid == packet.packetInfo?.headerGuid);
+                                //packets.value.splice(index, 0);
+                            }
+                                
 
                         },
                     },
@@ -521,7 +527,7 @@ export const PacketsViewer =  defineComponent({
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;
-            if(packet.packetInfo)
+            if(packet.packetInfo && !packet.packetInfo.error)
             {
                 const sign_date = packet.packetInfo.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
                 description = (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
@@ -553,7 +559,7 @@ export const PacketsViewer =  defineComponent({
                     (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
                 ])
             }
-            else if (packet.error)
+            else if (packet.packetInfo?.error)
             {
                 return h('div',
                 {
@@ -579,7 +585,7 @@ export const PacketsViewer =  defineComponent({
                         }),
                         default:() => "Ошибка парсинга пакета"
                     }),
-                    packet.error
+                    packet.packetInfo?.error
                 ])
             }
             //если нет ошибок и документа значит документ копируется с опцией CopyAll

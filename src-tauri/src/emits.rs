@@ -32,4 +32,8 @@ impl TauriEmits
     {
         let _ = HANDLE.get().unwrap().app_handle().emit_all("clean_complete", count);
     }
+    pub fn need_packets_refresh()
+    {
+        let _ = HANDLE.get().unwrap().app_handle().emit_all("need_packets_refresh", ());
+    }
 }

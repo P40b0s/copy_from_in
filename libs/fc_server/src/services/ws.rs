@@ -33,6 +33,10 @@ impl WebsocketServer
     {
         Self::broadcast_message_to_all(Contract::CleanComplete(count)).await;  
     }
+    pub async fn need_packets_update()
+    {
+        Self::broadcast_message_to_all(Contract::NeedPacketsrefresh).await;  
+    }
 }
 
 ///Стартуем сервер вебсокет для приема и отправки сообщений

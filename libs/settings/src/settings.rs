@@ -206,15 +206,17 @@ impl Settings
     }
     ///Обрезать файл с исключениями (*.task) удаляет из файла все директории которые отсутсвуют в текущий момент 
     /// по пути source_dir в текущей задаче
-    pub fn truncate_excludes(&self) -> u32
+    pub fn truncate_excludes(&self) -> (u32, HashMap<String, Vec<String>>)
     {
         let mut count: u32 = 0;
+        let mut founded: HashMap<String, Vec<String>> = HashMap::new();
         for t in &self.tasks
         {
             count = 0;
             let mut guard = EXCLUDES.get().unwrap().lock().unwrap();
             let excludes = guard.get(t.get_task_name()).unwrap();
             let mut del: Vec<String> = vec![];
+            let mut excl: Vec<String> = vec![];
             if let Some(dirs) = io::get_dirs(t.get_source_dir()) 
             {
                 for ex in excludes
@@ -225,10 +227,12 @@ impl Settings
                     }
                     else
                     {
+                        excl.push(ex.to_owned());
                         count+=1;
                     }
                 }
             }
+            founded.insert(t.get_task_name().to_owned(), excl);
             guard.insert(t.get_task_name().to_owned(), del);
             drop(guard);
             if count > 0
@@ -241,6 +245,6 @@ impl Settings
                 logger::info!("При проверке списка задачи {} не найдено несуществующих директорий",  t.get_task_name());
             }
         }
-        count
+        (count, founded)
     }
 }

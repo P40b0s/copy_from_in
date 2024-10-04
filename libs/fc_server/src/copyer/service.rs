@@ -4,7 +4,7 @@ use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::Packet;
 
-use crate::{copyer::io::get_files, services::WebsocketServer, state::AppState, Error};
+use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState, Error};
 
 use super::io::get_dirs;
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
@@ -44,6 +44,7 @@ pub trait PacketsCleaner
                                             if files.is_empty()
                                             {
                                                 let _ = std::fs::remove_dir_all(&source_path);
+                                                PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
                                                 let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
                                                 logger::info!("{}", inf);
                                                 count+=1;
@@ -57,6 +58,7 @@ pub trait PacketsCleaner
                                             if t.clean_types.contains(pt)
                                             {
                                                 let _ = std::fs::remove_dir_all(&source_path);
+                                                PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
                                                 let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
                                                 logger::info!("{}", inf);
                                                 count+=1;
@@ -111,7 +113,7 @@ mod tests
         logger::StructLogger::new_default();
         let s = Settings::load(Serializer::Toml).unwrap();
         let r = s.truncate_excludes();
-        println!("{:?} => {}", s, r);
+        println!("{:?} => {}", s, r.0);
     }
     // #[test]
     // fn test_packets_cleaner()

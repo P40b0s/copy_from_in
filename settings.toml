@@ -12,6 +12,7 @@ clean_types = ["Квитанция"]
 generate_exclude_file = false
 color = "#44FFE9"
 sound = false
+autocleaning = false
 
 [tasks.filters]
 document_types = ["Транспортный контейнер", "Документ"]
@@ -31,7 +32,28 @@ clean_types = ["Квитанция"]
 generate_exclude_file = false
 color = "#7F44FF"
 sound = true
+autocleaning = false
 
 [tasks.filters]
 document_types = ["Транспортный контейнер", "Документ"]
+document_uids = []
+
+[[tasks]]
+name = "test_in3_task"
+description = "тестовая задача"
+source_dir = "test_data/in3"
+target_dir = "test_data/out"
+report_dir = "test_data/report"
+timer = 60000
+delete_after_copy = false
+copy_modifier = "CopyOnly"
+is_active = true
+clean_types = ["Квитанция"]
+generate_exclude_file = true
+color = "#F00F0F"
+sound = false
+autocleaning = true
+
+[tasks.filters]
+document_types = ["Документ", "Транспортный контейнер"]
 document_uids = []

@@ -17,10 +17,7 @@ import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin, WarningS
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
 import { naive_notify } from '../services/notification.ts';
-export const SettingsEditorAsync = defineAsyncComponent({
-    loader: () => import ('./settings_editor.tsx'),
-    loadingComponent: h(NSpin)
-})
+import { sleepNow } from '../services/helpers.ts';
 
 const form_validation_rules = () : FormRules =>
 {
@@ -87,7 +84,7 @@ const form_validation_rules = () : FormRules =>
     }
 }
 export const SettingsEditor =  defineComponent({
-    setup () 
+    async setup () 
     {
         const notify = useNotification();
         const tasks = ref<Task[]>([]);
@@ -106,7 +103,6 @@ export const SettingsEditor =  defineComponent({
                 console.error(s.get_error());
             }
         }
-
         const updated_event = events.task_updated(async (task) => 
         {
             const new_task = task.payload;
@@ -134,7 +130,6 @@ export const SettingsEditor =  defineComponent({
             (selected_task.value as Task).generate_exclude_file = false;
             tasks.value[saved].generate_exclude_file = false;
         })
-        
         const delete_event = events.task_deleted(async (task) => 
         {
             const new_task = task.payload;
@@ -151,10 +146,8 @@ export const SettingsEditor =  defineComponent({
             updated_event.then(v=> v.unsubscribe())
             delete_event.then(t=>t.unsubscribe())
         })
-        onMounted(async ()=>
-        {
-           await get_tasks();
-        })
+        await get_tasks();
+      
         const settings_names = (): Array<SelectOption | SelectGroupOption> =>
         {
             return tasks.value.map(r=>
@@ -378,7 +371,7 @@ export const SettingsEditor =  defineComponent({
                     } as CSSProperties
 
                 },
-                    h(NScrollbar,
+                    () => h(NScrollbar,
                     {
                         trigger: 'hover',
                         style:
@@ -403,7 +396,8 @@ export const SettingsEditor =  defineComponent({
                             left_form(),
                             right_form(),
                         ])
-                    }))
+                    })
+                )
             } else return [];
         }
 
