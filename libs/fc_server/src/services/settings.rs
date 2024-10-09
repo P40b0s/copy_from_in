@@ -4,6 +4,7 @@ use logger::{debug, error};
 use settings::{FileMethods, Task};
 use transport::Packet;
 use crate::copyer::ExcludesCreator;
+use crate::db::PacketTable;
 use crate::state::AppState;
 use crate::Error;
 
@@ -41,7 +42,8 @@ pub async fn update(payload: Task, state: Arc<AppState>) -> Result<(), Error>
     }
     Ok(())
 }
-
+///Удаляем файл настроек, удаляем задачу из настроек и заново сериализуем в файл,  
+/// удаляем список директорий и все записи связанные с этим таском из БД
 pub async fn delete(task_name: &str, state: Arc<AppState>) -> Result<(), Error>
 {
     let mut sett = state.settings.lock().await;
@@ -56,5 +58,6 @@ pub async fn delete(task_name: &str, state: Arc<AppState>) -> Result<(), Error>
     let file_name = Path::new(&concat_path);
     let path = Path::new(&std::env::current_dir().unwrap()).join(file_name);
     let _ = std::fs::remove_file(path);
+    PacketTable::delete_by_task_name(task_name, state.get_db_pool()).await;
     Ok(())
 }

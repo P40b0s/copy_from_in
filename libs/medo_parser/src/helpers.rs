@@ -4,7 +4,6 @@ use regex::Regex;
 use utilites::{Date, DateFormat};
 use uuid::Uuid;
 use time::{OffsetDateTime, format_description, UtcOffset, Duration};
-use std::time::SystemTime;
 
 use crate::MedoParserError;
 

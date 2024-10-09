@@ -1,6 +1,4 @@
-use std::{time::SystemTime, fs, path::Path};
-
-use serde::{Deserialize, Serialize};
+use std::{fs, path::Path};
 use encoding::{all::WINDOWS_1251, Encoding};
 use utilites::DateFormat;
 
@@ -41,7 +39,7 @@ impl DeliveryTicketPacket
 
 fn create_ticket(ack_uid: &str, destination_organ_uid :&str, destination_organ_name: &str) -> String
 {
-    let date_time = SystemTime::now();
+    //let date_time = SystemTime::now();
     let created_datetime = utilites::Date::now().format(DateFormat::Serialize);
     let header_uid = uuid::Uuid::new_v4().to_string();
 

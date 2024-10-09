@@ -234,6 +234,7 @@ impl PacketTable
         let packets = Self::select(&selector, pool).await?;
         Ok(packets)
     }
+    ///Удаление из БД по имени таска + имени директории
     pub async fn truncate(task_name: &str, dirs: &[String], pool: Arc<SqlitePool>)
     {
         for d in dirs
@@ -244,6 +245,13 @@ impl PacketTable
             .bind(d)
             .execute(&*pool).await;
         }
+    }
+    pub async fn delete_by_task_name(task_name: &str, pool: Arc<SqlitePool>)
+    {
+        let sql = ["DELETE FROM ", &Self::table_name(), " WHERE task_name = $1"].concat();
+        let _ = db_service::query(&sql)
+        .bind(task_name)
+        .execute(&*pool).await;
     }
 
     pub async fn select_all(pool: Arc<SqlitePool>) -> Result<Vec<PacketTable>, DbError> 

@@ -1,13 +1,12 @@
 use std::{io::Read, net::SocketAddr, str::FromStr, sync::Arc};
 use http_body_util::{BodyExt, Empty, Full};
-use hyper::{Request, StatusCode};
+use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
-use logger::error;
-use once_cell::sync::OnceCell;
+use logger::{debug, error};
 use serde::{Deserialize, Serialize};
 use service::Client;
 use settings::Task;
-use transport::{BytesSerializer, Packet, Pagination};
+use transport::{Packet, Pagination};
 use tokio::net::TcpStream;
 use crate::{ws_serivice::WebsocketClient, Error};
 use utilites::http::{Bytes, HyperClient, HeaderName, ACCEPT, USER_AGENT};
@@ -31,9 +30,16 @@ fn code_error_check(response: (StatusCode, Bytes), need_code: u16) -> Result<Byt
 {
     if response.0 != utilites::http::StatusCode::OK
     {
-        //let e = ["Сервер ответил кодом ", response.0.as_str(), " ожидался код ", ].concat();
-        //logger::warn!("{}", &e);
-        return Err(Error::StatusCodeError(need_code, response.0.as_u16()));
+        
+        if let Ok(body) = String::from_utf8(response.1.to_vec())
+        {
+            error!("{:?}", &body);
+            return Err(Error::StatusCodeError(need_code, response.0.as_u16(), Some(body)));
+        }
+        else
+        {
+            return Err(Error::StatusCodeError(need_code, response.0.as_u16(), None));
+        }
     }
     else 
     {
@@ -75,14 +81,13 @@ async fn put<B: Serialize + Clone>(payload: B, api_path: &str, uri_path: &str) -
     Ok(())
 }
 
-async fn delete<T>(api_path: &str, uri_path: &str, params: &[(&str, &str)]) -> Result<T> where T: for <'de> Deserialize<'de>
+async fn delete(api_path: &str, uri_path: &str, params: &[(&str, &str)]) -> Result<()>
 {
     let client = get_client(api_path);
     let client = client.add_path(uri_path);
     let result = client.delete(params).await?;
-    let result = code_error_check(result, 200)?;
-    let result = serde_json::from_slice::<T>(&result)?;
-    Ok(result)
+    let _ = code_error_check(result, 200)?;
+    Ok(())
 }
 
 
@@ -101,29 +106,15 @@ impl SettingsService
     {
         let result = get(&self.api_path, "settings/tasks").await?;
         Ok(result)
-        // let client = get_client(&self.api_path);
-        // let client = client.add_path("settings/tasks");
-        // let tasks = client.get().await?;
-        // let tasks = code_error_check(tasks, 200)?;
-        // let tasks = serde_json::from_slice::<Vec<Task>>(&tasks)?;
-        // Ok(tasks)
     }
     pub async fn update(&self, payload: Task) -> Result<()>
     {
-        // let client = get_client(&self.api_path);
-        // let client = client.add_path("settings/tasks/update");
-        // let upd = client.post_with_body(payload).await?;
-        // let _ = code_error_check(upd, 200)?;
         put(payload, &self.api_path, "settings/tasks/update").await?;
         Ok(())
     }
     pub async fn delete(&self, payload: Task) -> Result<()>
     {
-        // let client = get_client(&self.api_path);
-        // let client = client.add_path("settings/tasks/delete");
-        // let del = client.post_with_body(payload).await?;
-        // let _ = code_error_check(del, 200)?;
-        delete(&self.api_path, "settings/tasks/delete", &[("name", payload.get_task_name())]).await?;
+        let _ = delete(&self.api_path, "settings/tasks/delete", &[("name", payload.get_task_name())]).await?;
         Ok(())
     }
 }
@@ -141,13 +132,6 @@ impl UtilitesService
     }
     pub async fn clear_dirs(&self)
     {
-        // let client = get_client(&self.api_path);
-        // let client = client.add_path("packets/clean");
-        // let tasks = client.get().await?;
-        // let tasks = code_error_check(tasks, 200)?;
-        // let tasks = serde_json::from_slice::<u32>(&tasks)?;
-        // Ok(tasks)
-        //let result = get(&self.api_path, "packets/clean").await?;
         WebsocketClient::send_message(transport::Contract::CleanStart).await;
     }
 
@@ -187,121 +171,11 @@ impl PacketService
     }
     pub async fn count(&self) -> Result<u32>
     {
-        // let client = get_client(&self.api_path);
-        // let client = client.add_path("packets/count");
-        // let result = client.get().await?;
-        // let result = code_error_check(result, 200)?;
-        // let result = serde_json::from_slice::<u32>(&result)?;
         let result = get(&self.api_path, "packets/count").await?;
         Ok(result)
     }
-
-    // pub async fn get_packets_list2() -> Result<Vec<Packet>, Error>
-    // {
-    //     http_service::get::<Vec<Packet>>("packets/list").await
-    // }
 }
 
-
-
-
-
-
-
-
-
-// pub async fn get<R>(subpath: &str) -> Result<R> where for <'de> R : Deserialize<'de> + BytesSerializer
-// {
-//     let (addr, uri) = HOST.get().unwrap();
-//     let req_path = [uri, subpath].concat();
-//     let uri = req_path.parse::<hyper::Uri>().unwrap();
-//     let stream = TcpStream::connect(addr).await?;
-//     let io = TokioIo::new(stream);
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-//     tokio::task::spawn(async move 
-//     {
-//         if let Err(err) = conn.await 
-//         {
-//             error!("Ошибка соединения с сервером: {:?}", err);
-//         }
-//     });
-//     let authority = uri.authority().unwrap().clone();
-//     let req = Request::builder()
-//     .uri(uri)
-//     .header(hyper::header::HOST, authority.as_str())
-//     .body(Empty::<Bytes>::new())?;
-//     let res = sender.send_request(req).await?;
-//     let status = res.status();
-//     let body = res.collect().await?.to_bytes();
-//     if status != StatusCode::OK
-//     {
-//         let dd: &[u8] = &body;
-//         let str = String::from_utf8(dd.to_vec()).unwrap();
-//         let err_format = format!("Ошибка {} -> {}", status, str);
-//         error!{"{}", &err_format};
-//         return Err(Error::RequestError(err_format));
-//     }
-//     let obj = R::from_bytes(&body)?;
-//     Ok(obj)
-// }
-
-// pub async fn post<R: Serialize + BytesSerializer>(subpath: &str, obj: &R) -> Result<()>
-// {
-//     let (addr, uri) = HOST.get().unwrap();
-//     let req_path = [uri, subpath].concat();
-//     let uri = req_path.parse::<hyper::Uri>().unwrap();
-//     let stream = TcpStream::connect(addr).await?;
-//     let io = TokioIo::new(stream);
-//     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await?;
-    
-//     tokio::task::spawn(async move 
-//     {
-//         if let Err(err) = conn.await 
-//         {
-//             error!("Ошибка соединения с сервером: {:?}", &err);
-//         }
-//     });
-//     let authority = uri.authority().unwrap().clone();
-//     let bytes = obj.to_bytes()?;
-//     let req = Request::builder()
-//     .method("POST")
-//     .uri(uri)
-//     .header(hyper::header::HOST, authority.as_str())
-//     .header(hyper::header::CONNECTION, "keep-alive")
-//     .header("Keep-Alive", "timeout=5, max=50")
-//     .body(to_body(bytes));
-//     if req.is_err()
-//     {
-//         error!("{:?}", req.as_ref().err().unwrap());
-//     }
-//     sender.ready().await?;
-//     let res = sender.send_request(req.unwrap()).await;
-//     if res.is_err()
-//     {
-//         let e = format!("Ошибка post запроса для: {} -> {}", &req_path, res.err().as_ref().unwrap().to_string());
-//         error!("{}", &e);
-//         return Err(Error::RequestError(e));
-//     }
-//     if res.as_ref().unwrap().status() != StatusCode::OK
-//     {
-//         let body = res.unwrap().collect().await?.to_bytes();
-//         let obj = std::str::from_utf8(body.as_ref()).unwrap_or("От сервера возвращена неизвестная ошибка");
-//         let e = format!("Ошибка post запроса для: {} -> {}", &req_path, obj);
-//         error!("{}", &e);
-//         return Err(Error::RequestError(obj.to_owned()));
-//     }
-//     else
-//     {
-//         Ok(())
-//     }
-// }
-
-// pub fn to_body(bytes: Bytes) -> BoxBody
-// {
-//     Full::new(bytes)
-//         .map_err(|never| match never {})
-//         .boxed()
-// }
 
 
 #[cfg(test)]

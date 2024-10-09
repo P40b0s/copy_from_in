@@ -1,5 +1,5 @@
 use std::fs::{DirEntry, File, OpenOptions};
-use std::{io::{BufWriter, Read, Write},   path::{Path, PathBuf}, sync::Arc, time::SystemTime};
+use std::{io::{BufWriter, Read, Write},   path::{Path, PathBuf}, sync::Arc, }; //time::SystemTime
 use futures::FutureExt;
 use logger::{backtrace, debug, error};
 use serde_json::Value;
@@ -82,7 +82,7 @@ use crate::Error;
 
  /// копирование директорий с задержкой для проверки полностью ли скопирован файл в эту директорию
  /// * check_duration с такой переодичностью идет проверка изменилось ли время изменения файла или нет
- pub fn copy_recursively_async(source: Arc<PathBuf>, destination: Arc<PathBuf>, check_duration: u64) -> futures::future::BoxFuture<'static, anyhow::Result<u64, Error>>
+ pub fn copy_recursively_async(source: Arc<PathBuf>, destination: Arc<PathBuf>, check_duration: u64) -> futures::future::BoxFuture<'static, anyhow::Result<(), Error>>
  {
     async move 
     {
@@ -95,9 +95,9 @@ use crate::Error;
         {
             //если в начальной пусто то все правильно, если во вложенной то просто возвращаем 0 в предыдущую функцию
             //вызываться будет ниже
-            return Ok(0);
+            return Ok(());
         }
-        let start = std::time::SystemTime::now();
+        //let start = std::time::SystemTime::now();
         let create_dir = std::fs::create_dir_all(&destination.as_ref());
         if create_dir.is_err()
         {
@@ -112,7 +112,6 @@ use crate::Error;
         {
             return Err(Error::Io(read_iter.err().unwrap()));
         }
-
         let dirs_iter = std::fs::read_dir(source.as_ref());
         if dirs_iter.is_err()
         {
@@ -184,24 +183,25 @@ use crate::Error;
                 return Err(Error::Io(iscopy.err().unwrap()));
             }
         }
-        let end = std::time::SystemTime::now();
-        let duration = end.duration_since(start).unwrap();
+        //let end = std::time::SystemTime::now();
+        //let duration = end.duration_since(start).unwrap();
         //return Box::pin(async { Ok(duration.as_secs())});
-        return Ok(duration.as_secs());
+        return Ok(());
     }.boxed()
  }
 
-
 async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, check_duration: u64) -> anyhow::Result<(P, P), Error>
 {
-    let mut modifed_time: Option<SystemTime> = None;
+    let mut modifed_time: Option<u32> = None;
     let mut modifed_len: Option<u64> = None;
     let mut max_repeats = 30;
     loop
     {
         //в цикле сверяем время изменения файла и его длинну каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
         let metadata = std::fs::metadata(source_file_path.as_ref())?;
-        if let Ok(md_time) = metadata.modified()
+        let mtime = filetime::FileTime::from_last_modification_time(&metadata);
+        //if let Ok(md_time) = metadata.modified()
+        let md_time = mtime.nanoseconds();
         {
             if modifed_time.is_none() &&  modifed_len.is_none()
             {

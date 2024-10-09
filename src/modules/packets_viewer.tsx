@@ -319,7 +319,7 @@ export const PacketsViewer =  defineComponent({
                                             marginRight: '2px',
                                         } as CSSProperties,
                                     }),
-                                    default:() => "Время обработки пакета"
+                                    default:() => "Время доставки пакета"
                                 }),
                                 parse_time,
                             ]),
@@ -349,7 +349,7 @@ export const PacketsViewer =  defineComponent({
                                             marginRight: '2px'
                                         } as CSSProperties,
                                     }),
-                                    default:() => "Наименование задачи"
+                                    default:() => packet.task.description
                                 }),
                                 packet.task?.name,
                             ]),

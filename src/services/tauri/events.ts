@@ -27,7 +27,7 @@ export class TauriEvents extends AbstractEvents<
     {
         return await this.subscribe('task_updated', func)
     }
-    public async task_deleted(func: (arg: event.Event<Task>) => void): Promise<Unlistener>
+    public async task_deleted(func: (arg: event.Event<string>) => void): Promise<Unlistener>
     {
         return await this.subscribe('task_deleted', func)
     }

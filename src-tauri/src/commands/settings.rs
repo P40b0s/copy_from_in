@@ -28,6 +28,7 @@ pub async fn update(payload: Task, state: State<'_, Arc<AppState>>) -> Result<()
 #[tauri::command]
 pub async fn delete(payload: Task, state: State<'_, Arc<AppState>>) -> Result<(), Error>
 {
+    debug!("Попытка удалить задачу {:?}", &payload);
     let _ = state.settings_service.delete(payload).await?;
     Ok(())
 }

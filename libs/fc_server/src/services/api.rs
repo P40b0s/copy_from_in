@@ -87,7 +87,8 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
     };
     if resp.is_err()
     {
-        resp.err().unwrap().into()
+        error!("{}", resp.as_ref().err().unwrap());
+        Ok(utilites::http::error_response(resp.err().unwrap().to_string(), StatusCode::BAD_REQUEST))
     }
     else
     {
@@ -185,8 +186,8 @@ async fn delete_task(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     {
         if let Some(name) = data.get("name")
         {
-           let _ = super::settings::delete(name, app_state).await?;
-           let response = ok_response(["Задача ", name, " удалена"].concat());
+            let  _ = super::settings::delete(name, app_state).await?;
+            let response = ok_response(["Задача ", name, " удалена"].concat());
             WebsocketServer::task_delete_event(name).await;
             return Ok(response);
         }
@@ -199,16 +200,6 @@ async fn delete_task(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     {
         return Ok(error_response("В запросе должен присутсвовать параметр name".to_owned(), StatusCode::BAD_REQUEST));
     };
-    // let body = req.collect().await?.to_bytes();
-    // let task: Task = Task::from_bytes(&body)?;
-    // if let Err(e) = super::settings::delete(task.clone(), app_state).await
-    // {
-    //     logger::error!("{}", &e);
-    //     return Ok(error_response(e.to_string(), StatusCode::BAD_REQUEST));
-    // }
-    // let response = ok_response([task.get_task_name(), " удален"].concat());
-   
-    // Ok(response)
 }
 
 async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 

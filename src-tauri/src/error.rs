@@ -10,10 +10,10 @@ pub enum Error
   Io(#[from] std::io::Error),
   #[error(transparent)]
   UtilitesError(#[from] utilites::error::Error),
-  #[error("Ошибка, сервер ответил кодом `{0}` вместо кода `{1}`")]
+  #[error("Ошибка, сервер ответил кодом `{}` вместо кода `{}` -> `{}`", .1, .0, .2.as_ref().unwrap_or(&"".to_owned()))]
   ///1 - ожидаемый код ответа сервера
   ///2 - полученный код от сервера
-  StatusCodeError(u16, u16),
+  StatusCodeError(u16, u16, Option<String>),
 }
 
 // impl std::fmt::Display for Error

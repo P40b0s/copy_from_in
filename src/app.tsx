@@ -39,7 +39,7 @@ export const App = defineComponent({
                     [
                         h(Services, {class: 'menu'}),
                         h(MainTab, {class: "main-body"}),
-                        h('div', {class: 'footer'}, "footer muter booter")
+                        h('div', {class: 'footer'}, "")
                         //h(Modals),
                         //h(TimeWarningsViewer, {items: time_warnings.value, class: 'footer'}),
                     ]),

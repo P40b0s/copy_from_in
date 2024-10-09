@@ -7,25 +7,17 @@ edition = "2021"
 [dependencies]
 serde = {version = "1.0.196", features = ["derive"]}
 serde_json = "1.0.113"
-#logger = {path = "../../../../rust/logger"}
 logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
 tokenizer = {git = "https://github.com/P40b0s/tokenizer.git", branch = "master"}
 tokenizer_derive = {git = "https://github.com/P40b0s/tokenizer.git", branch = "master"}
-#tokenizer = {path = "../../../../rust/tokenizer/tokenizer"}
-#tokenizer_derive = {path = "../../../../rust/tokenizer/tokenizer_derive"}
 settings = {path = "../settings"}
-#quickxml_to_serde={version = "0.5.0", features = ["json_types"]}
-quick-xml={version ="0.31.0", features = ["serialize", "overlapped-lists"]}
-#quick-xml = {git="https://github.com/P40b0s/quick-xml", features = ["serialize"]}
+quick-xml={version ="0.36.2", features = ["serialize", "overlapped-lists"]}
 regex="*"
 encoding = "0.2.33"
-zip = "0.6.6"
+zip = "2.2.0"
 uuid = {version = "1.7.0", features = ["v4"]}
 time = { version = "0.3.34", features = ["formatting"] }
-#blake2 = "0.10.6"
-#base64 = "0.13.1"
 once_cell="*"
-#lazy_static="*"
 crossbeam-channel="*"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 

@@ -132,12 +132,12 @@ export const SettingsEditor =  defineComponent({
         })
         const delete_event = events.task_deleted(async (task) => 
         {
-            const new_task = task.payload;
-            const saved = tasks.value.findIndex(t=>t.name == new_task.name);
+            const task_name = task.payload;
+            const saved = tasks.value.findIndex(t=>t.name == task_name);
             if (saved != -1)
             {
                 tasks.value.splice(saved, 1);
-                naive_notify(notify, 'success', "Удалена задача " + new_task.name, "", 2000);
+                naive_notify(notify, 'success', "Удалена задача " + task_name, "", 2000);
                 selected_task.value = tasks.value[0];
             }
         })
@@ -350,6 +350,7 @@ export const SettingsEditor =  defineComponent({
                 onClick: async () => 
                 {
                     selected_task.value = tasks.value[0];
+                    tasks.value.pop();
                     is_new_task.value = false;
                 }
             },

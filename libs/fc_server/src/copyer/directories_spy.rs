@@ -1,12 +1,11 @@
-use std::{self, collections::{HashMap, VecDeque}, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
+use std::{self, collections::HashMap, path::{Path, PathBuf}, sync::{atomic::AtomicBool, Arc}};
 use logger::{debug, error, info};
 use transport::{DeliveryTicketPacket, PacketInfo};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier,Settings, Task};
 use tokio::sync::Mutex;
 use transport::Packet;
-use utilites::Date;
-use crate::{ state::AppState};
+use crate::state::AppState;
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
 
@@ -147,7 +146,7 @@ impl DirectoriesSpy
         // }
         // else 
         // {
-            if let Ok(copy_time) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
+            if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
             {  
                 if task.delete_after_copy
                 {
@@ -156,7 +155,7 @@ impl DirectoriesSpy
                         error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
                     }
                 }
-                info!("Задачей `{}` c модификатором {} пакет {} скопирован в {} за {}с.",task.name, task.copy_modifier, packet_dir_name, &target_path.display(), copy_time);
+                info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
                 return true;
             }
             else

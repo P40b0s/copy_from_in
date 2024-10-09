@@ -4,7 +4,7 @@ use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::Packet;
 
-use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState, Error};
+use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState, Error, TOKIO_NANDLE};
 
 use super::io::get_dirs;
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
@@ -18,11 +18,12 @@ pub trait PacketsCleaner
         if !CLEAN_IN_PROGRESS.load(std::sync::atomic::Ordering::Relaxed)
         {
             CLEAN_IN_PROGRESS.store(true, std::sync::atomic::Ordering::Relaxed);
+            let rt  = Runtime::new().unwrap();
             let settings = app_state.get_settings().await;
-            let _ = tokio::task::spawn(async move 
+            tokio::task::block_in_place(move || 
             {
-                let runtime = Runtime::new().expect("Ошибка создания рантайма!");
-                let _ = runtime.spawn(async move 
+                let handle = rt.handle();
+                let _ = handle.block_on(async move 
                 {
                     let mut count = 0;
                     for t in &settings.tasks
@@ -73,8 +74,7 @@ pub trait PacketsCleaner
                     logger::info!("Очистка закончена, удалено {} пакетов", count);
                     WebsocketServer::clean_task_complete(count).await;
                 });
-                
-            }).await;
+            });
         }
         
     }
