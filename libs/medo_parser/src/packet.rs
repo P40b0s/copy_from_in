@@ -171,7 +171,10 @@ impl Packet
         }
         if let Ok(is_file) = self.path.as_ref().unwrap().metadata().and_then(|m| Ok(m.is_file()))
         {
-            return Err(MedoParserError::ParseError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", self.path.as_ref().unwrap().display())));
+            if is_file
+            {
+                return Err(MedoParserError::ParseError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", self.path.as_ref().unwrap().display())));
+            }
         }
         if let Ok(created) = self.path.as_ref().unwrap().metadata().and_then(|m|m.created())
         {
