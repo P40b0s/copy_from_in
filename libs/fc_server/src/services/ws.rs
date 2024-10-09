@@ -57,6 +57,7 @@ pub async fn start_ws_server(port: usize, app_state: Arc<AppState>)
                 Contract::ErrorConversion(e) => error!("{}", e),
                 Contract::CleanStart => 
                 {
+                    WebsocketServer::start_clean_task().await;
                     Settings::clean_packets(state).await;
                 }
                 //Contract::TaskUpdated(t) => task_updated(&addr, t).await,

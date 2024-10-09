@@ -45,7 +45,10 @@ pub trait DatesHelper
         for cap in MJ_DATE_REGEX.captures_iter(annotation)
         {
             let number = cap.get(1).unwrap().as_str().to_owned();
-            let dot_date = Date::parse(annotation).unwrap();
+            let date =  cap.get(2).unwrap().as_str().to_owned();
+            let month =  cap.get(3).unwrap().as_str().to_owned();
+            let year =  cap.get(4).unwrap().as_str().to_owned();
+            let dot_date = Date::parse([date, ".".to_owned(), month, ".".to_owned(), year].concat()).unwrap();
             logger::info!("Обнаружены данные министерства юстиции  {} {}", &number, &dot_date);
             return Some((number, dot_date.format(DateFormat::Serialize)));
         }   
@@ -132,6 +135,13 @@ mod tests
     fn test_mj_data()
     {
         let mj = String::from("72097 от 23.01.2023");
+        let res = super::Date::extract_mj_requisites(&mj).unwrap();
+        println!("№ {} дата: {}", res.0, res.1);
+    }
+    #[test]
+    fn test_mj_data2()
+    {
+        let mj = String::from("72097 от 12 04.2024");
         let res = super::Date::extract_mj_requisites(&mj).unwrap();
         println!("№ {} дата: {}", res.0, res.1);
     }

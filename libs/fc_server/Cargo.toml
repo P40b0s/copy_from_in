@@ -2,6 +2,7 @@
 name = "fc_server"
 version = "0.2.0"
 edition = "2021"
+
 description = "Сервер копирования пакетов МЭДО"
 authors = ["phobos"]
 license = ""
@@ -40,7 +41,12 @@ async-channel="2.3.1"
 futures = "0.3.30"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 db_service = {git = "https://github.com/P40b0s/db_service.git", commit="f7407e6"}
-filetime = "0.2"
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.58.0"
+features = [
+    "Wdk_Storage_FileSystem"
+]
 
 
 

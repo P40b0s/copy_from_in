@@ -50,7 +50,7 @@ impl DirectoriesSpy
             if guard.contains_key(&t.name)
             {
                 let countdown = guard.get(&t.name).unwrap() - 15000;
-                debug!("{}", countdown);
+                //debug!("{}", countdown);
                 if countdown > 0
                 {
                     *guard.get_mut(&t.name).unwrap() = countdown;

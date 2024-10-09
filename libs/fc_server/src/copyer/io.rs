@@ -1,4 +1,5 @@
 use std::fs::DirEntry;
+use std::time::SystemTime;
 use std::{path::{Path, PathBuf}, sync::Arc}; //time::SystemTime
 use futures::FutureExt;
 use logger::{backtrace, debug, error};
@@ -191,16 +192,16 @@ use crate::Error;
 
 async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, check_duration: u64) -> anyhow::Result<(P, P), Error>
 {
-    let mut modifed_time: Option<u32> = None;
+    let mut modifed_time: Option<SystemTime> = None;
     let mut modifed_len: Option<u64> = None;
     let mut max_repeats = 30;
     loop
     {
         //в цикле сверяем время изменения файла и его длинну каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
         let metadata = std::fs::metadata(source_file_path.as_ref())?;
-        let mtime = filetime::FileTime::from_last_modification_time(&metadata);
+        let mtime = metadata.modified();
         //if let Ok(md_time) = metadata.modified()
-        let md_time = mtime.nanoseconds();
+        if let Ok(md_time) = mtime
         {
             if modifed_time.is_none() &&  modifed_len.is_none()
             {
@@ -239,6 +240,57 @@ async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, chec
         tokio::time::sleep(tokio::time::Duration::from_millis(check_duration)).await;
     }
 }
+//FIXME на 2008 сервере не работает апи используемое по умолчанию в windows-sys для получения времени модификации файла
+// async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, check_duration: u64) -> anyhow::Result<(P, P), Error>
+// {
+//     let mut modifed_time: Option<u32> = None;
+//     let mut modifed_len: Option<u64> = None;
+//     let mut max_repeats = 30;
+//     loop
+//     {
+//         //в цикле сверяем время изменения файла и его длинну каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
+//         let metadata = std::fs::metadata(source_file_path.as_ref())?;
+//         let mtime = filetime::FileTime::from_last_modification_time(&metadata);
+//         //if let Ok(md_time) = metadata.modified()
+//         let md_time = mtime.nanoseconds();
+//         {
+//             if modifed_time.is_none() &&  modifed_len.is_none()
+//             {
+//                 modifed_time = Some(md_time);
+//                 modifed_len = Some(metadata.len());
+//                 //logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+//                 //logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
+//             }
+//             else
+//             {
+//                 //logger::debug!("file_len:{}->o:{}n:{}", source_file_path.as_ref().display(), modifed_len.as_ref().unwrap(), metadata.len());
+//                 //logger::debug!("file_modifed_time:{}->o:{:?}n:{:?}", source_file_path.as_ref().display(), modifed_time.as_ref().unwrap_or(&SystemTime::UNIX_EPOCH), &md_time);
+//                 if modifed_len.as_ref().unwrap() == &metadata.len() && modifed_time.as_ref().unwrap() ==  &md_time
+//                 {
+//                     modifed_time = None;
+//                     modifed_len = None;
+//                     return Ok((source_file_path, dest_file_path));
+//                 }
+//                 if modifed_time.as_ref().unwrap() !=  &md_time
+//                 {
+//                     modifed_time = Some(md_time);
+//                 }
+//                 if modifed_len.as_ref().unwrap() != &metadata.len()
+//                 {
+//                     modifed_len = Some(metadata.len())
+//                 }
+//             }
+//         }
+//         max_repeats -= 1;
+//         if max_repeats == 0 
+//         {
+//             let err = format!("Превышено максимальное количество попыток при попытке копирования файла {:?}, файл должен успевать копироваться в систему в течении 2 минут", source_file_path.as_ref());
+//             error!("{} {}", &err, backtrace!());
+//             return Err(Error::FileTimeCopyError(err));
+//         }
+//         tokio::time::sleep(tokio::time::Duration::from_millis(check_duration)).await;
+//     }
+// }
 
 
 

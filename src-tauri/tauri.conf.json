@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "packets_copyist_tasker",
+    "productName": "tasker_client",
     "version": "0.1.0"
   },
   "tauri": {
@@ -69,7 +69,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "Планировщик копирования пакетов МЭДО",
+        "title": "Клиент для планировщика копирования пакетов МЭДО",
         "width": 1200
       }
     ]

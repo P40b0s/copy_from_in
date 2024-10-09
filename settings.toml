@@ -57,23 +57,3 @@ autocleaning = true
 [tasks.filters]
 document_types = ["Документ", "Транспортный контейнер"]
 document_uids = []
-
-[[tasks]]
-name = "test_del_task"
-description = "test del"
-source_dir = "test_data/in3"
-target_dir = "test_data/out"
-report_dir = "test_data/report"
-timer = 120000
-delete_after_copy = false
-copy_modifier = "CopyAll"
-is_active = true
-clean_types = []
-generate_exclude_file = false
-color = "#0ff00f"
-sound = false
-autocleaning = false
-
-[tasks.filters]
-document_types = []
-document_uids = []

@@ -218,7 +218,7 @@ impl PacketTable
     {
         let ids_offset_selector = Selector::new_concat(&["SELECT id FROM ", Self::table_name()])
         .add_params(params)
-        .sort(SortingOrder::Asc("delivery_time"))
+        .sort(SortingOrder::Desc("delivery_time"))
         .limit(&rows)
         .offset(&offset);
         let users_ids: Vec<IdSelector> = Self::select_special_type(&ids_offset_selector, Arc::clone(&pool)).await?;

@@ -27,7 +27,7 @@ pub static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
 #[tokio::main]
 async fn main() 
 {
-    StructLogger::new_default();
+    let _ = StructLogger::new_default();
     let args = cli::Cli::parse_or_default();
     let api_addr = args.api_addr();
     let ws_addr = args.ws_addr();
