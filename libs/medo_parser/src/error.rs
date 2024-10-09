@@ -9,6 +9,7 @@ pub enum MedoParserError
     SerdeError(String),
     None
 }
+
 pub type Result<T> = std::result::Result<T, MedoParserError>;
 impl std::error::Error for MedoParserError {}
 
