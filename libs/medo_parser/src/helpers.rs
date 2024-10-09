@@ -1,9 +1,7 @@
-use logger::error;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use utilites::{Date, DateFormat};
 use uuid::Uuid;
-use time::{OffsetDateTime, format_description, UtcOffset, Duration};
 
 use crate::MedoParserError;
 

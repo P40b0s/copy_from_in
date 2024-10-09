@@ -1,9 +1,5 @@
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use db_service::SqlOperations;
 use settings::Settings;
-use tokio::runtime::Runtime;
-use tokio::task;
 use transport::Packet;
 use crate::copyer::PacketsCleaner;
 use crate::db::PacketTable;

@@ -1,15 +1,11 @@
-use std::net::SocketAddr;
 use std::sync::Arc;
-use bytes::Bytes;
-use db_service::{Operations, QuerySelector, Selector, SqlOperations};
-use http_body_util::{BodyExt, Full};
+use db_service::SqlOperations;
+use http_body_util::BodyExt;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::Uri;
-use hyper::{body::Incoming, header, Method, Request, Response, StatusCode};
+use hyper::{body::Incoming,  Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use logger::{debug, error, info};
-use serde::Serialize;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;

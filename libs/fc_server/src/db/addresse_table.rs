@@ -1,10 +1,8 @@
 use std::sync::Arc;
 
-use db_service::{from_json, get_fields_for_update, query, query_as, to_json, CountRequest, DbError, FromRow, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
-use logger::backtrace;
-use transport::{Ack, PacketInfo, Requisites, SenderInfo};
+use db_service::{from_json, get_fields_for_update, query,  to_json, CountRequest, DbError, FromRow, QuerySelector, Result, Row, Selector, SqlOperations, SqlitePool, SqliteRow};
+use transport::PacketInfo;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 use super::contact_info::{ContactInfo, ContactType};
 

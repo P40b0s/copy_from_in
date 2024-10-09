@@ -1,9 +1,9 @@
 use std::{net::SocketAddr, sync::Arc};
-use logger::{backtrace, debug, error};
+use logger::{debug, error};
 use settings::{Settings, Task};
 use transport::{Contract, Packet};
 use service::Server;
-use crate::{copyer::{DirectoriesSpy, PacketsCleaner}, state::AppState, Error};
+use crate::{copyer::PacketsCleaner, state::AppState, Error};
 
 pub struct WebsocketServer;
 impl Server<Contract> for WebsocketServer{}

@@ -1,10 +1,6 @@
-use std::{borrow::Cow, ops::Deref, sync::Arc};
-use db_service::{from_json, get_fields_for_update, query, to_json, CountRequest, DbError, FromRow, IdSelector, Operations, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
-use logger::backtrace;
-use transport::{Ack, PacketInfo, Requisites, SenderInfo, Packet};
-use serde_json::json;
-use settings::Task;
-use uuid::Uuid;
+use std::sync::Arc;
+use db_service::{from_json, get_fields_for_update, query, to_json, CountRequest, DbError, FromRow, IdSelector, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
+use transport::{PacketInfo, Packet};
 use super::addresse_table::AddresseTable;
 
 #[derive(Debug)]
@@ -216,7 +212,6 @@ impl PacketTable
         Ok(count.count)
     }
 
-    //TODO добавить выборку по параметрам а не тупо всех подряд, будет и отсеивание по имени и еще по чему то
     ///`rows` - количество записей получаемых из базы данных<br>
     /// `offset` - с какой позиции начинать
     pub async fn get_with_offset(rows: u32, offset: u32, pool: Arc<SqlitePool>, params: Option<Vec<(&str, &str)>>) -> Result<Vec<PacketTable>, DbError>
@@ -266,8 +261,6 @@ mod tests
 {
     use db_service::to_json;
     use transport::PacketInfo;
-
-    use super::PacketTable;
 
     #[test]
    fn test_json_null()

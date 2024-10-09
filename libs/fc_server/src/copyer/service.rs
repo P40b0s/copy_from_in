@@ -1,13 +1,12 @@
-use std::{path::Path, sync::{atomic::AtomicBool, Arc}, thread, time::Duration};
-
+use std::{path::Path, sync::{atomic::AtomicBool, Arc}};
 use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::Packet;
-
-use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState, Error, TOKIO_NANDLE};
-
+use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState};
 use super::io::get_dirs;
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
+
+
 pub trait PacketsCleaner
 {
     
@@ -105,23 +104,12 @@ mod tests
 {
     use settings::{FileMethods, Serializer, Settings};
 
-    use crate::copyer::service::PacketsCleaner;
-
     #[test]
     fn test_task_cleaner()
     {
-        logger::StructLogger::new_default();
+        let _ = logger::StructLogger::new_default();
         let s = Settings::load(Serializer::Toml).unwrap();
         let r = s.truncate_excludes();
         println!("{:?} => {}", s, r.0);
     }
-    // #[test]
-    // fn test_packets_cleaner()
-    // {
-    //     logger::StructLogger::new_default();
-    //     let s = Settings::load(Serializer::Toml).unwrap();
-    //     let r = Settings::clear_packets(&s);
-    //     assert!(r.as_ref().unwrap() == &31);
-    //     println!("{:?} => {}", s, r.unwrap());
-    // }
 }

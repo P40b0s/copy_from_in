@@ -1,9 +1,7 @@
 mod directories_spy;
 mod service;
 pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, ExcludesCreator}};
-
 mod io;
-mod serialize;
 
 // #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 // #[serde(rename_all = "camelCase")]

@@ -4,16 +4,14 @@ mod validation_error;
 mod file_methods;
 pub use file_methods::FileMethods;
 use once_cell::sync::OnceCell;
-use std::{borrow::Cow, fmt::{Display, Write}, path::{Path, PathBuf}, sync::{Arc, Mutex, RwLock}, time::Duration};
+use std::sync::Mutex;
 pub use io::{serialize, deserialize, Serializer};
-use serde::{Serialize, Deserialize};
 extern crate toml;
 extern crate blake2;
 mod settings;
 pub use settings::Settings;
 pub use task::{Task, Filter, CopyModifier};
 pub use validation_error::ValidationError;
-use hashbrown::hash_map::HashMap;
 pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<String>>>> = OnceCell::new();
 
 

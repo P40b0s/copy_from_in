@@ -1,4 +1,4 @@
 mod files;
 mod document;
-pub use files::{File, Files};
-pub use document::{Document, Number, Correspondent};
+pub use files::Files;
+pub use document::{Document, Number};

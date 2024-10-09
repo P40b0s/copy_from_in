@@ -2,7 +2,6 @@ use std::path::Path;
 use std::sync::Arc;
 use logger::{debug, error};
 use settings::{FileMethods, Task};
-use transport::Packet;
 use crate::copyer::ExcludesCreator;
 use crate::db::PacketTable;
 use crate::state::AppState;

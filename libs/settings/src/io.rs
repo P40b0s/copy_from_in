@@ -1,7 +1,6 @@
-use std::{path::{PathBuf, Path}, fs::{OpenOptions, File}, io::{BufWriter, Write, Seek, Read}, str::FromStr};
+use std::{path::{PathBuf, Path}, fs::{OpenOptions, File}, io::{BufWriter, Write, Read}};
 use logger::{error, warn};
-use serde::{Serialize, Deserialize, de::DeserializeOwned};
-use toml::de::Error;
+use serde::{Serialize,  de::DeserializeOwned};
 
 #[derive(Clone)]
 pub enum Serializer
