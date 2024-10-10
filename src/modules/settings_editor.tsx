@@ -189,7 +189,8 @@ export const SettingsEditor =  defineComponent({
                 {
                     display: 'flex',
                     flexDirection: 'row',
-                    width: '100%'
+                    width: '100%',
+                    height: '100%'
                 }   as CSSProperties
             },
             [
@@ -257,6 +258,7 @@ export const SettingsEditor =  defineComponent({
                                 sound: false,
                                 autocleaning: false,
                                 color: '#0ff00f',
+                                visible: true,
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -375,9 +377,10 @@ export const SettingsEditor =  defineComponent({
                     () => h(NScrollbar,
                     {
                         trigger: 'hover',
+                        
                         style:
                         {
-                            maxHeight: '570px',
+                            maxHeight: '78vh',
                             padding: '10px'
                         } as CSSProperties
                     },
@@ -395,6 +398,11 @@ export const SettingsEditor =  defineComponent({
                         },
                         [
                             left_form(),
+                            h('div',   {style:
+                                {
+                                    flexGrow: '2',
+                                    marginTop:'5px'
+                                } as CSSProperties}),
                             right_form(),
                         ])
                     })
@@ -464,7 +472,6 @@ export const SettingsEditor =  defineComponent({
                     model: selected_task.value,
                     style:
                     {
-                       // width: '600px',
                         flexGrow: '3',
                         marginTop:'5px'
                     } as CSSProperties
@@ -901,6 +908,26 @@ export const SettingsEditor =  defineComponent({
                                 (selected_task.value as Task).autocleaning = v;
                             } 
                         })
+                        }),
+                        h(NFormItem,
+                        {
+                            path: 'visible',
+                        },
+                        {
+                            label:() => h(HeaderWithDescription,{
+                                name: "Отображение в списке пакетов",
+                                description: "Отображать ли процесс данной задачи во вкладке \"Пакеты\"",
+                                fontSize: '14px'
+                            }),
+                            default:() =>
+                            h(NSwitch,
+                            {
+                                value: selected_task.value?.visible,
+                                onUpdateValue:(v: boolean)=>
+                                {
+                                    (selected_task.value as Task).visible = v;
+                                } 
+                            })
                         }),
             ]})
         }

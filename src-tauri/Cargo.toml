@@ -47,6 +47,8 @@ http-body-util = "0.1.1"
 bytes="1.7.2"
 async-channel="2.2.0"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
+nosleep = "0.2.1"
+
 
 [dependencies.service]
 git = "https://github.com/P40b0s/websocket_service.git"

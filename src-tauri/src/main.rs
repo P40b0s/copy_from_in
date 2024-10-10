@@ -8,6 +8,7 @@ mod ws_serivice;
 mod http_service;
 mod emits;
 mod cli;
+mod nosleep;
 pub use emits::TauriEmits;
 pub use error::Error;
 use state::AppState;
@@ -28,6 +29,7 @@ pub static HANDLE : OnceCell<Arc<AppHandle>> = OnceCell::new();
 async fn main() 
 {
     let _ = StructLogger::new_default();
+    nosleep::prevent_sleep().await;
     let args = cli::Cli::parse_or_default();
     let api_addr = args.api_addr();
     let ws_addr = args.ws_addr();

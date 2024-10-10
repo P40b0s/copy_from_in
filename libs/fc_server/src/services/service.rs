@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use db_service::SqlOperations;
+use logger::debug;
 use settings::Settings;
 use transport::Packet;
 use crate::copyer::PacketsCleaner;
@@ -26,9 +28,10 @@ pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>
     Ok(r.0)
 }
 
-pub async fn rescan_packet(packet: Packet, _state: Arc<AppState>) -> Result<(), Error>
+pub async fn rescan_packet(packet: Packet, state: Arc<AppState>) -> Result<(), Error>
 {
-    //let settings = state.get_settings().await;
+    debug!("Получен запрос на пересканирование пакета {}", packet.get_packet_name());
     Settings::del_exclude(packet.get_task(), packet.get_packet_name());
+    PacketTable::delete_by_id(packet.get_id(), state.get_db_pool()).await;
     Ok(())
 }

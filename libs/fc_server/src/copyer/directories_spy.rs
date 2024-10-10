@@ -185,6 +185,7 @@ impl DirectoriesSpy
                 {
                     if let Ok(_) = std::fs::remove_dir_all(source_path)
                     {
+                        debug!("Пакет {} был удален, так как в настройках задачи {} включен флаг автоочистка", packet.get_packet_name(), packet.get_task().get_task_name());
                         return false;
                     }
                 }

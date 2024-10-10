@@ -107,7 +107,10 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate:
 
 async fn get_packets_count(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
 {
-    let count = PacketTable::packets_count(app_state.get_db_pool()).await?;
+    let guard = app_state.settings.lock().await;
+    let names = guard.get_visible_tasks_names();
+    drop(guard);
+    let count = PacketTable::packets_count(app_state.get_db_pool(), names).await?;
     Ok(ok_response(count.to_string()))
 }
 
@@ -119,6 +122,10 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     {
         let limit = q.get("limit");
         let offset = q.get("offset");
+        //выбираем только те таски у котрых есть флаг visible=true
+        let guard = app_state.settings.lock().await;
+        let names = guard.get_visible_tasks_names();
+        drop(guard);
         if limit.is_some() && offset.is_some()
         {
             let paging = Pagination 
@@ -126,7 +133,7 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
                 row: limit.unwrap().parse().unwrap(),
                 offset: offset.unwrap().parse().unwrap()
             };
-            PacketTable::get_with_offset(paging.row, paging.offset, app_state.get_db_pool(), None).await
+            PacketTable::get_with_offset(paging.row, paging.offset, app_state.get_db_pool(), names).await
         }
         else 
         {

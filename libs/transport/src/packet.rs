@@ -43,7 +43,7 @@ impl Packet
             parse_time,
             report_sended: false,
             task: task.clone(),
-            packet_info: packet_info,
+            packet_info,
         }
     }
     pub fn new_packet(task: &Task, packet: PacketInfo) -> Self
@@ -108,7 +108,7 @@ impl Packet
             name: packet.packet_directory.clone(),
             parse_time: packet.delivery_time.clone(),
             report_sended,
-            task: task,
+            task,
             packet_info: packet.clone(),
         }
     }

@@ -35,7 +35,9 @@ pub struct Task
     pub sound: bool,
     #[serde(default="is_default")]
     pub autocleaning: bool,
-    pub filters: Filter
+    pub filters: Filter,
+    #[serde(default="is_default_true")]
+    pub visible: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 //#[serde(rename_all = "camelCase")]
@@ -48,6 +50,10 @@ pub struct Filter
 }
 
 fn is_default() -> bool
+{
+    false
+}
+fn is_default_true() -> bool
 {
     false
 }
@@ -100,7 +106,8 @@ impl Default for Task
             {
                 document_types: vec![],
                 document_uids: vec![]
-            }
+            },
+            visible: true
             
         }
     }

@@ -13,6 +13,7 @@ generate_exclude_file = false
 color = "#44FFE9"
 sound = false
 autocleaning = false
+visible = true
 
 [tasks.filters]
 document_types = ["Транспортный контейнер", "Документ"]
@@ -33,6 +34,7 @@ generate_exclude_file = false
 color = "#7F44FF"
 sound = true
 autocleaning = false
+visible = true
 
 [tasks.filters]
 document_types = ["Транспортный контейнер", "Документ"]
@@ -53,6 +55,7 @@ generate_exclude_file = false
 color = "#E0D457"
 sound = false
 autocleaning = true
+visible = true
 
 [tasks.filters]
 document_types = ["Документ", "Транспортный контейнер"]

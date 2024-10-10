@@ -204,21 +204,23 @@ impl<'a> SqlOperations<'a> for PacketTable
 
 impl PacketTable
 {
-    pub async fn packets_count(pool: Arc<SqlitePool>) -> Result<u32, DbError>
+    pub async fn packets_count(pool: Arc<SqlitePool>, names: Vec<String>) -> Result<u32, DbError>
     {
-        //let q = ["SELECT COUNT(*) as count FROM ", Self::table_name()].concat();
-        let selector = Selector::new_concat(&["SELECT COUNT(*) as count FROM ", Self::table_name()]);
+        let vq = Self::only_visible_tasks_query(names);
+        let selector = Selector::new_concat(&["SELECT COUNT(*) as count FROM ", Self::table_name()])
+        .add_raw_query(&vq);
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count)
     }
 
     ///`rows` - количество записей получаемых из базы данных<br>
     /// `offset` - с какой позиции начинать
-    pub async fn get_with_offset(rows: u32, offset: u32, pool: Arc<SqlitePool>, params: Option<Vec<(&str, &str)>>) -> Result<Vec<PacketTable>, DbError>
+    pub async fn get_with_offset(rows: u32, offset: u32, pool: Arc<SqlitePool>, names: Vec<String>) -> Result<Vec<PacketTable>, DbError>
     {
+        let vq = Self::only_visible_tasks_query(names);
         let ids_offset_selector = Selector::new_concat(&["SELECT id FROM ", Self::table_name()])
-        .add_params(params)
         .sort(SortingOrder::Desc("delivery_time"))
+        .add_raw_query(&vq)
         .limit(&rows)
         .offset(&offset);
         let users_ids: Vec<IdSelector> = Self::select_special_type(&ids_offset_selector, Arc::clone(&pool)).await?;
@@ -228,6 +230,24 @@ impl PacketTable
         .sort(SortingOrder::Desc("delivery_time"));
         let packets = Self::select(&selector, pool).await?;
         Ok(packets)
+    }
+
+    fn only_visible_tasks_query(names: Vec<String>) -> String
+    {
+        let mut params: String = " where ".to_owned();
+        for (i,t) in names.iter().enumerate()
+        {
+            let p = if i + 1 < names.len()
+            {
+                [" task_name = ", "\"", t, "\" or "].concat()
+            }
+            else
+            {
+                [" task_name = ", "\"", t, "\""].concat()
+            };
+            params.push_str(&p);
+        }
+        params
     }
     ///Удаление из БД по имени таска + имени директории
     pub async fn truncate(task_name: &str, dirs: &[String], pool: Arc<SqlitePool>)
@@ -246,6 +266,13 @@ impl PacketTable
         let sql = ["DELETE FROM ", &Self::table_name(), " WHERE task_name = $1"].concat();
         let _ = db_service::query(&sql)
         .bind(task_name)
+        .execute(&*pool).await;
+    }
+    pub async fn delete_by_id(id: &str, pool: Arc<SqlitePool>)
+    {
+        let sql = ["DELETE FROM ", &Self::table_name(), " WHERE id = $1"].concat();
+        let _ = db_service::query(&sql)
+        .bind(id)
         .execute(&*pool).await;
     }
 

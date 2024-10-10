@@ -111,6 +111,11 @@ impl FileMethods for Settings
 
 impl Settings
 {
+    ///Список имен задач с флагом visible=true
+    pub fn get_visible_tasks_names(&self) -> Vec<String>
+    {
+        self.tasks.iter().filter(|t| t.visible).map(|t| t.name.clone()).collect()
+    }
     ///Добавить к задаче имя директории, чтобы больше ее не копировать
     /// если возвращает true то директория успешно добавлена в список, если false то такая директория там уже есть
     pub fn add_to_exclude(task_name: &str, dir: &String) -> bool

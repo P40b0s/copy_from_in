@@ -1,35 +1,6 @@
 import { RendererElement, RendererNode, VNode } from "vue";
 import type { IPacketInfo } from './packet';
-// export interface IPacketInfo
-// {
-//     // organization?: string,
-//     // organizationUid: string,
-//     // docType?: string,
-//     // sourceMedoAddressee?: string
-//     // docUid?: string
-//     // number?: string,
-//     // signDate?: string,
-//     header_guid?: string,
-//     packet_directory: string,
-//     packet_type?: string,
-//     ///Время создания локальной директории
-//     ///(фактически когда пакет пришел к нам)
-//     ///зависит от времени на сервере, тому что берет локальное время создания
-//     delivery_time : string,
-//     wrong_encoding: boolean,
-//     error?: string,
-//     files: string[],
-//     requisites?: Requisites,
-//     sender_info?: SenderInfo,
-//     default_pdf?: string,
-//     pdf_hash?: string,
-//     acknowledgment?: Ack,
-//     trace_message?: string,
-//     visible: boolean,
-   
-// }
-// для всех
-// parseTime, name, organization, docType, number, signDate
+
 export interface IPacket
 {
     id: string;
@@ -56,6 +27,8 @@ export type Task =
     sound: boolean,
     clean_types: string[],
     autocleaning: boolean,
+    //Отображать ли результат обработки этого таска в списке пакетов
+    visible: boolean,
     filters: Filter
 }
 export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
@@ -97,6 +70,7 @@ class TaskClone implements Clone<Task>
                 clean_types: source.clean_types,
                 generate_exclude_file: source.generate_exclude_file,
                 autocleaning: source.autocleaning,
+                visible: source.visible,
                 filters: f
             } 
             return t;

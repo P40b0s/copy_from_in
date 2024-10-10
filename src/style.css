@@ -1,5 +1,4 @@
 :root {
-  font-family: 'monospace' !important;
   font-weight: 400;
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -30,7 +29,7 @@ a:hover {
 body {
   margin: 0;
   font-family: 'monospace' !important;
-  font-size: 15px !important;
+  font-size: 16px !important;
   line-height: 1.6 !important;
   overflow-x: hidden;
   overflow-y: hidden;
@@ -47,12 +46,15 @@ body {
   height: 100vh;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+@media (prefers-color-scheme: dark) 
+{
+  :root 
+  {
     color: #45d1f7;
     /* background-color: #0d0808; */
   }
-  a:hover {
+  a:hover 
+  {
     color: #747bff;
   }
   /* button {

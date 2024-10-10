@@ -14,6 +14,7 @@ import { naive_notify } from '../services/notification.ts';
 import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';
 import { events } from '../services/tauri/events.ts';
+import { error_sound, new_packet_notify_sound } from '../services/sounds.ts';
 export const ServicesAsync = defineAsyncComponent({
     loader: () => import ('./settings_editor.tsx'),
     loadingComponent: h(NSpin)
@@ -36,7 +37,11 @@ setup ()
     })
     const new_packet_event = events.packets_update(async (packet) => 
     {
-        naive_notify(notify, 'info', `В ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 2000);
+        if(packet.payload.packetInfo?.error != undefined)
+            error_sound();
+          else
+            new_packet_notify_sound();
+        naive_notify(notify, 'info', `Задачей ${packet.payload.task.name} в ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 2000);
     })
     onUnmounted(()=>
     {
@@ -52,7 +57,7 @@ setup ()
             {
                 display: 'flex',
                 flexDirection: 'row',
-                width: '100%'
+                width: '100%',
             }   as CSSProperties
         },
         [
