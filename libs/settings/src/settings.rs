@@ -109,6 +109,15 @@ impl FileMethods for Settings
     }
 }
 
+pub trait ExcludesInterface
+{
+    fn save_exclude(task_name: &str);
+    fn add_to_exclude(task_name: &str, dir: &String) -> bool;
+    fn delete_from_exclude(task_name: &str, dir: &String);
+    fn truncate_excludes(&self) -> (u32, HashMap<String, Vec<String>>);
+    fn clear_exclude(task_name: &str);
+}
+
 impl Settings
 {
     ///Список имен задач с флагом visible=true

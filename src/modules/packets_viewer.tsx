@@ -11,14 +11,14 @@ import
     watchEffect,
   } from 'vue'
 
-import { NButton, NIcon, NPagination, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
+import { NButton, NIcon, NPagination, NPopconfirm, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { background, envelope_ico, error_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
-import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline } from '@vicons/ionicons5';
-import { commands_packets, commands_service } from '../services/tauri/commands.ts';
+import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
+import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { events } from '../services/tauri/events.ts';
 
@@ -358,8 +358,66 @@ export const PacketsViewer =  defineComponent({
                     }),
                     default:() => "Пересканировать текущий пакет"
                 }),
+                del_button(packet),
                 report_icon(packet)
             ])
+        }
+
+        const del_button =(packet: IPacket) =>
+        {
+            return h(NPopconfirm,
+            {
+                style:
+                {
+                    
+                } as CSSProperties,
+                positiveText: "Удалить",
+                onPositiveClick: async () => 
+                {
+                    let dl = await commands_service.delete_packet(packet)
+                    if (dl.is_err())
+                    {
+                        naive_notify(notify, 'error', "Ошибка удаления пакета " + packet.name, () => 
+                        {
+                            return h('div', 
+                            {
+                                style:
+                                {
+                                    color: 'red'
+                                } as CSSProperties,
+                            },
+                            dl.get_error()
+                            );
+                        });
+                    }
+                    else
+                    {
+                        const index = packets.value.findIndex(i=> i.id == packet.id);
+                        packets.value.splice(index, 1);
+                    }
+                }
+            },
+            {
+                trigger:() =>  h(NTooltip,null,
+                {
+                    trigger:() =>  h(NButton,
+                    {
+                        type: 'error',
+                        quaternary: true,
+                        circle: true,
+                        color: "#d90d0d",
+                        style:
+                        {
+                            marginLeft: '5px',
+                        }    as CSSProperties,
+                    },
+                    {
+                        icon:() => h(NIcon, {component: TrashBin})
+                    }),
+                    default:() => "Удалить пакет"
+                }),
+                default:() => `При удалении пакет ${packet.name} будет удален физически с диска!`
+            })
         }
 
         const report_icon = (packet: IPacket) =>
@@ -380,6 +438,24 @@ export const PacketsViewer =  defineComponent({
                             } as CSSProperties,
                         }),
                         default:() => "Уведомление успешно отправлено"
+                    });
+            }
+            const report_not_needed = () =>
+            {
+                return h(NTooltip, null,
+                    {
+                        trigger:() =>
+                        h(NIcon, 
+                        {
+                            component: CheckmarkDoneCircle,
+                            color: '#878787',
+                            size: 'large',
+                            style:
+                            {
+                                marginRight: '2px',
+                            } as CSSProperties,
+                        }),
+                        default:() => "Для данного типа задания уведомление не требуется"
                     });
             }
             const report_not_sended_icon = () =>
@@ -405,20 +481,19 @@ export const PacketsViewer =  defineComponent({
 
             const icon = () =>
             {
-                if (report_sended)
+                if(packet.task.copy_modifier == 'CopyAll')
+                {
+                    return report_not_needed();
+                }
+                else if (report_sended)
                 {
                     return report_sended_icon();
                 } 
-                if (error_sended)
+                else if (error_sended)
                 {
                     return report_not_sended_icon();
                 }
-                if(packet.task.copy_modifier == 'CopyAll')
-                {
-                    return []
-                }
-                //это значит что модификатор copyall
-                return [];
+                return report_not_needed();
             }
 
             return h('div',

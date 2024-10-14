@@ -37,6 +37,13 @@ pub async fn rescan_packet(payload: Packet, state: State<'_, Arc<AppState>>) -> 
   Ok(())
 }
 
+#[tauri::command]
+pub async fn delete_packet(payload: Packet, state: State<'_, Arc<AppState>>) -> Result<(), Error>
+{
+  let _ = state.utilites_service.delete_packet(payload).await?;
+  Ok(())
+}
+
 pub fn service_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
 {
   Builder::new("service")
@@ -45,6 +52,7 @@ pub fn service_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R>
       ws_server_online,
       rescan_packet,
       truncate_tasks_excepts,
+      delete_packet,
       ])
     .setup(|app_handle| 
       {

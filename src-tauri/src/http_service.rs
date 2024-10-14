@@ -147,6 +147,12 @@ impl UtilitesService
         Ok(())
     }
 
+    pub async fn delete_packet(&self, payload: Packet) -> Result<()>
+    {
+        post(payload, &self.api_path, "packets/delete").await?;
+        Ok(())
+    }
+
 }
 
 pub struct PacketService

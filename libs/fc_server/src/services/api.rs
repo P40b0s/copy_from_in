@@ -72,6 +72,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/packets/truncate") => truncate(app_state).await,
         (&Method::GET, "/api/v1/packets/clean") => clean(app_state).await,
         (&Method::POST, "/api/v1/packets/rescan") => rescan(req, app_state).await,
+        (&Method::POST, "/api/v1/packets/delete") => delete(req, app_state).await,
         (&Method::GET, "/api/v1/packets") => get_packets(req, app_state).await,
         (&Method::GET, "/api/v1/packets/count") => get_packets_count(app_state).await,
         _ => 
@@ -226,6 +227,16 @@ async fn rescan(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
     let response = empty_response(StatusCode::OK);
     Ok(response)
 }
+
+async fn delete(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let packet = Packet::from_bytes(&body)?;
+    let _ = super::service::delete_packet(packet, app_state).await?;
+    let response = empty_response(StatusCode::OK);
+    Ok(response)
+}
+
 #[cfg(test)]
 mod tests
 {
