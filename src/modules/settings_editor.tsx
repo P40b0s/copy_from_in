@@ -473,7 +473,7 @@ export const SettingsEditor =  defineComponent({
                     style:
                     {
                         flexGrow: '3',
-                        marginTop:'5px'
+                        marginTop:'5px',
                     } as CSSProperties
                 },
                 {
@@ -773,7 +773,8 @@ export const SettingsEditor =  defineComponent({
                     style:
                     {
                         marginTop:'5px',
-                        marginLeft: '5px'
+                        marginLeft: '5px',
+                        marginRight: '10px'
                     } as CSSProperties
                 },
                 {

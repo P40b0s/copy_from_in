@@ -9,6 +9,8 @@ use crate::state::AppState;
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
 
+use super::CopyerService;
+
 //для каждой задачи есть свой таймер, отнимаем 15 сек от времени задачи каждую итерацию
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 //static PACKETS: Lazy<Mutex<VecDeque<Packet>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
@@ -29,21 +31,22 @@ impl DirectoriesSpy
     pub async fn process_tasks(state: Arc<AppState>) -> anyhow::Result<()>
     {
         
-        let settings = state.get_settings().await;
-        if !INIT.load(std::sync::atomic::Ordering::SeqCst)
-        {
-            for t in &settings.tasks
-            {
-                Settings::load_exclude(t)
-            }
-            INIT.store(true, std::sync::atomic::Ordering::Relaxed);
-        }
-        Self::process_timers(&settings).await;
+        //let settings = state.get_settings().await;
+        // if !INIT.load(std::sync::atomic::Ordering::SeqCst)
+        // {
+        //     for t in &settings.tasks
+        //     {
+        //         Settings::load_exclude(t)
+        //     }
+        //     INIT.store(true, std::sync::atomic::Ordering::Relaxed);
+        // }
+        Self::process_timers(Arc::clone(&state)).await;
         Ok(())
     }
 
-    async fn process_timers(settings: &Settings)
+    async fn process_timers(state: Arc<AppState>)
     {
+        let settings = state.get_settings().await;
         for t in &settings.tasks
         {
             let mut guard = TIMERS.lock().await;
@@ -62,9 +65,17 @@ impl DirectoriesSpy
                     drop(guard);
                     //таск 1 а вот пакетов может быть несколько
                     let tsk = Arc::new(t.clone());
+                    let service = Arc::clone(&state.copyer_service);
+                    if tsk.generate_exclude_file
+                    {
+                        service.excludes.replace(&tsk);
+                        let mut guard = state.settings.lock().await;
+                        let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
+                        task.generate_exclude_file = false;
+                    }
                     tokio::spawn(async move
                     {
-                        let ready_tasks = Self::scan_dir(tsk).await;
+                        let ready_tasks: Vec<(Arc<Task>, String)> = Self::scan_dir(tsk, service).await;
                         for ready_task in ready_tasks
                         {
                             Self::copy_files_process(ready_task.0, ready_task.1).await;
@@ -249,7 +260,7 @@ impl DirectoriesSpy
     }
 
     ///проверяем новые пакеты у тасков с истекшим таймером, получаем список тасков у которых найдены новые пакеты
-    async fn scan_dir(task: Arc<Task>) -> Vec<(Arc<Task>, String)>
+    async fn scan_dir(task: Arc<Task>, cp_service: Arc<CopyerService>) -> Vec<(Arc<Task>, String)>
     {
         let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
         if task.is_active
@@ -257,20 +268,23 @@ impl DirectoriesSpy
             let paths = super::io::get_dirs(&task.source_dir);
             if let Some(reader) = paths.as_ref()
             {
-                let mut exclude_is_changed = false;
+                //let mut exclude_is_changed = false;
                 for d in reader
                 {
                     let cloned_task = Arc::clone(&task);
-                    if Settings::add_to_exclude(&cloned_task.name, d)
+                    if let Ok(is_added) = cp_service.excludes.add(&cloned_task.name, d)
                     {
-                        exclude_is_changed = true;
-                        prepared_tasks.push((cloned_task, d.to_owned()));
+                        if is_added
+                        {
+                            //exclude_is_changed = true;
+                            prepared_tasks.push((cloned_task, d.to_owned()));
+                        }
                     }
                 }
-                if exclude_is_changed
-                {
-                    Settings::save_exclude(&task.name);
-                }
+                // if exclude_is_changed
+                // {
+                //     Settings::save_exclude(&task.name);
+                // }
             }
         }
         prepared_tasks

@@ -3,13 +3,12 @@ use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::Packet;
 use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState};
-use super::io::get_dirs;
+use super::{excludes::{ExcludesService, ExcludesTrait, KeyValueStore}, io::get_dirs};
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 
 pub trait PacketsCleaner
 {
-    
     ///нам нужно вернуть только колчество удаленных пакетов, ошибки нас не интересуют
     /// + вернуть надо через websocket и не ждать ответа, это можеть быть долго
     async fn clean_packets(app_state: Arc<AppState>)
@@ -79,37 +78,32 @@ pub trait PacketsCleaner
     }
 }
 
-impl PacketsCleaner for Settings{}
-
-pub trait ExcludesCreator
+pub struct CopyerService
 {
-    ///Создание нового стоп листа имен директорий если лист уже есть, он будет пересканирован и сохранен заново
-    async fn create_stoplist_file(task: &Task)
-    {
-        Settings::clear_exclude(task.get_task_name());
-        if let Some(dirs) = get_dirs(&task.source_dir)
-        {
-            for d in dirs
-            {
-                Settings::add_to_exclude(task.get_task_name(), &d);
-            }
-        }
-        Settings::save_exclude(task.get_task_name());
-    }
+    pub excludes: Box<dyn ExcludesTrait + Sync + Send>
 }
-impl ExcludesCreator for Task{}
+impl PacketsCleaner for CopyerService{}
+
 
 #[cfg(test)]
 mod tests
 {
     use settings::{FileMethods, Serializer, Settings};
 
+    use crate::copyer::{KeyValueStore, CopyerService};
+
     #[test]
     fn test_task_cleaner()
     {
         let _ = logger::StructLogger::new_default();
-        let s = Settings::load(Serializer::Toml).unwrap();
-        let r = s.truncate_excludes();
-        println!("{:?} => {}", s, r.0);
+        let s = CopyerService {
+            excludes: Box::new(KeyValueStore::new())
+        };
+        let r = s.excludes.add("t1", "d1");
+        assert!(r.is_ok());
+        let d = s.excludes.delete("t1", "d1");
+        assert!(d.is_ok());
+        let cl = s.excludes.clear("t1");
+        assert!(cl.is_ok());
     }
 }

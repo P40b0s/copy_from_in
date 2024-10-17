@@ -12,7 +12,7 @@ mod settings;
 pub use settings::Settings;
 pub use task::{Task, Filter, CopyModifier};
 pub use validation_error::ValidationError;
-pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<String>>>> = OnceCell::new();
+//pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<String>>>> = OnceCell::new();
 
 
 
@@ -58,7 +58,7 @@ pub static EXCLUDES: OnceCell<Mutex<hashbrown::hash_map::HashMap<String, Vec<Str
 mod test
 {
     use serde::Deserialize;
-    use crate::{file_methods::FileMethods, CopyModifier, Settings, EXCLUDES};
+    use crate::{file_methods::FileMethods, CopyModifier, Settings};
 
     #[test]
     fn test_serialize_medo()
@@ -76,7 +76,7 @@ mod test
     #[test]
     fn test_from_json_to_toml()
     {
-        logger::StructLogger::new_default();;
+        logger::StructLogger::new_default();
         let settings = Settings::load(crate::io::Serializer::Json).unwrap();
         settings.save(crate::io::Serializer::Toml);
     }
@@ -89,7 +89,7 @@ mod test
     #[test]
     fn test_deserialize_settings_json()
     {
-        logger::StructLogger::new_default();;
+        logger::StructLogger::new_default();
         let settings = Settings::load(crate::io::Serializer::Json).unwrap();
         assert_eq!(settings.tasks[0].copy_modifier, CopyModifier::CopyAll);
         assert_eq!(settings.tasks[1].copy_modifier, CopyModifier::CopyOnly);
@@ -97,34 +97,9 @@ mod test
     #[test]
     fn test_deserialize_settings_toml()
     {
-        logger::StructLogger::new_default();;
+        logger::StructLogger::new_default();
         let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
         assert_eq!(settings.tasks[0].copy_modifier, CopyModifier::CopyAll);
         assert_eq!(settings.tasks[1].copy_modifier, CopyModifier::CopyOnly);
-    }
-
-    #[test]
-    fn test_deserialize_medo()
-    {
-        logger::StructLogger::new_default();;
-        let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
-        Settings::add_to_exclude("TASK", &"5555555".to_owned());
-        Settings::add_to_exclude("TASK", &"4555555".to_owned());
-        Settings::add_to_exclude("TASK", &"3555555".to_owned());
-        Settings::add_to_exclude("TASK", &"2555555".to_owned());
-        logger::info!("{:?}", EXCLUDES.get().unwrap().lock().unwrap());
-        Settings::save_exclude("TASK");
-        //let adm_prez = settings.organs.iter().find(|s|s.internal_id == OrganInternalId::AdmPrez);
-        //assert_eq!(adm_prez.unwrap().source_uid, String::from("0b21bba1-f44d-4216-b465-147665360c06"));
-    }
-
-    #[test]
-    fn test_del_one_exclude()
-    {
-        logger::StructLogger::new_default();
-        let settings = Settings::load(crate::io::Serializer::Toml).unwrap();
-        Settings::del_exclude(settings.tasks.first().as_ref().unwrap(), "38773995_1");
-        //let adm_prez = settings.organs.iter().find(|s|s.internal_id == OrganInternalId::AdmPrez);
-        //assert_eq!(adm_prez.unwrap().source_uid, String::from("0b21bba1-f44d-4216-b465-147665360c06"));
     }
 }

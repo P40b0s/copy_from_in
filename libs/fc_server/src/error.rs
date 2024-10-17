@@ -4,34 +4,69 @@ use settings::ValidationError;
 #[derive(Debug, thiserror::Error)]
 pub enum Error 
 {
-  #[error(transparent)]
-  Io(#[from] std::io::Error),
-  #[error(transparent)]
-  DbError(#[from] db_service::DbError),
-  Other(#[from] anyhow::Error),
-  SettingsValidation(Vec<ValidationError>),
-  ServiceErrors(Vec<String>),
-  HyperError(#[from] hyper::Error),
-  //Ошибка если дата и размер копируемого файла не может синхронизироваться больше 2 минут
-  FileTimeCopyError(String)
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    DbError(#[from] db_service::DbError),
+    #[error(transparent)]
+    RedbError(#[from] redb::Error),
+    #[error(transparent)]
+    RedbTransactionError(#[from] redb::TransactionError),
+    #[error(transparent)]
+    RedbTableError(#[from] redb::TableError),
+    #[error(transparent)]
+    RedbStorageError(#[from] redb::StorageError),
+    #[error(transparent)]
+    RedbCommitError(#[from] redb::CommitError),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+    #[error("Ошибка валидации настроек: {}", from_validation_error(.0))]
+    SettingsValidation(Vec<ValidationError>),
+    #[error("Ошибка валидации настроек: {}", from_service_error(.0))]
+    ServiceErrors(Vec<String>),
+    #[error(transparent)]
+    HyperError(#[from] hyper::Error),
+    //Ошибка если дата и размер копируемого файла не может синхронизироваться больше 2 минут
+    #[error("Превышено максимальное количество попыток при попытке копирования файла `{0}`, файл должен успевать копироваться в систему в течении 2 минут")]
+    FileTimeCopyError(String)
 }
 
-impl std::fmt::Display for Error
+fn from_validation_error(err: &Vec<ValidationError>) -> String
 {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
-  {
-    match self 
+    let mut out = String::new();
+    for e in err
     {
-      Error::Io(io) => f.write_str(&io.to_string()),
-      Error::Other(oth) => f.write_str(&oth.to_string()),
-      Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
-      Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
-      Error::HyperError(e) => f.write_str(&e.to_string()),
-      Error::FileTimeCopyError(e) => f.write_str(&e),
-      Error::DbError(e) => f.write_str(&e.to_string()),
+        let str_err = e.to_string();
+        out.push_str(&str_err);
     }
-  }
+    out
 }
+fn from_service_error(err: &Vec<String>) -> String
+{
+    let mut out = String::new();
+    for e in err
+    {
+        out.push_str(&e);
+    }
+    out
+}
+
+// impl std::fmt::Display for Error
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+//     {
+//         match self 
+//         {
+//             Error::Io(io) => f.write_str(&io.to_string()),
+//             Error::Other(oth) => f.write_str(&oth.to_string()),
+//             Error::SettingsValidation(e) => f.write_str(&vec_to_str(&e)),
+//             Error::ServiceErrors(e) => f.write_str(&e.join("\\r\\n")),
+//             Error::HyperError(e) => f.write_str(&e.to_string()),
+//             Error::FileTimeCopyError(e) => f.write_str(&e),
+//             Error::DbError(e) => f.write_str(&e.to_string()),
+//         }
+//     }
+// }
 
 impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Error>>
 {
@@ -46,10 +81,16 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::HyperError(e) => async move { Err(Error::HyperError(e)) }.boxed(),
       Error::FileTimeCopyError(e) => async move { Err(Error::FileTimeCopyError(e)) }.boxed(),
       Error::DbError(e) => async move { Err(Error::DbError(e)) }.boxed(),
+      Error::RedbError(e) => async move { Err(Error::RedbError(e)) }.boxed(),
+      Error::RedbTransactionError(e) => async move { Err(Error::RedbTransactionError(e)) }.boxed(),
+      Error::RedbTableError(e) => async move { Err(Error::RedbTableError(e)) }.boxed(),
+      Error::RedbStorageError(e) => async move { Err(Error::RedbStorageError(e)) }.boxed(),
+      Error::RedbCommitError(e) => async move { Err(Error::RedbCommitError(e)) }.boxed(),
     }
   }
 }
 
+///используется fold, оставить как памятку
 fn vec_to_str(val : &Vec<ValidationError>) -> String
 {
   let mut errors = String::new();

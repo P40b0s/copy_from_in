@@ -40,7 +40,10 @@ clap_derive="4.5.4"
 async-channel="2.3.1"
 futures = "0.3.30"
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
-db_service = {git = "https://github.com/P40b0s/db_service.git", commit="f7407e6"}
+db_service = {git = "https://github.com/P40b0s/db_service.git"}
+hashbrown = {version ="0.15.0" , features = ['serde']}
+redb="2.1.4"
+
 
 [target.'cfg(windows)'.dependencies.windows]
 version = "0.58.0"

@@ -2,7 +2,6 @@ use std::path::Path;
 use std::sync::Arc;
 use logger::{debug, error};
 use settings::{FileMethods, Task};
-use crate::copyer::ExcludesCreator;
 use crate::db::PacketTable;
 use crate::state::AppState;
 use crate::Error;
@@ -37,7 +36,8 @@ pub async fn update(payload: Task, state: Arc<AppState>) -> Result<(), Error>
     }
     if payload.generate_exclude_file
     {
-        Task::create_stoplist_file(&payload).await;
+        state.get_service().excludes.replace(&payload);
+        //Task::create_stoplist_file(&payload).await;
     }
     Ok(())
 }

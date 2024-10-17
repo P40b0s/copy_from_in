@@ -25,8 +25,6 @@ async fn main() -> Result<(), Error>
     let params = cli::Cli::parse_args();
     debug!("Инициализация настроек");
     let app_state = Arc::new(AppState::initialize().await?);
-    debug!("Инициализация базы данных");
-    db::initialize_db(app_state.get_db_pool()).await;
     let _ = services::start_http_server(params.http_port, Arc::clone(&app_state)).await;
     services::start_ws_server(params.ws_port, Arc::clone(&app_state)).await;
     start_packets_handler(app_state.get_db_pool()).await;

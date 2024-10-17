@@ -1,4 +1,4 @@
-use nosleep::{NoSleep};
+use nosleep::NoSleep;
 pub async fn prevent_sleep()
 {
     let _ = tokio::task::spawn_blocking(||

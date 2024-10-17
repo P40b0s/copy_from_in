@@ -1,6 +1,8 @@
 mod directories_spy;
 mod service;
-pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, ExcludesCreator}};
+mod excludes;
+pub use excludes::{ExcludesService, ExcludesTrait, KeyValueStore, FileExcludes};
+pub use  {directories_spy::DirectoriesSpy, service::{PacketsCleaner, CopyerService}};
 mod io;
 
 // #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
