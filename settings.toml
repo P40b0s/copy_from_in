@@ -1,9 +1,9 @@
 [[tasks]]
 name = "from_backup_to_architector"
 description = "задача копирования из бэкапа в архитектор"
-source_dir = "test_data/in"
-target_dir = "test_data/out"
-report_dir = "test_data/report"
+source_dir = "../../test_data/copy_from_in_test_data/in"
+target_dir = "../../test_data/copy_from_in_test_data/out"
+report_dir = "../../test_data/copy_from_in_test_data/report"
 timer = 15000
 delete_after_copy = false
 copy_modifier = "CopyAll"
@@ -22,9 +22,9 @@ document_uids = []
 [[tasks]]
 name = "from_in_to_backup"
 description = "Копирование из деректории in в директорию backup"
-source_dir = "test_data/in2"
-target_dir = "test_data/out"
-report_dir = "test_data/report"
+source_dir = "../../test_data/copy_from_in_test_data/in2"
+target_dir = "../../test_data/copy_from_in_test_data/out"
+report_dir = "../../test_data/copy_from_in_test_data/report"
 timer = 45000
 delete_after_copy = false
 copy_modifier = "CopyOnly"
@@ -43,9 +43,9 @@ document_uids = []
 [[tasks]]
 name = "test_in3_task"
 description = "тестовая задача"
-source_dir = "test_data/in3"
-target_dir = "test_data/out"
-report_dir = "test_data/report"
+source_dir = "../../test_data/copy_from_in_test_data/in3"
+target_dir = "../../test_data/copy_from_in_test_data/out"
+report_dir = "../../test_data/copy_from_in_test_data/report"
 timer = 45000
 delete_after_copy = false
 copy_modifier = "CopyOnly"
