@@ -47,6 +47,12 @@ impl AppState
     {
         Arc::clone(&self.copyer_service)
     }
+    pub async fn get_settings(&self) -> Settings
+    {
+        let guard = self.settings.lock().await;
+        guard.clone()
+    }
+    
 }
 // impl Default for AppState
 // {
@@ -71,11 +77,11 @@ impl AppState
 // }
 
 
-impl AppState
-{
-    pub async fn get_settings(&self) -> Settings
-    {
-        let guard = self.settings.lock().await;
-        guard.clone()
-    }
-}
+// impl AppState
+// {
+//     pub async fn get_settings(&self) -> Settings
+//     {
+//         let guard = self.settings.lock().await;
+//         guard.clone()
+//     }
+// }

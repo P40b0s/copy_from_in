@@ -2,7 +2,7 @@ use std::{self, collections::HashMap, path::{Path, PathBuf}, sync::{atomic::Atom
 use logger::{debug, error, info};
 use transport::{DeliveryTicketPacket, PacketInfo};
 use once_cell::sync::{Lazy, OnceCell};
-use settings::{CopyModifier,Settings, Task};
+use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::sync::Mutex;
 use transport::Packet;
 use crate::state::AppState;
@@ -72,6 +72,7 @@ impl DirectoriesSpy
                         let mut guard = state.settings.lock().await;
                         let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
                         task.generate_exclude_file = false;
+                        guard.save(settings::Serializer::Toml);
                     }
                     tokio::spawn(async move
                     {
