@@ -170,7 +170,7 @@ checksum = "df099ccb16cd014ff054ac1bf392c67feeef57164b05c42f037cd40f5d4357f4"
 dependencies = [
  "clipboard-win",
  "core-graphics 0.23.2",
- "image 0.25.3",
+ "image 0.25.4",
  "log",
  "objc2",
  "objc2-app-kit",
@@ -620,9 +620,9 @@ dependencies = [
 
 [[package]]
 name = "built"
-version = "0.7.4"
+version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "236e6289eda5a812bc6b53c3b024039382a2895fbbeef2d748b2931546d392c4"
+checksum = "c360505aed52b7ec96a3636c3f039d99103c37d1d9b4f7a8c743d3ea9ffcd03b"
 
 [[package]]
 name = "bumpalo"
@@ -1659,6 +1659,7 @@ dependencies = [
  "hyper",
  "hyper-util",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
+ "medo_parser",
  "once_cell",
  "redb",
  "serde",
@@ -2618,9 +2619,9 @@ dependencies = [
 
 [[package]]
 name = "image"
-version = "0.25.3"
+version = "0.25.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d97eb9a8e0cd5b76afea91d7eecd5cf8338cd44ced04256cf1f800474b227c52"
+checksum = "bc144d44a31d753b02ce64093d532f55ff8dc4ebf2ffb8a63c0dda691385acae"
 dependencies = [
  "bytemuck",
  "byteorder-lite",
@@ -2720,15 +2721,6 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
-
-[[package]]
-name = "itertools"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
-dependencies = [
- "either",
-]
 
 [[package]]
 name = "itertools"
@@ -2880,9 +2872,9 @@ checksum = "03087c2bad5e1034e8cace5926dec053fb3790248370865f5117a7d0213354c8"
 
 [[package]]
 name = "libc"
-version = "0.2.160"
+version = "0.2.161"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0b21006cd1874ae9e650973c565615676dc4a274c965bb0a73796dac838ce4f"
+checksum = "8e9489c2807c139ffd9c1794f4af0ebe86a828db53ecdc7fea2111d0fed085d1"
 
 [[package]]
 name = "libdbus-sys"
@@ -3110,7 +3102,7 @@ dependencies = [
 
 [[package]]
 name = "medo_parser"
-version = "0.3.0"
+version = "0.3.5"
 dependencies = [
  "crossbeam-channel",
  "encoding",
@@ -3121,9 +3113,8 @@ dependencies = [
  "serde",
  "serde_json",
  "settings",
+ "thiserror",
  "time",
- "tokenizer",
- "tokenizer_derive",
  "utilites",
  "uuid",
  "zip",
@@ -3747,7 +3738,7 @@ dependencies = [
 name = "pdf"
 version = "0.1.0"
 dependencies = [
- "image 0.25.3",
+ "image 0.25.4",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
  "once_cell",
  "pdfium-render",
@@ -3768,7 +3759,7 @@ dependencies = [
  "chrono",
  "console_error_panic_hook",
  "console_log",
- "image 0.25.3",
+ "image 0.25.4",
  "itertools 0.13.0",
  "js-sys",
  "libloading",
@@ -4316,9 +4307,9 @@ dependencies = [
 
 [[package]]
 name = "ravif"
-version = "0.11.10"
+version = "0.11.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8f0bfd976333248de2078d350bfdf182ff96e168a24d23d2436cef320dd4bdd"
+checksum = "2413fd96bd0ea5cdeeb37eaf446a22e6ed7b981d792828721e74ded1980a45c6"
 dependencies = [
  "avif-serialize",
  "imgref",
@@ -4595,9 +4586,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.128"
+version = "1.0.129"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ff5456707a1de34e7e37f2a6fd3d3f808c318259cbd01ab6377795054b483d8"
+checksum = "6dbcf9b78a125ee667ae19388837dd12294b858d101fdd393cb9d5501ef09eb2"
 dependencies = [
  "indexmap 2.6.0",
  "itoa 1.0.11",
@@ -5609,26 +5600,6 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
-
-[[package]]
-name = "tokenizer"
-version = "0.1.5"
-source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
-dependencies = [
- "itertools 0.11.0",
- "regex",
- "tokenizer_derive",
-]
-
-[[package]]
-name = "tokenizer_derive"
-version = "0.10.12"
-source = "git+https://github.com/P40b0s/tokenizer.git?branch=master#398fc5845e2245d459b3bd3ef5ddf076a8823089"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.79",
-]
 
 [[package]]
 name = "tokio"

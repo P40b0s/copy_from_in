@@ -1,7 +1,7 @@
 use std::{path::Path, sync::{atomic::AtomicBool, Arc}};
 use settings::{Settings, Task};
 use tokio::runtime::Runtime;
-use transport::Packet;
+use transport::{Packet, PacketInfo};
 use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState};
 use super::{excludes::{ExcludesService, ExcludesTrait, KeyValueStore}, io::get_dirs};
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
@@ -33,7 +33,9 @@ pub trait PacketsCleaner
                                 for d in &dirs
                                 {
                                     let source_path = Path::new(t.get_source_dir()).join(d);
-                                    let packet = Packet::parse(&source_path, t);
+                                    //надо сконвертить внутренний пакет мэдо в универсальный транспортный пакет что лежит в transport
+                                    let packet_info = PacketInfo::parse(&source_path);
+                                    let packet = Packet::parse(&source_path, packet_info, t);
                                     if let Some(e) = packet.get_error()
                                     {
                                         let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();

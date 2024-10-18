@@ -25,10 +25,12 @@ impl Packet
     /// В этом методе дополнительно считаем хэш pdf файла  
     /// основной метод прозрачно пробрасывается в  
     /// `medo_parser::PacketInfo::parse()` -> `medo_parser::Packet::parse()`
-    pub fn parse<P: AsRef<Path>>(path: P, task: &Task) -> Self
+    /// меняем, сделал футуру чтобы весь парсер с собой не таскать а только модель, поэтому от прозрачного проброса пришлось отказаться  
+    /// запускаем отдельно и передаем сюда
+    pub fn parse<P: AsRef<Path>>(path: P, packet_info: PacketInfo, task: &Task) -> Self
     {
         let path = Path::new(path.as_ref());
-        let mut packet_info = PacketInfo::parse(path);
+        let mut packet_info = packet_info;
         if packet_info.default_pdf.is_some()
         {
             let path = Path::new(path).join(packet_info.default_pdf.as_ref().unwrap());

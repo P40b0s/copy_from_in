@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use utilites::Date;
-
-use super::Packet;
+#[cfg(feature = "all")]
+use crate::packet::Packet;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -39,7 +39,7 @@ impl Default for Requisites
         }
     }
 }
-
+#[cfg(any(feature = "model", feature = "all"))]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketInfo
@@ -80,6 +80,7 @@ impl PacketInfo
     {
        Path::new(&self.packet_directory).to_owned()
     }
+    #[cfg(feature = "all")]
     pub fn parse<P: AsRef<Path>>(path: P) -> Self
     {
         Packet::parse(path).into()

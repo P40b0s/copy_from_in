@@ -1,40 +1,6 @@
 use serde::{Deserialize, Deserializer, de::Error};
 use uuid::Uuid;
 
-
-// pub fn from_delivery_index<'de, D>(deserializer: D) -> Result<String, D::Error>
-// where
-// D: Deserializer<'de>,
-// {
-//     let s: &str = Deserialize::deserialize(deserializer)?;
-//     Ok(s.to_lowercase())
-// }
-
-
-// pub fn from_uid<'de, D>(deserializer: D) -> Result<String, D::Error>
-// where
-// D: Deserializer<'de>,
-// {
-//     let s: &str = Deserialize::deserialize(deserializer)?;
-//     Ok(s.to_lowercase())
-// }
-
-// pub fn from_header_type<'de, D>(deserializer: D) -> Result<PacketType, D::Error>
-// where
-// D: Deserializer<'de>,
-// {
-//     let s: &str = Deserialize::deserialize(deserializer)?;
-//     let t = s.to_lowercase().replace(" ", "");
-//     let packet = match t.as_str()
-//     {
-//         "транспортныйконтейнер" => PacketType::Container,
-//         "документ" => PacketType::Document,
-//         "письмо" => PacketType::Document,
-//         _ => PacketType::Unknown(t)
-//     };
-//     Ok(packet)
-// }
-
 pub fn guid_deserializer<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
 D: Deserializer<'de>

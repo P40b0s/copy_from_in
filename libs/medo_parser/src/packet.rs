@@ -27,7 +27,7 @@ pub struct Packet
     #[serde(skip_serializing_if="Option::is_none")]
     packet_date_time: Option<String>,
     wrong_encoding: bool,
-    error: PacketError,
+    error: Option<String>,
     #[serde(skip_serializing)]
     path: Option<PathBuf>
 }
@@ -40,14 +40,14 @@ impl Packet
     }
     fn add_error(&mut self, error: MedoParserError)
     {
-        self.error =  PacketError::Error(error.to_string());
+        self.error =  Some(error.to_string());
     }
     pub fn get_error(&self) -> Option<Cow<str>>
     {
         match &self.error
         {
-            PacketError::Error(e) => Some(Cow::from(e)),
-            PacketError::None => None
+            Some(e) => Some(Cow::from(e)),
+            None => None
         }
     }
     ///Проверка распарсился ли транспоттный пакет
@@ -134,7 +134,7 @@ impl Packet
             rc: None,
             founded_files: None,
             wrong_encoding: false,
-            error: PacketError::None,
+            error: None,
             packet_dir: None,
             packet_date_time: None,
             path: Some(path.as_ref().into())
@@ -173,7 +173,7 @@ impl Packet
         {
             if is_file
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", self.path.as_ref().unwrap().display())));
             }
         }
         if let Ok(created) = self.path.as_ref().unwrap().metadata().and_then(|m|m.created())
@@ -189,7 +189,7 @@ impl Packet
         {
             if files.len() == 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display())));
             }
             file_count = 0;
             //Добавляем все файлы виз директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы

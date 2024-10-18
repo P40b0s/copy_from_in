@@ -52,7 +52,7 @@ fn test_ltr()
     let theme = "ЭСД МЭДО (МД-1654 от 2022-10-29 {e4595e23-16f9-4a17-ae0b-e2a2385640d7})";
     if let Ok(decoded) = super::open_file(&default, None)
     {
-        let ltr = Ltr::parse(&default).unwrap();
+        let ltr = Ltr::parse_file(&default).unwrap();
         
         //write_string_to_file(&decoded, "ltr_file");
         assert_eq!(ltr.addresses.iter().nth(0).unwrap(), addr);
@@ -66,7 +66,7 @@ fn test_ltr()
     .join("wo_addresse_2.ltr");
     if let Ok(decoded) = super::open_file(&wo_addresse_2, None)
     {
-        let lltr = Ltr::parse(&wo_addresse_2);
+        let lltr = Ltr::parse_file(&wo_addresse_2);
         error!("Ошибка разбора файла {} \r\n{}", &wo_addresse_2.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -75,7 +75,7 @@ fn test_ltr()
     .join("wo_addresse.ltr");
     if let Ok(decoded) = super::open_file(&wo_addresse, None)
     {
-        let lltr = Ltr::parse(&wo_addresse);
+        let lltr = Ltr::parse_file(&wo_addresse);
         error!("Ошибка разбора файла {} \r\n{}", &wo_addresse.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -84,7 +84,7 @@ fn test_ltr()
     .join("wo_files.ltr");
     if let Ok(decoded) = super::open_file(&wo_files, None)
     {
-        let lltr = Ltr::parse(&wo_files);
+        let lltr = Ltr::parse_file(&wo_files);
         error!("Ошибка разбора файла {} \r\n{}", &wo_files.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -93,7 +93,7 @@ fn test_ltr()
     .join("wo_theme.ltr");
     if let Ok(decoded) = super::open_file(&wo_theme, None)
     {
-        let lltr = Ltr::parse(&wo_theme).unwrap();
+        let lltr = Ltr::parse_file(&wo_theme).unwrap();
        
         assert_eq!(lltr.theme, None);
     }
@@ -102,7 +102,7 @@ fn test_ltr()
     .join("wo_date.ltr");
     if let Ok(decoded) = super::open_file(&wo_date, None)
     {
-        let lltr = Ltr::parse(&wo_date).unwrap();
+        let lltr = Ltr::parse_file(&wo_date).unwrap();
        
         assert_eq!(lltr.date, None);
     }
@@ -112,7 +112,7 @@ fn test_ltr()
     .join("envelope.ltr");
     if let Ok(decoded) = super::open_file(&xz_error, None)
     {
-        let lltr = Ltr::parse(&xz_error).unwrap();
+        let lltr = Ltr::parse_file(&xz_error).unwrap();
        
         assert_eq!(lltr.date, None);
     }
@@ -127,11 +127,12 @@ fn strange_error_ltr()
     .join("envelope.ltr");
     if let Ok(decoded) = super::open_file(&xz_error, None)
     {
-        let lltr = Ltr::parse(&xz_error).unwrap();
+        let lltr = Ltr::parse_file(&xz_error).unwrap();
        
         assert_eq!(lltr.date, None);
     }
 }
+
 #[test]
 fn test_all_ltrs()
 {
@@ -151,7 +152,7 @@ fn test_all_ltrs()
                     {
                         if let Ok(decoded) = super::open_file(&f.path(), None)
                         {
-                            let ltr = Ltr::parse(&f.path());
+                            let ltr = Ltr::parse_file(&f.path());
                             if ltr.is_ok()
                             {
                                 processed = processed + 1;
@@ -441,6 +442,7 @@ fn test_rc_files()
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
+    assert!(packet.get_error().is_none())
 }
 
 
@@ -625,7 +627,12 @@ fn test_duplicate_field()
 
 
 
-
+// #[test]
+// fn test_errors()
+// {
+//     let err = MedoParserError::PacketError("123321".to_owned());
+//     println!("{}", err.to_string());
+// }
 
 
 

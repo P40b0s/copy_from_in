@@ -41,7 +41,7 @@ setup ()
             error_sound();
           else
             new_packet_notify_sound();
-        naive_notify(notify, 'info', `Задачей ${packet.payload.task.name} в ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 2000);
+        naive_notify(notify, 'info', `Задачей ${packet.payload.task.name} в ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 4000);
     })
     onUnmounted(()=>
     {

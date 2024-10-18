@@ -9,7 +9,6 @@ pub use contract::Contract;
 use settings::{Settings, Task};
 use serde::{Serialize, Deserialize};
 pub use medo_parser::DeliveryTicketPacket;
-pub use medo_parser::MedoParser;
 pub use medo_parser::{Ack, PacketInfo, Executor, Requisites, SenderInfo, MinistryOfJustice};
 pub use pagination::Pagination;
 ///Трейт для сериализации\десериализации данных через http

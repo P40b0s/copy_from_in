@@ -181,7 +181,8 @@ impl DirectoriesSpy
 
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
     {
-        Packet::parse(source_path, task)
+        let packet_info = PacketInfo::parse(source_path);
+        Packet::parse(source_path, packet_info, task)
     }
 
     ///Отработали ли правила из текущей задачи

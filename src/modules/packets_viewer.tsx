@@ -54,7 +54,7 @@ export const PacketsViewer =  defineComponent({
                 const exist_index = packets.value.findIndex(f=>f.id == packet.payload.id);
                 if (exist_index >= 0)
                 {
-                    naive_notify(notify, 'info', `Пакет ${packet.payload.name} был заменен`, "После пересканирования пакет был заменен");
+                    naive_notify(notify, 'info', `Пакет ${packet.payload.name}-${packet.payload.id} был заменен`, "После пересканирования пакет был заменен");
                     packets.value.splice(exist_index, 1, packet.payload);
                 }
                 else if(current_page.value == 1)
@@ -76,10 +76,19 @@ export const PacketsViewer =  defineComponent({
         {
             await get_packets();
         })
+        const vis_change = async () =>
+        {
+            if (!document.hidden) 
+            {
+                await get_packets();
+            }
+        }
+        document.addEventListener("visibilitychange", () => vis_change());
         onUnmounted(()=>
         {
             new_packet_event.then(u=> u.unsubscribe());
             update_packets_event.then(u=> u.unsubscribe())
+            document.removeEventListener('visibilitychange', () => vis_change());
         })
         const get_pages_count = async () : Promise<number> =>
         {
