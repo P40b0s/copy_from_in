@@ -167,7 +167,7 @@ impl Packet
         }
         if base_dir.is_none()
         {
-            return Err(MedoParserError::ParseError(format!("Ошибка определения базовой директории пакета {}", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", self.path.as_ref().unwrap().display())));
         }
         if let Ok(is_file) = self.path.as_ref().unwrap().metadata().and_then(|m| Ok(m.is_file()))
         {
@@ -240,13 +240,13 @@ impl Packet
         {
             if file_count > 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
             }
             if file_count == 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
             }
-            return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
         }
         Ok(self.clone())
     }
