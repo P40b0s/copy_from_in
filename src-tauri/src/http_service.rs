@@ -159,6 +159,11 @@ pub struct PacketService
 {
     api_path: String
 }
+#[derive(Serialize, Clone)]
+pub struct SearchingValue<'a>
+{
+    value: &'a str
+}
 impl PacketService
 {
     pub fn new(path: &str) -> Self
@@ -167,10 +172,18 @@ impl PacketService
     }
     pub async fn get(&self, Pagination {row, offset} : Pagination) -> Result<Vec<Packet>>
     {
-        logger::info!("pagination row:{} offset:{}", row,offset);
         let client = get_client(&self.api_path);
         let client = client.add_path("packets");
         let result = client.get_with_params(&[("limit".to_owned(), row.to_string()), ("offset".to_owned(), offset.to_string())]).await?;
+        let result = code_error_check(result, 200)?;
+        let result = serde_json::from_slice::<Vec<Packet>>(&result)?;
+        Ok(result)
+    }
+    pub async fn search(&self, payload: &str) -> Result<Vec<Packet>>
+    {
+        let client = get_client(&self.api_path);
+        let client = client.add_path("packets/search");
+        let result = client.get_with_body(SearchingValue {value: payload}).await?;
         let result = code_error_check(result, 200)?;
         let result = serde_json::from_slice::<Vec<Packet>>(&result)?;
         Ok(result)

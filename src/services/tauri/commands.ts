@@ -43,12 +43,16 @@ class Service extends Plugin<'truncate_tasks_excepts' | 'clear_dirs' | 'ws_serve
     }
 }
 
-class Packets extends Plugin<'get_packets_list' | 'get_count'>
+class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets'>
 {
     plugin = "plugin:packets|";
     public async get_packets_list(limit: number, offset: number): Promise<Result<IPacket[]>>
     {
         return await this.get<IPacket[]>('get_packets_list', {pagination: {row: limit, offset: offset}});
+    }
+    public async search_packets(search_string: string): Promise<Result<IPacket[]>>
+    {
+        return await this.get<IPacket[]>('search_packets', {payload: search_string});
     }
     public async get_count(): Promise<Result<number>>
     {

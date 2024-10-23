@@ -6,6 +6,7 @@ use hyper::service::service_fn;
 use hyper::{body::Incoming,  Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use logger::{debug, error, info};
+use serde_json::Value;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
@@ -74,6 +75,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::POST, "/api/v1/packets/rescan") => rescan(req, app_state).await,
         (&Method::POST, "/api/v1/packets/delete") => delete(req, app_state).await,
         (&Method::GET, "/api/v1/packets") => get_packets(req, app_state).await,
+        (&Method::GET, "/api/v1/packets/search") => search_packets(req, app_state).await,
         (&Method::GET, "/api/v1/packets/count") => get_packets_count(app_state).await,
         _ => 
         {
@@ -156,6 +158,51 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     drop(guard);
     let mut complex_data: Vec<Packet> = Vec::with_capacity(table_data.capacity());
     for d in table_data
+    {
+        if let Some(task) = tasks.iter().find(|f| f.get_task_name() == d.get_task_name())
+        {
+            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended()));
+        }
+        else
+        {
+            logger::error!("Задачи {} не существует в текущих настройках программы! Невозможно связять запись БД {}", d.get_task_name(), d.get_id());
+        }
+    }
+    Ok(json_response(&complex_data))
+}
+
+async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let value = serde_json::from_slice::<Value>(&body);
+    if value.is_err()
+    {
+        return Ok(error_response("В запросе должен присутсвовать параметр value".to_owned(), StatusCode::BAD_REQUEST));
+    }
+    let value = value.unwrap();
+    let data =
+    {
+        let search_string = value["value"].as_str();
+        if let Some(s) = search_string
+        {
+            PacketTable::search(s, app_state.get_db_pool()).await
+        }
+        else 
+        {
+            return Ok(error_response("В запросе должен присутсвовать параметр value".to_owned(), StatusCode::BAD_REQUEST));
+        }
+    };
+    if let Err(e) = data
+    {
+        logger::error!("{}", &e);
+        return Ok(error_response(e.to_string(), StatusCode::BAD_REQUEST));
+    }
+    let guard = app_state.settings.lock().await;
+    let tasks = guard.tasks.clone();
+    drop(guard);
+    let data = data.unwrap();
+    let mut complex_data: Vec<Packet> = Vec::with_capacity(data.capacity());
+    for d in data
     {
         if let Some(task) = tasks.iter().find(|f| f.get_task_name() == d.get_task_name())
         {

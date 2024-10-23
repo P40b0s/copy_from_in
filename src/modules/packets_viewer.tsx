@@ -21,6 +21,7 @@ import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, Ref
 import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { events } from '../services/tauri/events.ts';
+import { LiveSearch } from './live_search.tsx';
 
 
 export const PacketsViewerAsync = defineAsyncComponent({
@@ -39,7 +40,9 @@ export const PacketsViewer =  defineComponent({
         let current_offset = 0;
         const state = app_state_store.getState();
         const packets = ref<IPacket[]>([]);
-
+        const scrollbar_ref = ref();
+        const search_value = ref("");
+        const in_search = ref(false);
         const get_packets = async () =>
         {
             total_count.value = await get_pages_count();
@@ -49,7 +52,7 @@ export const PacketsViewer =  defineComponent({
         }
         const new_packet_event = events.packets_update(async (packet) => 
         {
-            if (packet.payload.task.visible)
+            if (packet.payload.task.visible && !in_search.value)
             {
                 const exist_index = packets.value.findIndex(f=>f.id == packet.payload.id);
                 if (exist_index >= 0)
@@ -103,8 +106,8 @@ export const PacketsViewer =  defineComponent({
                 return 0;
             }
         }
-
         await get_packets();
+
         const complex = () =>
         {
             return h('div', {
@@ -122,6 +125,7 @@ export const PacketsViewer =  defineComponent({
                 h(NPagination,
                 {
                     itemCount: total_count.value,
+                    disabled: in_search.value,
                     pageSizes: [items_on_page],
                     showSizePicker: false,
                     simple: true,
@@ -134,6 +138,7 @@ export const PacketsViewer =  defineComponent({
                         let r = await commands_packets.get_packets_list(items_on_page, current_offset);
                         if(r.is_ok())
                             packets.value = r.get_value();
+                        scrollbar_ref.value.scrollTo({top: 0})
                     },
                 },
                 {
@@ -142,6 +147,7 @@ export const PacketsViewer =  defineComponent({
 
             ])
         }
+        const searched_count = ref(0);
         const list = () =>
         {
             return h('div',
@@ -156,11 +162,54 @@ export const PacketsViewer =  defineComponent({
                     backgroundImage: background
                 }   as CSSProperties
             },
-            h(NScrollbar,
+            [
+                h(LiveSearch,
                 {
-                   style:{
-                    maxHeight: '78vh',
-                   } as CSSProperties
+                    value: search_value.value,
+                    "onUpdate:value": async (s: string) => 
+                    {
+                        if (s.length == 0)
+                        {
+                           await get_packets();
+                           in_search.value = false;
+                           searched_count.value = 0;
+                        }
+                        else
+                        {
+                            in_search.value = true;
+                            packets.value = [];
+                            const founded = await commands_packets.search_packets(s);
+                            if(founded.is_ok())
+                            {
+                                packets.value = founded.get_value()
+                                searched_count.value = packets.value.length;
+                            } 
+                        }
+                        
+                    },
+                    style:
+                    {
+                        width: '50vw',
+                        fontSize:"12px",
+                        fontWeight: "100",
+                        marginLeft: '5px'
+                    } as CSSProperties
+                }),
+                h('div', 
+                {
+                    style:
+                    {
+                        visibility: in_search.value ? 'visible' : 'hidden'
+                    } as CSSProperties
+                },
+                searched_count.value),
+                h(NScrollbar,
+                {
+                    style:
+                    {
+                        maxHeight: '78vh',
+                    } as CSSProperties,
+                    ref: scrollbar_ref
                 },
                 {
                     default:() => packets.value.map(p =>
@@ -168,7 +217,8 @@ export const PacketsViewer =  defineComponent({
                         return doc_status(p);
                     })
                 })
-            );
+            
+            ]);
         }
         const doc_status = (packet: IPacket) =>
         {
@@ -590,51 +640,6 @@ export const PacketsViewer =  defineComponent({
                 return [];
             }
         }
-        const virtual_list = () =>
-        {
-            return h(NVirtualList,
-                {
-                    style:
-                    {
-                        maxHeight: "600px",
-                        minHeight: '900px',
-                        padding: '10px'
-                    } as CSSProperties,
-                    trigger: 'hover',
-                    itemSize: 80,
-                    items: packets.value
-                },
-                {
-                    default:({ item }: {item: IPacket}) => 
-                    {
-                        console.error(item);
-                        return doc_status(item);
-                    }
-                })
-            }
-            const packets_list = () =>
-            {
-                
-                return h(NVirtualList,
-                    {
-                        style:
-                        {
-                            maxHeight: "600px",
-                            minHeight: '900px',
-                            padding: '10px'
-                        } as CSSProperties,
-                        trigger: 'hover',
-                        itemSize: 80,
-                        items: packets.value
-                    },
-                    {
-                        default:({ item }: {item: IPacket}) => 
-                        {
-                            console.error(item);
-                            return doc_status(item);
-                        }
-                    })
-                }
         return {list, complex}
     },
     render ()

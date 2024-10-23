@@ -102,6 +102,7 @@ impl<'a> SqlOperations<'a> for PacketTable
             "report_sended" //15
         ]
     }
+    
     fn create_table() -> String 
     {  
         ["CREATE TABLE IF NOT EXISTS ", Self::table_name(), " (
@@ -230,6 +231,25 @@ impl PacketTable
         .sort(SortingOrder::Desc("delivery_time"));
         let packets = Self::select(&selector, pool).await?;
         Ok(packets)
+    }
+    pub async fn search(search_string: &str, pool: Arc<SqlitePool>) -> Result<Vec<PacketTable>, DbError>
+    {
+        let like = vec![
+            Self::like("directory", search_string),
+            Self::like("requisites", search_string),
+            Self::like("sender_info", search_string),
+        ];
+        let select = [" where ".to_owned(), like.join(" OR ")].concat();
+        let selector = Selector::new(&Self::full_select())
+        .sort(SortingOrder::Desc("delivery_time"))
+        .add_raw_query(&select)
+        .limit(&100);
+        let packets = Self::select(&selector, pool).await?;
+        Ok(packets)
+    }
+    fn like(field_name: &str, searched_word: &str) -> String
+    {
+        [field_name, " LIKE ", "'%", searched_word, "%'"].concat()
     }
 
     fn only_visible_tasks_query(names: Vec<String>) -> String
