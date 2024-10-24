@@ -42,7 +42,11 @@ export const PacketsViewer =  defineComponent({
         const packets = ref<IPacket[]>([]);
         const scrollbar_ref = ref();
         const search_value = ref("");
+        //сейчас выполняется поиск
         const in_search = ref(false);
+        //количество найденных значений
+        const searched_count = ref(0);
+
         const get_packets = async () =>
         {
             total_count.value = await get_pages_count();
@@ -147,7 +151,7 @@ export const PacketsViewer =  defineComponent({
 
             ])
         }
-        const searched_count = ref(0);
+        
         const list = () =>
         {
             return h('div',
@@ -163,46 +167,85 @@ export const PacketsViewer =  defineComponent({
                 }   as CSSProperties
             },
             [
-                h(LiveSearch,
-                {
-                    value: search_value.value,
-                    "onUpdate:value": async (s: string) => 
-                    {
-                        if (s.length == 0)
-                        {
-                           await get_packets();
-                           in_search.value = false;
-                           searched_count.value = 0;
-                        }
-                        else
-                        {
-                            in_search.value = true;
-                            packets.value = [];
-                            const founded = await commands_packets.search_packets(s);
-                            if(founded.is_ok())
-                            {
-                                packets.value = founded.get_value()
-                                searched_count.value = packets.value.length;
-                            } 
-                        }
-                        
-                    },
-                    style:
-                    {
-                        width: '50vw',
-                        fontSize:"12px",
-                        fontWeight: "100",
-                        marginLeft: '5px'
-                    } as CSSProperties
-                }),
-                h('div', 
+                //live search block
+                h('div',
                 {
                     style:
                     {
-                        visibility: in_search.value ? 'visible' : 'hidden'
+                        display: 'flex',
+                        flexDirection: 'row',
+                        marginLeft: '5px',
+                        //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
+                        backgroundImage: "linear-gradient(90deg, #303131ad 0%, #425b5c 51%, #61e1e5 100%)"
                     } as CSSProperties
                 },
-                searched_count.value),
+                [
+                    h(LiveSearch,
+                    {
+                        value: search_value.value,
+                        "onUpdate:value": async (s: string) => 
+                        {
+                            if (s.length == 0)
+                            {
+                            packets.value = [];
+                            await get_packets();
+                            in_search.value = false;
+                            searched_count.value = 0;
+                            }
+                            else
+                            {
+                                in_search.value = true;
+                                packets.value = [];
+                                const founded = await commands_packets.search_packets(s);
+                                if(founded.is_ok())
+                                {
+                                    packets.value = founded.get_value()
+                                    searched_count.value = packets.value.length;
+                                } 
+                            }
+                            
+                        },
+                        style:
+                        {
+                            width: '50vw',
+                            fontSize:"16px",
+                            fontWeight: "100",
+                            flexGrow: '2',
+                            color: 'black !important!'
+                            
+                        } as CSSProperties
+                    }),
+                
+                    h('div', 
+                    {
+                        style:
+                        {
+                            visibility: in_search.value ? 'visible' : 'hidden',
+                            alignSelf: 'center',
+                            textAlign: 'left',
+                            fontSize:"16px",
+                            marginLeft: '5px',
+                            flexGrow: '2',
+                            color: 'black',
+                            fontWeight: "700",
+                        } as CSSProperties
+                    },
+                    "Найдено: "+ searched_count.value),
+                    h('div', 
+                    {
+                        style:
+                        {
+                            visibility: in_search.value ? 'hidden' : 'visible',
+                            alignSelf: 'center',
+                            fontSize:"16px",
+                            flexGrow: '1',
+                            color: 'black',
+                            fontWeight: "700",
+                        } as CSSProperties
+                    },
+                    "Всего: "+ total_count.value),
+                ]),
+               
                 h(NScrollbar,
                 {
                     style:
