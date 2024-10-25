@@ -6,6 +6,7 @@ use hyper::service::service_fn;
 use hyper::{body::Incoming,  Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use logger::{debug, error, info};
+use serde::Deserialize;
 use serde_json::Value;
 use settings::Task;
 use tokio::net::TcpListener;
@@ -14,6 +15,7 @@ use transport::{BytesSerializer, Packet, Pagination};
 use utilites::http::{empty_response, error_response, json_response, ok_response, BoxBody};
 use crate::db::PacketTable;
 use crate::state::AppState;
+use super::files::FileService;
 use super::WebsocketServer;
 
 impl From<crate::Error> for Result<Response<BoxBody>, crate::Error>
@@ -214,6 +216,39 @@ async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
         }
     }
     Ok(json_response(&complex_data))
+}
+
+#[derive(Deserialize)]
+pub struct PdfPageRequest
+{
+    dir_name: String,
+    task_name: String,
+    page_number: u32,
+}
+///TODO продолжим потом
+async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let pdf_request = serde_json::from_slice::<PdfPageRequest>(&body)?;
+    let guard = app_state.settings.lock().await;
+    let task = guard.tasks.iter().find(|f| f.get_task_name() == &pdf_request.task_name);
+    if task.is_none()
+    {
+        logger::error!("Задача {} не обнаружена", &pdf_request.task_name);
+        return Ok(error_response(format!("Задача {} не обнаружена", &pdf_request.task_name), StatusCode::BAD_REQUEST));
+    }
+    let task = task.unwrap();
+    let (source_dir, target_dir, del_source) = (task.get_source_dir().clone(), task.get_target_dir().clone(), task.delete_after_copy);
+    drop(guard);
+    let fs = if del_source
+    {
+        FileService::search(target_dir).await
+    }
+    else 
+    {
+        FileService::search(source_dir).await
+    };
+    Ok(json_response(&fs))
 }
 
 

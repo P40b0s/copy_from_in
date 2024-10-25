@@ -36,7 +36,7 @@ pub async fn update(payload: Task, state: Arc<AppState>) -> Result<(), Error>
     }
     if payload.generate_exclude_file
     {
-        state.get_service().excludes.replace(&payload);
+        let _ = state.get_service().excludes.replace(&payload);
         //Task::create_stoplist_file(&payload).await;
     }
     Ok(())

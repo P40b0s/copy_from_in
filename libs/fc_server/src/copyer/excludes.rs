@@ -137,7 +137,7 @@ impl ExcludesTrait for KeyValueStore
         {
             for d in &dirs
             {
-                self.add(task.get_task_name(), d);
+                let _ = self.add(task.get_task_name(), d);
             }
         }
         Ok(())
@@ -292,15 +292,14 @@ impl ExcludesTrait for FileExcludes
 #[cfg(test)]
 mod db_tests
 {
-    use std::ops::Deref;
     use logger::debug;
-    use super::{ExcludesService, ExcludesTrait};
+    use super::ExcludesTrait;
    ///добавление двух таблиц и их последующее их удаление
     #[test]
     fn test_redb_create_clear()
     {
         //let b : Box<dyn ExcludesTrait> = Box::new(super::KeyValueStore::new());
-        logger::StructLogger::new_default();
+        let _ = logger::StructLogger::new_default();
         let t = super::ExcludesService(super::KeyValueStore::new());
         let tasks = vec!["task_1", "task_2"];
         let add_1 = t.add(tasks[0], "1");
@@ -349,7 +348,7 @@ mod files_tests
     fn test_redb_create_clear()
     {
         let b : Box<dyn ExcludesTrait> = Box::new(super::KeyValueStore::new());
-        logger::StructLogger::new_default();
+        let _ = logger::StructLogger::new_default();
         let t = super::ExcludesService(super::KeyValueStore::new());
         let tasks = vec!["task_1", "task_2"];
         let add_1 = t.add(tasks[0], "1");

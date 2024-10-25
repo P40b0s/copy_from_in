@@ -28,7 +28,9 @@ pub enum Error
     HyperError(#[from] hyper::Error),
     //Ошибка если дата и размер копируемого файла не может синхронизироваться больше 2 минут
     #[error("Превышено максимальное количество попыток при попытке копирования файла `{0}`, файл должен успевать копироваться в систему в течении 2 минут")]
-    FileTimeCopyError(String)
+    FileTimeCopyError(String),
+    #[error(transparent)]
+    JsonError(#[from] serde_json::Error),
 }
 impl serde::Serialize for Error 
 {
@@ -78,6 +80,7 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::RedbTableError(e) => async move { Err(Error::RedbTableError(e)) }.boxed(),
       Error::RedbStorageError(e) => async move { Err(Error::RedbStorageError(e)) }.boxed(),
       Error::RedbCommitError(e) => async move { Err(Error::RedbCommitError(e)) }.boxed(),
+      Error::JsonError(e) => async move { Err(Error::JsonError(e)) }.boxed(),
     }
   }
 }
