@@ -273,7 +273,7 @@ export const PacketsViewer =  defineComponent({
                 avatar: packet.packetInfo?.error ? error_ico : envelope_ico,
                 task_color: packet.task.color,
                 shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',
-                tooltip: packet.name
+                tooltip: packet.packetInfo?.requisites?.annotation ?? packet.name
             },
             {
                 default:() =>

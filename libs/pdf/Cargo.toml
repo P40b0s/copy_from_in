@@ -1,14 +1,17 @@
 [package]
 name = "pdf"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pdfium-render= {version="0.8.20", features = ["thread_safe", "image"]}
-once_cell="1.19.0"
-image="0.25.1"
+pdfium-render= {version="0.8.24", features = ["thread_safe", "image"]}
+serde="1.0.213"
+once_cell="1.20.2"
+image="0.25.4"
 logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
-tokio= {version="1.37.0", features = ["test-util", "rt", "macros"]}
+tokio= {version="1.41.0", features = ["test-util", "rt", "macros"]}
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
+thiserror="*"
+rand="0.8.5"

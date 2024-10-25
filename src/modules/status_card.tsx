@@ -80,7 +80,15 @@ props: localProps,
                     }   as CSSProperties
                 },
                 [
-                    h(NTooltip,{placement: 'left'},
+                    h(NTooltip,
+                    {
+                        placement: 'left',
+                        style:
+                        {
+                            maxWidth: '400px',
+                            fontSize: '16px'
+                        } as CSSProperties
+                    },
                     {
                         trigger:() =>
                         h(NAvatar,
