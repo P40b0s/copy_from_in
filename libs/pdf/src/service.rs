@@ -49,7 +49,7 @@ impl PdfService
     }
     
     ///Извлечение изображения из pdf и выдача в формате строки base64
-    pub async fn convert_pdf_page_to_image<'a>(&'a self, page_number: u32) -> Result<String, error::Error> 
+    pub async fn convert_pdf_page_to_image(&self, page_number: u32) -> Result<String, error::Error> 
     {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let config = Arc::clone(&self.config);
@@ -94,7 +94,7 @@ impl PdfService
                 let _ = sender.send(Ok(dyn_image));
             })
         });
-        
+
         if let Ok(png) = receiver.await
         {
             let image = png?;
@@ -109,7 +109,7 @@ impl PdfService
     }
 
     // Извлечение страницы из pdf и преобразование ее в формат rgba8 pdf и выдача страницы в виде массива байт
-    async fn convert_page<'a>(&self, dyn_image: DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
+    async fn convert_page(&self, dyn_image: DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
     {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let current = Handle::current();
