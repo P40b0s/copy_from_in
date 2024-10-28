@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::sync::Arc;
 use db_service::SqlOperations;
 use http_body_util::BodyExt;
@@ -6,12 +7,13 @@ use hyper::service::service_fn;
 use hyper::{body::Incoming,  Method, Request, Response, StatusCode};
 use hyper_util::rt::TokioIo;
 use logger::{debug, error, info};
-use serde::Deserialize;
+use pdf::PdfService;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
-use transport::{BytesSerializer, Packet, Pagination};
+use transport::{BytesSerializer, FileRequest, FilesRequest, Packet, Pagination};
 use utilites::http::{empty_response, error_response, json_response, ok_response, BoxBody};
 use crate::db::PacketTable;
 use crate::state::AppState;
@@ -79,6 +81,9 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/packets") => get_packets(req, app_state).await,
         (&Method::GET, "/api/v1/packets/search") => search_packets(req, app_state).await,
         (&Method::GET, "/api/v1/packets/count") => get_packets_count(app_state).await,
+        (&Method::GET, "/api/v1/packets/files") => get_files_list(req, app_state).await,
+        (&Method::GET, "/api/v1/packets/pdf") => get_pdf_page(req).await,
+        (&Method::GET, "/api/v1/packets/pdf/pages") => get_pdf_pages_count(req).await,
         _ => 
         {
             let err = ["Эндпоинт ", req.uri().path(), " отсутсвует в схеме API"].concat();
@@ -179,6 +184,7 @@ async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
     let value = serde_json::from_slice::<Value>(&body);
     if value.is_err()
     {
+        error!("{}", "В запросе должен присутсвовать параметр value");
         return Ok(error_response("В запросе должен присутсвовать параметр value".to_owned(), StatusCode::BAD_REQUEST));
     }
     let value = value.unwrap();
@@ -191,6 +197,7 @@ async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
         }
         else 
         {
+            error!("{}", "В запросе должен присутсвовать параметр value");
             return Ok(error_response("В запросе должен присутсвовать параметр value".to_owned(), StatusCode::BAD_REQUEST));
         }
     };
@@ -218,37 +225,64 @@ async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
     Ok(json_response(&complex_data))
 }
 
-#[derive(Deserialize)]
-pub struct PdfPageRequest
-{
-    dir_name: String,
-    task_name: String,
-    page_number: u32,
-}
-///TODO продолжим потом
-async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+
+async fn get_pdf_pages_count(req: Request<Incoming>) -> Result<Response<BoxBody>, crate::Error> 
 {
     let body = req.collect().await?.to_bytes();
-    let pdf_request = serde_json::from_slice::<PdfPageRequest>(&body)?;
-    let guard = app_state.settings.lock().await;
-    let task = guard.tasks.iter().find(|f| f.get_task_name() == &pdf_request.task_name);
-    if task.is_none()
+    let file_request = serde_json::from_slice::<FileRequest>(&body)?;
+    if file_request.file.extension() == "pdf"
     {
-        logger::error!("Задача {} не обнаружена", &pdf_request.task_name);
-        return Ok(error_response(format!("Задача {} не обнаружена", &pdf_request.task_name), StatusCode::BAD_REQUEST));
-    }
-    let task = task.unwrap();
-    let (source_dir, target_dir, del_source) = (task.get_source_dir().clone(), task.get_target_dir().clone(), task.delete_after_copy);
-    drop(guard);
-    let fs = if del_source
-    {
-        FileService::search(target_dir).await
+        let page = PdfService::new(file_request.file.path(), 600, 800).get_pages_count().await?;
+        return Ok(json_response(&page));
     }
     else 
     {
-        FileService::search(source_dir).await
+        let error = format!("Запрос количества станиц pdf файла возможет только для расширения `pdf`");
+        logger::error!("{}", &error);
+        return Ok(error_response(error, StatusCode::BAD_REQUEST));    
+    }
+}
+async fn get_pdf_page(req: Request<Incoming>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let file_request = serde_json::from_slice::<FileRequest>(&body)?;
+    if file_request.file.extension() == "pdf" && file_request.page_number.is_some()
+    {
+        let page_number = file_request.page_number.unwrap();
+        let page = PdfService::new(file_request.file.path(), 600, 800).convert_pdf_page_to_image(page_number).await?;
+        return Ok(json_response(&page));
+    }
+    else 
+    {
+        let error = format!("Запрос страницы pdf файла возможет только для расширения `pdf` ({}) и указанием номера страницы ({:?})", file_request.file.extension(), file_request.page_number);
+        logger::error!("{}", &error);
+        return Ok(error_response(error, StatusCode::BAD_REQUEST));    
+    }
+}
+async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let request = serde_json::from_slice::<FilesRequest>(&body)?;
+    let guard = app_state.settings.lock().await;
+    let task = guard.tasks.iter().find(|f| f.get_task_name() == &request.task_name).cloned();
+    drop(guard);
+    if task.is_none()
+    {
+        logger::error!("Задача {} не обнаружена", &request.task_name);
+        return Ok(error_response(format!("Задача {} не обнаружена", &request.task_name), StatusCode::BAD_REQUEST));
+    }
+    let task = task.unwrap();
+    let fs = if task.delete_after_copy
+    {
+        debug!("Начат поиск файлов в {:?}", &[task.get_target_dir().as_path(), &Path::new(&request.dir_name)]);
+        FileService::search_concat(&[task.get_target_dir().as_path(), &Path::new(&request.dir_name)]).await
+    }
+    else 
+    {
+        debug!("Начат поиск файлов в {:?}", &[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]);
+        FileService::search_concat(&[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]).await
     };
-    Ok(json_response(&fs))
+    Ok(json_response(&fs.get_list()))
 }
 
 

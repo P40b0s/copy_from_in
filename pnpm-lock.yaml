@@ -8,12 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@highlightjs/vue-plugin':
+        specifier: ^2.1.0
+        version: 2.1.0(highlight.js@11.10.0)(vue@3.5.10(typescript@5.6.2))
       '@tauri-apps/api':
         specifier: 1.6.0
         version: 1.6.0
       '@vicons/ionicons5':
         specifier: ^0.12.0
         version: 0.12.0
+      highlight.js:
+        specifier: ^11.10.0
+        version: 11.10.0
       mitt:
         specifier: ^3.0.1
         version: 3.0.1
@@ -281,6 +287,12 @@ packages:
   '@eslint/js@8.57.1':
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+
+  '@highlightjs/vue-plugin@2.1.0':
+    resolution: {integrity: sha512-E+bmk4ncca+hBEYRV2a+1aIzIV0VSY/e5ArjpuSN9IO7wBJrzUE2u4ESCwrbQD7sAy+jWQjkV5qCCWgc+pu7CQ==}
+    peerDependencies:
+      highlight.js: ^11.0.1
+      vue: ^3
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -1913,6 +1925,11 @@ snapshots:
       - supports-color
 
   '@eslint/js@8.57.1': {}
+
+  '@highlightjs/vue-plugin@2.1.0(highlight.js@11.10.0)(vue@3.5.10(typescript@5.6.2))':
+    dependencies:
+      highlight.js: 11.10.0
+      vue: 3.5.10(typescript@5.6.2)
 
   '@humanwhocodes/config-array@0.13.0':
     dependencies:

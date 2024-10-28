@@ -1,5 +1,6 @@
-import { IPacket, Task } from '../../models/types'; 
+import { type IPacket, type Task, type File, type FilesRequest, type FileRequest } from '../../models/types'; 
 import { Plugin, Result } from "./abstract";
+
 
 class Settings extends Plugin<'update' | 'get' | 'delete'>
 {
@@ -43,7 +44,7 @@ class Service extends Plugin<'truncate_tasks_excepts' | 'clear_dirs' | 'ws_serve
     }
 }
 
-class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets'>
+class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets' | 'get_files_list' | 'get_pdf_pages_count'>
 {
     plugin = "plugin:packets|";
     public async get_packets_list(limit: number, offset: number): Promise<Result<IPacket[]>>
@@ -58,6 +59,17 @@ class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets'
     {
         return await this.get<number>('get_count');
     }
+    public async get_files_list(fr: FilesRequest): Promise<Result<File[]>>
+    {
+        return await this.get<File[]>('get_files_list', {filesRequest: {dir_name: fr.dir_name, task_name: fr.task_name}});
+    }
+
+    public async get_pdf_pages_count(fr: FileRequest): Promise<Result<number>>
+    {
+        return await this.get<number>('get_pdf_pages_count', {fileRequest: { file: { file_name: fr.file.file_name, file_type: fr.file.file_type, path: fr.file.path }, page_number: fr.page_number}});
+    }
+    
+    
 }
 const commands_service = new Service();
 const commands_settings = new Settings();

@@ -11,7 +11,7 @@ import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { PacketsViewer } from './packets_viewer.tsx';
 import Loader2 from './Loader/Loader2.vue';
 import { SettingsEditor } from './settings_editor.tsx';
-
+import FileViewer from './file_viewer/FileViewer.vue';
 
 export const MainTab =  defineComponent({
     setup (props) 
@@ -38,7 +38,13 @@ export const MainTab =  defineComponent({
                 },
                 [
                 ]),
-                default:() =>  tab_view()
+                default:() =>  h('div', [tab_view(),
+                    h(Suspense, 
+                    null,
+                    {
+                        default:()=> h(h(FileViewer)),
+                        fallback:() => h(Loader2)
+                    })])
             }
         )
     }

@@ -15,3 +15,5 @@ tokio= {version="1.41.0", features = ["test-util", "rt", "macros"]}
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
 thiserror="*"
 rand="0.8.5"
+[dev-dependencies]
+futures="*"

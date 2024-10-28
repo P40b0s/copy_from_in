@@ -6,7 +6,7 @@ use logger::{debug, error};
 use serde::{Deserialize, Serialize};
 use service::Client;
 use settings::Task;
-use transport::{Packet, Pagination};
+use transport::{File, FileRequest, FilesRequest, Packet, Pagination};
 use tokio::net::TcpStream;
 use crate::{ws_serivice::WebsocketClient, Error};
 use utilites::http::{Bytes, HyperClient, HeaderName, ACCEPT, USER_AGENT};
@@ -54,6 +54,15 @@ async fn get<T>(api_path: &str, uri_path: &str) -> Result<T> where T: for <'de> 
     let result = client.get().await?;
     let result = code_error_check(result, 200)?;
     let result = serde_json::from_slice::<T>(&result)?;
+    Ok(result)
+}
+async fn get_with_body<I: Serialize + Clone, O>(api_path: &str, uri_path: &str, body: I) -> Result<O> where O: for <'de> Deserialize<'de>
+{
+    let client = get_client(api_path);
+    let client = client.add_path(uri_path);
+    let result = client.get_with_body(body).await?;
+    let result = code_error_check(result, 200)?;
+    let result = serde_json::from_slice::<O>(&result)?;
     Ok(result)
 }
 async fn post<B: Serialize + Clone>(payload: B, api_path: &str, uri_path: &str) -> Result<()>
@@ -159,6 +168,7 @@ pub struct PacketService
 {
     api_path: String
 }
+
 #[derive(Serialize, Clone)]
 pub struct SearchingValue<'a>
 {
@@ -193,6 +203,16 @@ impl PacketService
         let result = get(&self.api_path, "packets/count").await?;
         Ok(result)
     }
+    pub async fn get_files_list(&self, FilesRequest {task_name, dir_name} : FilesRequest) -> Result<Vec<File>>
+    {
+        let result = get_with_body(&self.api_path, "packets/files", FilesRequest {task_name, dir_name}).await?;
+        Ok(result)
+    }   
+    pub async fn get_pdf_pages_count(&self, FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest) -> Result<Vec<File>>
+    {
+        let result = get_with_body(&self.api_path, "packets/files", {FileRequest { file: File {file_name, file_type, path}, page_number }}).await?;
+        Ok(result)
+    }   
 }
 
 

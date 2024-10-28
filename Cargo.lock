@@ -1661,6 +1661,7 @@ dependencies = [
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
  "medo_parser",
  "once_cell",
+ "pdf",
  "redb",
  "serde",
  "serde_json",
@@ -3736,6 +3737,7 @@ dependencies = [
 name = "pdf"
 version = "0.1.2"
 dependencies = [
+ "futures",
  "image 0.25.4",
  "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
  "once_cell",

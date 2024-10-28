@@ -4,6 +4,7 @@ import type { IPacketInfo } from './packet';
 export interface IPacket
 {
     id: string;
+    //Директория пакета
     name: string,
     parseTime: string,
     packetInfo?: IPacketInfo,
@@ -78,6 +79,26 @@ class TaskClone implements Clone<Task>
         else return undefined;
     }
 }
+
+export type File = 
+{   
+    file_name: string,
+    file_type: string,
+    path: string
+}
+/// Структура для запроса страницы файла или всего файла из API
+export type FileRequest = 
+{
+    file: File,
+    page_number?: number,
+}
+
+export type FilesRequest = 
+{
+    task_name: string,
+    dir_name: string
+}
+
 
 export type VN = VNode<RendererNode, RendererElement, {
     [key: string]: any;

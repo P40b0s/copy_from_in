@@ -28,6 +28,7 @@ uuid = {version = "1.8.0", features = ["v7"] }
 const_format = "0.2.32"
 settings = {path = "../settings"}
 transport = {path = "../transport"}
+pdf = {path = "../pdf"}
 medo_parser = {path = "../medo_parser", features = ["all"]}
 crossbeam-channel="0.5.12"
 #http api

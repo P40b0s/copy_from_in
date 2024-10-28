@@ -1,17 +1,11 @@
 use std::{path::{Path, PathBuf}, sync::Arc};
 use futures::{future::BoxFuture, FutureExt};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::{fs::DirEntry, sync::Mutex};
-use logger::{error};
+use logger::{debug, error};
+use transport::File;
 
 
-#[derive(Debug,Serialize)]
-pub struct File
-{   
-    file_name: String,
-    file_type: String,
-    path: String
-}
 #[derive(Debug,Serialize)]
 pub struct FileService
 {
@@ -37,6 +31,15 @@ impl FileService
         Self{
             files
         }
+    }
+    pub async fn search_concat<P: AsRef<Path>>(path: &[P]) -> Self
+    {
+        let mut pb = PathBuf::new();
+        for p in path
+        {
+            pb = pb.join(p);
+        }
+        Self::search(pb).await
     }
     fn search_files(path: Arc<Mutex<PathBuf>>, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
     {
@@ -79,6 +82,10 @@ impl FileService
             }
         }.boxed()
     }
+    pub fn get_list(&self) -> &[File]
+    {
+        &self.files
+    }
 
     async fn get_entries(path:&Path) -> Option<Vec<DirEntry>>
     {
@@ -113,5 +120,24 @@ mod tests
         let pdfs = files.get_pdf();
         assert_eq!(pdfs.len(), 1);
 
+    }
+    #[tokio::test]
+    async fn test_files2()
+    {   let _ = logger::StructLogger::new_default();
+        let p = &["../../test_data/copy_from_in_test_data/in2", "70178878_1 copy 11"];
+        let files =  super::FileService::search_concat(p).await;
+        logger::info!("{:?}", &files.files);
+        let pdfs = files.get_pdf();
+        assert_eq!(pdfs.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_files3()
+    {   let _ = logger::StructLogger::new_default();
+        let p = &["../../test_data/copy_from_in_test_data/in2", "70178878_1 copy 11"];
+        let files =  super::FileService::search_concat(p).await;
+        logger::info!("{:?}", &files.files);
+        let pdfs = files.get_pdf();
+        assert_eq!(pdfs.len(), 1);
     }
 }

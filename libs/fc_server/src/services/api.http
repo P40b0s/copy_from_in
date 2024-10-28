@@ -1,6 +1,8 @@
-GET http://localhost:3009/api/v1/packets/search HTTP/1.1
+GET http://localhost:3009/api/v1/packets/files HTTP/1.1
 content-type: application/json
 
 {
-    "value": "Чекун"
+    "task_name": "from_in_to_backup",
+    "dir_name": "70178878_1 copy 11"
+
 }

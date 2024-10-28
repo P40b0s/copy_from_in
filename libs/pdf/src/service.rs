@@ -107,6 +107,45 @@ impl PdfService
             return Err(error::Error::ChannelError(self.path.clone()));
         }
     }
+     ///Извлечение изображения из pdf и выдача в формате строки base64
+     pub async fn get_pages_count(&self) -> Result<u16, error::Error> 
+     {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        let path = self.path.clone();
+        let current = Handle::current();
+        tokio::task::spawn_blocking(move || 
+        {
+            current.block_on(
+            async move
+            {
+                let pdfium = Self::get_instance();
+                if pdfium.is_err()
+                {
+                    let _ = sender.send(Err(pdfium.err().unwrap()));
+                    return;
+                }
+                let pdfium = pdfium.unwrap();
+                let document = pdfium.load_pdf_from_file(&path, None);
+                if document.is_err()
+                {
+                    let _ = sender.send(Err(error::Error::PdfiumError(document.err().unwrap())));
+                    return;
+                }
+                let document = document.unwrap();
+                let pages_count = document.pages().len();
+                let _ = sender.send(Ok(pages_count));
+            })
+        });
+
+        if let Ok(pages) = receiver.await
+        {
+            return pages;
+        }
+        else 
+        {
+            return Err(error::Error::ChannelError(self.path.clone()));
+        }
+    }
 
     // Извлечение страницы из pdf и преобразование ее в формат rgba8 pdf и выдача страницы в виде массива байт
     async fn convert_page(&self, dyn_image: DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
@@ -155,7 +194,11 @@ impl PdfService
 #[cfg(test)]
 mod async_tests
 {
+    use std::future::Future;
+
+    use futures::future::join_all;
     use logger::debug;
+    use tokio::task::JoinSet;
     
     //use tokio::test;
     #[tokio::test]
@@ -165,10 +208,11 @@ mod async_tests
         let path = "/hard/xar/medo_testdata/0/15933154/text0000000000.pdf";
         let service = super::PdfService::new(path, 600, 800);
         debug!("main: {:?}", std::thread::current().id());
-        let _page = service.convert_pdf_page_to_image(2).await.unwrap();
-        let _page = service.convert_pdf_page_to_image(3).await.unwrap();
-        let _page = service.convert_pdf_page_to_image(4).await.unwrap();
-        let page = service.convert_pdf_page_to_image(5).await.unwrap();
-        debug!("Тестирование завершено извлечена страница рвзмер: {}", page.len());
+        let now = std::time::Instant::now();
+        let futures: Vec<_> = (1..20).map(|i| service.convert_pdf_page_to_image(i)).collect();
+        let r = join_all(futures).await;
+        let lenghts = r.iter().map(|f| f.as_ref().unwrap().len()).collect::<Vec<usize>>();
+        assert_eq!(&lenghts, &[194944, 230068, 227336, 229548, 243152, 240192, 227376, 244440, 223816, 213632, 219396, 251056, 249396, 231444, 240676, 251600, 274848, 245200, 216220]);
+        debug!("Тестирование завершено за {}мc -> lenghts: {:?}",  now.elapsed().as_millis(), &lenghts);
     }
 }

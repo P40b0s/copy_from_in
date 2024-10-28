@@ -22,7 +22,8 @@ import { commands_packets, commands_service, commands_settings } from '../servic
 import { naive_notify } from '../services/notification.ts';
 import { events } from '../services/tauri/events.ts';
 import { LiveSearch } from './live_search.tsx';
-
+import { type Emitter, type Events } from "../services/emit";
+import emitter from '../services/emit.ts';
 
 export const PacketsViewerAsync = defineAsyncComponent({
     loader: () => import ('./packets_viewer.tsx'),
@@ -286,7 +287,12 @@ export const PacketsViewer =  defineComponent({
                         textAlign: 'left',
                         //background: 'linear-gradient(0.25turn, #0000004a, 90%, '+ packet.task.color + ', #ebf8e100)',
                         //background: '#00000033',
-                    } as CSSProperties
+                    } as CSSProperties,
+                    onClick: (m) =>
+                    {
+                        console.log(packet);
+                        emitter.emit('packetItemDoubleClick', packet);
+                    },
                 },
                 [
                     h('div',

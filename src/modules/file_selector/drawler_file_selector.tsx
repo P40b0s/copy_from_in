@@ -3,10 +3,13 @@ import
     h,
     defineComponent,
     PropType,
+    ref,
   } from 'vue'
-import { PacketInfo } from '../../models/backend/document'
 import { NSelect, NTag} from 'naive-ui';
-import { fileSelectorLabel, on_update_val, options, get_dir_type } from './file_selector_label';
+import { fileSelectorLabel, on_update_val, options, get_dir_type, SelectedValue } from './file_selector_label';
+import { type IPacket } from '../../models/types';
+import { SelectBaseOption } from 'naive-ui/es/select/src/interface';
+import { emit } from '@tauri-apps/api/event';
 export const fileSelectorProps = 
 {
     placement: 
@@ -17,32 +20,37 @@ export const fileSelectorProps =
     /**Транспотрный пакет */
     packet: 
     {
-        
-        type: Object as PropType<PacketInfo>,
+        type: Object as PropType<IPacket>,
         required: true
     },
-    selected: 
-    {
-        type: String,
-        required: true
-    }
+    
 } as const
 
 export default defineComponent({
-name: 'FileSelector',
 props: fileSelectorProps,
-    setup (props) 
+emits:
+{
+    'onSelect': (value: SelectedValue) => true
+},
+    async setup (props, emits) 
     {
-        
-        const pop = () => {
+        const opt = await options(props.packet);
+        const selected = ref("");
+        const pop = () => 
+        {
             return  h(
                 NSelect,
                 {
-                    value: props.selected,
-                    options: options(props.packet),
-                    onUpdateValue: on_update_val,
+                    value: selected.value,
+                    options: opt,
+                    onUpdateValue:  (val: string, option: SelectBaseOption|null) =>
+                    {
+                        let s = opt.findIndex(i=> i.path == val);
+                        emits.emit('onSelect', opt[s]);
+                        selected.value = opt[s].label;
+                        
+                    },
                     renderLabel: fileSelectorLabel
-
                 },
                 {
                     default: () => 
@@ -56,7 +64,7 @@ props: fileSelectorProps,
                         bordered: false
                     },
                     {
-                        default: () => props.packet?.packetDirectory
+                        default: () => props.packet.name
                     })
                 }
             )

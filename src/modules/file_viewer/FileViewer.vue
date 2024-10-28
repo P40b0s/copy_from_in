@@ -5,7 +5,7 @@ n-drawer(v-model:show="is_open" style="min-width: 45vw;")
       div(style="display: flex; flex-direction: row; align-items: center; width: 100%;")
           n-tooltip(placement="left")  Выбор файла для просмотра 
             template(#trigger)
-              drawler-file-selector(v-if="packet" :packet="packet", :selected="selected" style="min-width: 42vw;")
+              drawler-file-selector(v-if="packet" :packet="packet" @onSelect="on_selected" style="min-width: 42vw;")
     template(#footer)
       n-pagination.paging(
             v-if="is_pdf"
@@ -23,21 +23,17 @@ n-drawer(v-model:show="is_open" style="min-width: 45vw;")
         div e
     highlightjs.code-block(v-if="!is_pdf" :language='lang' :code="body" :class="[{'is-pdf': is_pdf}, {'is-file': !is_pdf}]")
 </template>
-        
+ 
 <script lang="ts">
 import { ref, type Component, defineAsyncComponent, watch, inject, onMounted, onUnmounted } from 'vue';
 import { NNotificationProvider, NButton, NIcon, NTooltip, NDrawer, NDrawerContent, NPagination, NSpin, NProgress} from 'naive-ui';
 import { Analytics, Document, Warning, Settings, FingerPrintSharp, PieChart, PulseSharp } from '@vicons/ionicons5';
 import { type Emitter, type Events } from "../../services/emit";
-import ws from '../../services/websocket.service';
-import { type PdfRenderStatus, create_pdf_command } from '../../models/backend/websocket/pdf';
 import { type Status } from 'naive-ui/es/progress/src/interface';
-import { sleepNow } from '../../helpers';
 import {pdf_logic} from './pdf_logic';
-import { PacketInfo } from '../../models/backend/document';
-import { type FileResponse, create_file_command} from '../../models/backend/websocket/file';
-import { packetService } from '../../services/packets.service';
-import DrawlerFileSelector from '../FileSelector/DrawlerFileSelector';
+import DrawlerFileSelector from '../file_selector/drawler_file_selector';
+import {type IPacket, type File} from '../../models/types'
+import { type SelectedValue } from '../file_selector/file_selector_label';
 
 const FileViewer = defineAsyncComponent({
   loader: () => import('./FileViewer.vue'),
@@ -51,34 +47,34 @@ const FileViewer = defineAsyncComponent({
 
 
 <script lang="ts" setup>
-
 const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
 const is_open = ref(false);
 const in_progress = ref(false);
-const selected = ref("");
 const file = ref<string>();
 const body = ref<string>("");
 const lang = ref("xml");
-const packet = ref<PacketInfo>()
+const packet = ref<IPacket>()
 let full_file_path = "";
 const is_pdf = ref(false);
+
+///selected path
+const on_selected = (s: SelectedValue) =>
+{
+  console.log(s)
+}
+
 
 const {
   render_page,
   change_page,
-  get_render_status,
   select_pdf,
-  render_status,
   response_pdf_pages,
   current_image,
   current_page,
-  current_pdf_path,
-  percentage,
   pages,
   errors,
   on_wheel
 } = pdf_logic(is_open, in_progress);
-
 
 const request_file = (file_path: string) =>
 {
@@ -87,23 +83,23 @@ const request_file = (file_path: string) =>
     console.log(full_file_path, file_path);
     full_file_path = file_path
     const splitted = file_path.split('/');
-    const p = packetService.packets.find(f=>f.packetDirectory && f.packetDirectory == splitted[0]);
-    packet.value = p;
-    console.log(p, splitted);
+    //const p = packetService.packets.find(f=>f.packetDirectory && f.packetDirectory == splitted[0]);
+    //packet.value = p;
+    //console.log(p, splitted);
     //это файл
-    selected.value = splitted[splitted.length -1];
-    if(selected.value.indexOf(".pdf") >=0)
+    //selected.value = splitted[splitted.length -1];
+    //if(selected.value.indexOf(".pdf") >=0)
     {
       is_pdf.value = true;
       select_pdf(file_path);
       file.value = file_path;
     }
-    else
+    //else
     {
       is_pdf.value = false;
-      let cmd = create_file_command(file_path);
-      file.value = file_path;
-      ws.send_message(cmd);
+      //let cmd = create_file_command(file_path);
+      //file.value = file_path;
+      //ws.send_message(cmd);
       in_progress.value = true;
     }
   }
@@ -112,55 +108,59 @@ const request_file = (file_path: string) =>
   
 }
 
-const response_file = (response: FileResponse[]) =>
-{
-  if(response[0])
-  {
-    let file_ok = false;
-    switch(response[0].fileType)
-    {
-      case "rc":
-      case "xml":
-      {
-        lang.value = response[0].fileType;
-        body.value = response[0].body;
-        file_ok = true;
-        break;
-      }
-      case "ltr":
-      {
-        lang.value = "toml";
-        body.value = response[0].body;
-        file_ok = true;
-        break;
-      }
-      case "txt":
-      {
-        lang.value = "text";
-        body.value = response[0].body;
-        file_ok = true;
-        break;
-      }
-    }
-    if(file_ok)
-    {
-      in_progress.value = false;
-      is_open.value = true;
-    }
-  }
-}
+// const response_file = (response: File[]) =>
+// {
+//   if(response[0])
+//   {
+//     let file_ok = false;
+//     switch(response[0].fileType)
+//     {
+//       case "rc":
+//       case "xml":
+//       {
+//         lang.value = response[0].fileType;
+//         body.value = response[0].body;
+//         file_ok = true;
+//         break;
+//       }
+//       case "ltr":
+//       {
+//         lang.value = "toml";
+//         body.value = response[0].body;
+//         file_ok = true;
+//         break;
+//       }
+//       case "txt":
+//       {
+//         lang.value = "text";
+//         body.value = response[0].body;
+//         file_ok = true;
+//         break;
+//       }
+//     }
+//     if(file_ok)
+//     {
+//       in_progress.value = false;
+//       is_open.value = true;
+//     }
+//   }
+// }
 
-emitter.on('fileRequest', request_file);
-emitter.on('fileResponse', response_file);
-emitter.on('pdfRenderStatus', render_status)
-emitter.on('pdfResponsed', response_pdf_pages)
+emitter.on('packetItemDoubleClick', (p) => 
+{
+  packet.value = p;
+  is_open.value = true;
+});
+//emitter.on('fileResponse', response_file);
+//emitter.on('pdfRenderStatus', render_status)
+//emitter.on('pdfResponsed', response_pdf_pages)
 
 onUnmounted(()=> 
 {
-  emitter.off('pdfRenderStatus', render_status)
-  emitter.off('pdfResponsed', response_pdf_pages)
-  emitter.off('fileRequest', request_file);
-  emitter.off('fileResponse', response_file);
+  emitter.off('packetItemDoubleClick')
+  //emitter.off('pdfResponsed', response_pdf_pages)
+  //emitter.off('fileRequest', request_file);
+  //emitter.off('fileResponse', response_file);
 })
 
 </script>

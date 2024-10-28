@@ -2,6 +2,7 @@
 mod contract;
 mod packet;
 mod pagination;
+mod files;
 pub use packet::Packet;
 use anyhow::{Result, Context};
 use bytes::Bytes;
@@ -11,6 +12,7 @@ use serde::{Serialize, Deserialize};
 pub use medo_parser::DeliveryTicketPacket;
 pub use medo_parser::{Ack, PacketInfo, Executor, Requisites, SenderInfo, MinistryOfJustice};
 pub use pagination::Pagination;
+pub use files::{File, FileRequest, FilesRequest};
 ///Трейт для сериализации\десериализации данных через http
 /// надо вынести его в отдельный функционал и не мешать с websocket? может его в вебсокет и отправить? тем более фючи совпадают и ящики тоже
 pub trait BytesSerializer

@@ -5,9 +5,9 @@ import
     defineComponent,
     PropType,
   } from 'vue'
-import { PacketInfo } from '../../models/backend/document'
 import { NPopselect, NTag } from 'naive-ui';
 import { fileSelectorLabel, on_update_val, options, get_dir_type } from './file_selector_label';
+import { type IPacket } from '../../models/types';
 export const fileSelectorProps = 
 {
     placement: 
@@ -19,16 +19,16 @@ export const fileSelectorProps =
     packet: 
     {
         
-        type: Object as PropType<PacketInfo>,
+        type: Object as PropType<IPacket>,
         required: true
     }
 } as const
 
 export default defineComponent({
-name: 'FileSelector',
 props: fileSelectorProps,
-    setup (props) 
+    async setup (props) 
     {
+        const opt = await options(props.packet);
         const value = ref("");
         const pop = () => {
             return  h(
@@ -36,7 +36,7 @@ props: fileSelectorProps,
                 {
                     placement: 'left',
                     value: value.value,
-                    options: options(props.packet),
+                    options: opt,
                     onUpdateValue: on_update_val,
                     renderLabel: fileSelectorLabel
                 },
@@ -52,9 +52,8 @@ props: fileSelectorProps,
                         bordered: false
                     },
                     {
-                        default: () => props.packet?.packetDirectory
-                    }
-                    )
+                        default: () => props.packet?.name
+                    })
                 }
             )
         }

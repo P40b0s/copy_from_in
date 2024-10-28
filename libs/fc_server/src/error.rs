@@ -7,6 +7,8 @@ pub enum Error
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
+    PdfExtractError(#[from] pdf::Error),
+    #[error(transparent)]
     DbError(#[from] db_service::DbError),
     #[error(transparent)]
     RedbError(#[from] redb::Error),
@@ -81,6 +83,7 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::RedbStorageError(e) => async move { Err(Error::RedbStorageError(e)) }.boxed(),
       Error::RedbCommitError(e) => async move { Err(Error::RedbCommitError(e)) }.boxed(),
       Error::JsonError(e) => async move { Err(Error::JsonError(e)) }.boxed(),
+      Error::PdfExtractError(e) => async move { Err(Error::PdfExtractError(e)) }.boxed(),
     }
   }
 }
