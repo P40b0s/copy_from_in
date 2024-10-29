@@ -33,6 +33,8 @@ pub enum Error
     FileTimeCopyError(String),
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
+    #[error(transparent)]
+    UtilitesError(#[from] utilites::error::Error),
 }
 impl serde::Serialize for Error 
 {
@@ -84,6 +86,7 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::RedbCommitError(e) => async move { Err(Error::RedbCommitError(e)) }.boxed(),
       Error::JsonError(e) => async move { Err(Error::JsonError(e)) }.boxed(),
       Error::PdfExtractError(e) => async move { Err(Error::PdfExtractError(e)) }.boxed(),
+      Error::UtilitesError(e) => async move { Err(Error::UtilitesError(e)) }.boxed(),
     }
   }
 }

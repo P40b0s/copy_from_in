@@ -92,6 +92,11 @@ const on_selected = async (s: SelectedValue) =>
         }
         //todo запрос количества страниц с сервера
       }
+      else
+      {
+        const request = {file} as FileRequest;
+        const pages = await commands_packets.get_file_body(request);
+      }
     }
 }
 

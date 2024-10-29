@@ -5,6 +5,8 @@ use tokio::{fs::DirEntry, sync::Mutex};
 use logger::{debug, error};
 use transport::File;
 
+use crate::Error;
+
 
 #[derive(Debug,Serialize)]
 pub struct FileService
@@ -17,6 +19,11 @@ impl FileService
     {
         let pdfs: Vec<&File> = self.files.iter().filter(|f| f.file_type == "pdf").collect();
         pdfs
+    }
+    pub async fn get_file_body<P: AsRef<Path> + ToString>(path: P) -> Result<String, Error>
+    {
+        let body = utilites::io::open_file_with_encoding(path, None).await?;
+        Ok(body)
     }
     ///поиск файлов в директории
     pub async fn search(path: PathBuf) -> Self

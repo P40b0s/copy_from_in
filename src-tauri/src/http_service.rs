@@ -218,6 +218,11 @@ impl PacketService
         let result = get_with_body(&self.api_path, "packets/pdf", FileRequest { file: File {file_name, file_type, path}, page_number }).await?;
         Ok(result)
     }   
+    pub async fn get_file_body(&self, FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest) -> Result<String>
+    {
+        let result = get_with_body(&self.api_path, "packets/file", FileRequest { file: File {file_name, file_type, path}, page_number: None }).await?;
+        Ok(result)
+    }   
 }
 
 

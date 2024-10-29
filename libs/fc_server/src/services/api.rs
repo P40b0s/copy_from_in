@@ -82,6 +82,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/packets/search") => search_packets(req, app_state).await,
         (&Method::GET, "/api/v1/packets/count") => get_packets_count(app_state).await,
         (&Method::GET, "/api/v1/packets/files") => get_files_list(req, app_state).await,
+        (&Method::GET, "/api/v1/packets/file") => get_file_body(req).await,
         (&Method::GET, "/api/v1/packets/pdf") => get_pdf_page(req).await,
         (&Method::GET, "/api/v1/packets/pdf/pages") => get_pdf_pages_count(req).await,
         _ => 
@@ -258,6 +259,14 @@ async fn get_pdf_page(req: Request<Incoming>) -> Result<Response<BoxBody>, crate
         logger::error!("{}", &error);
         return Ok(error_response(error, StatusCode::BAD_REQUEST));    
     }
+}
+async fn get_file_body(req: Request<Incoming>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let file_request = serde_json::from_slice::<FileRequest>(&body)?;
+    let path = file_request.file.path();
+    let body = utilites::io::open_file_with_encoding(path, None).await?;
+    return Ok(json_response(&body));
 }
 
 async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
