@@ -11,7 +11,6 @@ import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { PacketsViewer } from './packets_viewer.tsx';
 import Loader2 from './Loader/Loader2.vue';
 import { SettingsEditor } from './settings_editor.tsx';
-import FileViewer from './file_viewer/FileViewer.vue';
 
 export const MainTab =  defineComponent({
     setup (props) 
@@ -38,13 +37,13 @@ export const MainTab =  defineComponent({
                 },
                 [
                 ]),
-                default:() =>  h('div', [tab_view(),
-                    h(Suspense, 
-                    null,
-                    {
-                        default:()=> h(h(FileViewer)),
-                        fallback:() => h(Loader2)
-                    })])
+                default:() =>  tab_view(),
+                    // h(Suspense, 
+                    // null,
+                    // {
+                    //     default:()=> h(FileViewer),
+                    //     fallback:() => h(Loader2)
+                    // })])
             }
         )
     }
@@ -56,24 +55,24 @@ export const MainTab =  defineComponent({
                 justifyContent: 'space-evenly',
                 type: 'line',
                 size: 'large',
-                defaultValue: "log",
+                defaultValue: "pak",
                 style:
                 {
                       height: '100%'
                 }
             },
             {
-                default:() => [log_tab(), settings_tab()]
+                default:() => [packets_tab(), settings_tab()]
             }
         )
     }
 
-    const log_tab = () => 
+    const packets_tab = () => 
     {
         return h(NTabPane,
             {
                 tab: 'Пакеты',
-                name: 'log',
+                name: 'pak',
                 style:
                 {
                       height: '100%'

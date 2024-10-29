@@ -15,7 +15,7 @@ type Result<T> = anyhow::Result<T, Error>;
 
 fn get_client(api_path: &str) -> HyperClient
 {
-    HyperClient::new_with_timeout(api_path.parse().unwrap(), 150, 1000, 12).with_headers(headers())
+    HyperClient::new_with_timeout(api_path.parse().unwrap(), 850, 1200, 12).with_headers(headers())
 }
 
 fn headers() -> Vec<(HeaderName, String)>
@@ -208,9 +208,14 @@ impl PacketService
         let result = get_with_body(&self.api_path, "packets/files", FilesRequest {task_name, dir_name}).await?;
         Ok(result)
     }   
-    pub async fn get_pdf_pages_count(&self, FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest) -> Result<Vec<File>>
+    pub async fn get_pdf_pages_count(&self, FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest) -> Result<u16>
     {
-        let result = get_with_body(&self.api_path, "packets/files", {FileRequest { file: File {file_name, file_type, path}, page_number }}).await?;
+        let result = get_with_body(&self.api_path, "packets/pdf/pages", FileRequest { file: File {file_name, file_type, path}, page_number }).await?;
+        Ok(result)
+    }   
+    pub async fn get_pdf_page(&self, FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest) -> Result<String>
+    {
+        let result = get_with_body(&self.api_path, "packets/pdf", FileRequest { file: File {file_name, file_type, path}, page_number }).await?;
         Ok(result)
     }   
 }

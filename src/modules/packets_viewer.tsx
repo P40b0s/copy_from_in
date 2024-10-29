@@ -24,6 +24,7 @@ import { events } from '../services/tauri/events.ts';
 import { LiveSearch } from './live_search.tsx';
 import { type Emitter, type Events } from "../services/emit";
 import emitter from '../services/emit.ts';
+import { sleepNow } from '../services/helpers.ts';
 
 export const PacketsViewerAsync = defineAsyncComponent({
     loader: () => import ('./packets_viewer.tsx'),

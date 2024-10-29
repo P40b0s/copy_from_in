@@ -49,7 +49,7 @@ pub async fn start_http_server(port: usize, app_state: Arc<AppState>) -> Result<
                 {
                     let service = service_fn(move |req|
                     {
-                        info!("Поступил запрос от {} headers->{:?}", &addr, req.headers());
+                        info!("Поступил запрос от {} на {} headers->{:?}", &addr, req.uri(), req.headers());
                         router(req, Arc::clone(&app_state))
                     });
                     if let Err(err) = http1::Builder::new().serve_connection(io, service).await 
@@ -259,6 +259,7 @@ async fn get_pdf_page(req: Request<Incoming>) -> Result<Response<BoxBody>, crate
         return Ok(error_response(error, StatusCode::BAD_REQUEST));    
     }
 }
+
 async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
 {
     let body = req.collect().await?.to_bytes();

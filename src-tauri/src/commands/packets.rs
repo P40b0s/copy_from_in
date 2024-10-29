@@ -41,9 +41,15 @@ pub async fn get_files_list(FilesRequest {task_name, dir_name} : FilesRequest, s
     Ok(res)
 }
 #[tauri::command]
-pub async fn get_pdf_pages_count(FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest, state: State<'_, Arc<AppState>>) -> Result<Vec<File>, Error>
+pub async fn get_pdf_pages_count(FileRequest { file: File {file_name, file_type, path}, page_number: _ }: FileRequest, state: State<'_, Arc<AppState>>) -> Result<u16, Error>
 {
-    let res = state.packet_service.get_pdf_pages_count(FileRequest { file: File {file_name, file_type, path}, page_number }).await?;
+    let res = state.packet_service.get_pdf_pages_count(FileRequest { file: File {file_name, file_type, path}, page_number: None }).await?;
+    Ok(res)
+}
+#[tauri::command]
+pub async fn get_pdf_page(FileRequest { file: File {file_name, file_type, path}, page_number }: FileRequest, state: State<'_, Arc<AppState>>) -> Result<String, Error>
+{
+    let res = state.packet_service.get_pdf_page(FileRequest { file: File {file_name, file_type, path}, page_number }).await?;
     Ok(res)
 }
 
@@ -56,7 +62,8 @@ pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R>
         search_packets,
         get_count,
         get_files_list,
-        get_pdf_pages_count
+        get_pdf_pages_count,
+        get_pdf_page
         ])
         .setup(|app_handle| 
         {

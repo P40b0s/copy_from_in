@@ -29,6 +29,8 @@ impl File
 pub struct FileRequest
 {
     pub file: File,
+    #[serde(skip_serializing_if="Option::is_none")]
+    #[serde(default)]
     pub page_number: Option<u32>,
 }
 ///

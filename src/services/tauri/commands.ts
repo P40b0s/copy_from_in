@@ -44,7 +44,7 @@ class Service extends Plugin<'truncate_tasks_excepts' | 'clear_dirs' | 'ws_serve
     }
 }
 
-class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets' | 'get_files_list' | 'get_pdf_pages_count'>
+class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets' | 'get_files_list' | 'get_pdf_pages_count' | 'get_pdf_page'>
 {
     plugin = "plugin:packets|";
     public async get_packets_list(limit: number, offset: number): Promise<Result<IPacket[]>>
@@ -66,7 +66,11 @@ class Packets extends Plugin<'get_packets_list' | 'get_count' | 'search_packets'
 
     public async get_pdf_pages_count(fr: FileRequest): Promise<Result<number>>
     {
-        return await this.get<number>('get_pdf_pages_count', {fileRequest: { file: { file_name: fr.file.file_name, file_type: fr.file.file_type, path: fr.file.path }, page_number: fr.page_number}});
+        return await this.get<number>('get_pdf_pages_count', {fileRequest: { file: { file_name: fr.file.file_name, file_type: fr.file.file_type, path: fr.file.path }} as FileRequest});
+    }
+    public async get_pdf_page<T extends string>(fr: FileRequest): Promise<Result<T>>
+    {
+        return await this.get<T>('get_pdf_page', {fileRequest: { file: { file_name: fr.file.file_name, file_type: fr.file.file_type, path: fr.file.path }, page_number: fr.page_number} as FileRequest});
     }
     
     

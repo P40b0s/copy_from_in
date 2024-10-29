@@ -21,8 +21,8 @@ align-items: center;
 justify-content: center;
 width: 100%;
 max-width: 6rem;
-margin-top: 3rem;
-margin-bottom: 3rem;
+//margin-top: 3rem;
+//margin-bottom: 3rem;
 }
 .loader:before,
 .loader:after {
