@@ -1,14 +1,20 @@
 <template lang="pug">
-n-drawer(v-model:show="is_open" style="min-width: 32vw;")
+n-drawer.file-drawler(v-model:show="is_open")
   n-drawer-content
     template(#header)
       div(style="display: flex; flex-direction: row; align-items: center; width: 100%;")
           n-tooltip(placement="left")  Выбор файла для просмотра 
             template(#trigger)
               drawler-file-selector(v-if="packet" :packet="packet" @onSelect="on_selected")
-    div.pdf-paging(v-if="is_pdf")
-      img(:src="current_image" @wheel="on_wheel" :class="{'bluring': in_progress, 'unbluring': !in_progress}")
-    highlightjs.code-block(v-if="!is_pdf" :language='lang' :code="body" :class="[{'is-pdf': is_pdf}, {'is-file': !is_pdf}]")
+    transition(name="fade")
+      .pdf-container(v-if="is_pdf" :class="{'bluring': in_progress, 'unbluring': !in_progress}")
+        img(:src="current_image" @wheel="on_wheel")
+    transition(name="fade")
+      .image-container(v-if="is_image")
+        img(:src="current_image")
+    transition(name="fade")
+      n-scrollbar.hlsb(v-if="is_file")
+        highlightjs.code-block(:language='lang' :code="body")
     template(#footer)
       n-pagination.paging(
             v-if="is_pdf"
@@ -18,20 +24,20 @@ n-drawer(v-model:show="is_open" style="min-width: 32vw;")
             :on-update-page="change_page"
             size="medium"
             show-quick-jumper)
-    
 </template>
  
 <script lang="ts">
 import { ref, type Component, defineAsyncComponent, watch, inject, onMounted, onUnmounted, computed } from 'vue';
-import { NNotificationProvider, NLoadingBarProvider, NButton, NIcon, NSkeleton, NTooltip, NDrawer, NDrawerContent, NPagination, NSpin, NProgress, useLoadingBar} from 'naive-ui';
+import { NNotificationProvider, NScrollbar, NLoadingBarProvider, NButton, NIcon, NSkeleton, NTooltip, NDrawer, NDrawerContent, NPagination, NSpin, NProgress, useLoadingBar} from 'naive-ui';
 import { Analytics, Document, Warning, Settings, FingerPrintSharp, PieChart, PulseSharp } from '@vicons/ionicons5';
 import { type Emitter, type Events } from "../../services/emit";
 import { type Status } from 'naive-ui/es/progress/src/interface';
-import DrawlerFileSelector from '../file_selector/drawler_file_selector';
+import DrawlerFileSelector from './file_selector/drawler_file_selector';
 import {type IPacket, type File, type FileRequest} from '../../models/types'
-import { type SelectedValue } from '../file_selector/file_selector_label';
+import { type FileType, FileTypeEnum, type SelectedValue, supported_files} from './file_selector/file_selector_label';
 import Loader2 from '../Loader/Loader2.vue';
 import { commands_packets } from '../../services/tauri/commands';
+
 </script>
 
 
@@ -41,63 +47,99 @@ const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
 const is_open = ref(false);
 const in_progress = ref(false);
 const body = ref<string>("");
-const lang = ref("xml");
+const lang = ref<string>();
 const packet = ref<IPacket>()
 const file_path = ref("");
-const file_type = ref<string>();
+let file_type = ref<FileType>();
 const file_name = ref("");
-const is_pdf = computed((): boolean =>
-{
-  return file_type.value == 'pdf';
-})
+const is_pdf = ref(false);
+const is_file = ref(false);
+const is_image = ref(false);
 const current_image = ref<string>();
 const current_page = ref(1);
 const pages_count = ref(1);
 let file_request: FileRequest;
+/**параметры файла для запроса на бэк */
 let file: File;
 watch(is_open, (o, n) =>
 {
   if(n == false)
   {
-    file_type.value = "";
+    file_type.value = undefined;
+    current_image.value = undefined;
   }
 })
 ///selected path
 const on_selected = async (s: SelectedValue) =>
 {
-    console.log(s)
-    // switch(s.ext)
-    // {
-    //   case "xml":
-    //   {
-    //     //lang.value = "xml"
-    //     break;
-    //   }
-    // }
     if (s.path != file_path.value)
     {
+      current_image.value = undefined;
+      is_file.value = false;
+      is_pdf.value = false;
+      is_image.value = false;
+      body.value = "";
       file_path.value = s.path;
-      file_type.value = s.ext;
       file_name.value = s.label
+      file_type.value = supported_files.get_type(s.ext);
       file = {file_name: s.label, file_type: s.ext, path: s.path} as File;
-      if(s.ext == "pdf")
+      //только поддерживаемые расширения файлов
+      if(file_type)
       {
-        in_progress.value = true;
-        const request = {file} as FileRequest;
-        const pages = await commands_packets.get_pdf_pages_count(request);
-        if(pages.is_ok())
+        lang.value = file_type.value?.highlighting_lang;
+        switch(file_type.value?.type)
         {
-          pages_count.value = pages.get_value()
-          await change_page(1);
+          case FileTypeEnum.Pdf:
+          {
+            is_pdf.value = true;
+            in_progress.value = true;
+            const request = {file} as FileRequest;
+            const pages = await commands_packets.get_pdf_pages_count(request);
+            if(pages.is_ok())
+            {
+              pages_count.value = pages.get_value()
+              await change_page(1);
+            }
+            break;
+          }
+          case FileTypeEnum.File:
+          {
+            is_file.value = true;
+            await process_file();
+            break;
+          }
+          case FileTypeEnum.Image:
+          {
+            is_image.value = true;
+            await process_image();
+            break;
+          }
+          default:
+          {
+            console.error("Операция не поддерживается с типом файла " + file_type.value?.extension);
+            break;
+          }
         }
-        //todo запрос количества страниц с сервера
-      }
-      else
-      {
-        const request = {file} as FileRequest;
-        const pages = await commands_packets.get_file_body(request);
       }
     }
+}
+const process_file = async () =>
+{
+  const request = {file} as FileRequest;
+  const res = await commands_packets.get_file_body(request);
+  if(res.is_ok())
+  {
+    body.value = res.get_value()
+  }
+}
+const process_image = async () =>
+{
+  const request = {file} as FileRequest;
+  const res = await commands_packets.get_file_body(request);
+  if(res.is_ok())
+  {
+    current_image.value = 'data:image/png;base64,' + res.get_value();
+  }
 }
 
 const change_page = async (pagenum: number) =>
@@ -109,7 +151,6 @@ const change_page = async (pagenum: number) =>
   {
     current_page.value = pagenum;
     current_image.value = 'data:image/png;base64,' + png.get_value();
-    console.log(is_pdf.value, current_page.value)
   }
   in_progress.value = false;
 }
@@ -151,7 +192,7 @@ onUnmounted(()=>
 </script>
     
 <style lang="scss">
-.pdf-paging
+.pdf-container
 {
   height: 100%;
   display: flex;
@@ -160,19 +201,62 @@ onUnmounted(()=>
   justify-content: space-between;
   align-content: space-between;
 }
-
-.is-pdf
+.image-container
 {
-  min-width: 45vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  align-content: space-between;
+  max-width: 550px;
 }
-.is-file
+
+.pdf-container img
 {
-  min-width: 45vw;
+  width: inherit;
+  height: inherit;
+}
+.image-container img
+{
+  width: inherit;
+  height: inherit;
+  max-width: inherit;
+  background-color: aliceblue;
+}
+.file-drawler
+{
+  width: 600px;
+  min-width: 600px;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+.n-base-selection .n-base-selection-label
+{
+  height: initial !important;
+}
+//TRANSITIONS
+.fade-enter-active 
+{
+  transition: opacity 11s
+}
+
+.fade-enter,
+.fade-leave-active 
+{
+  opacity: 0
+}
+
+.hlsb
+{
+  max-height: inherit;
+  width: inherit;
 }
 .code-block
 {
   font-size: 12px;
-  min-width: 42.5vw;
+  width: inherit;
+  height: inherit;
+  background-color: transparent;
   white-space: pre-wrap;
 }
 

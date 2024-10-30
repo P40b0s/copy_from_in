@@ -50,7 +50,8 @@
     "vite": "5.4.8",
     "vite-plugin-eslint": "^1.8.1",
     "vue-eslint-parser": "^9.4.3",
-    "vue-tsc": "^2.1.6"
+    "vue-tsc": "^2.1.6",
+    "@vue/language-plugin-pug": "latest"
   },
   "main": "index.ts",
   "repository": "git@github.com:p40b0s/copy_from_in.git",

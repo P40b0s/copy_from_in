@@ -1,15 +1,13 @@
 import 
 {
     h,
+    ref,
     defineComponent,
     PropType,
-    ref,
   } from 'vue'
-import { NSelect, NTag} from 'naive-ui';
-import { fileSelectorLabel, on_update_val, options, get_dir_type, SelectedValue } from './file_selector_label';
-import { type IPacket } from '../../models/types';
-import { SelectBaseOption } from 'naive-ui/es/select/src/interface';
-import { emit } from '@tauri-apps/api/event';
+import { NPopselect, NTag } from 'naive-ui';
+import { fileSelectorLabel, on_update_val, options, get_dir_type } from './file_selector_label';
+import { type IPacket } from '../../../models/types';
 export const fileSelectorProps = 
 {
     placement: 
@@ -20,36 +18,26 @@ export const fileSelectorProps =
     /**Транспотрный пакет */
     packet: 
     {
+        
         type: Object as PropType<IPacket>,
         required: true
-    },
-    
+    }
 } as const
 
 export default defineComponent({
 props: fileSelectorProps,
-emits:
-{
-    'onSelect': (value: SelectedValue) => true
-},
-    async setup (props, emits) 
+    async setup (props) 
     {
         const opt = await options(props.packet);
-        const selected = ref("");
-        const pop = () => 
-        {
+        const value = ref("");
+        const pop = () => {
             return  h(
-                NSelect,
+                NPopselect,
                 {
-                    value: selected.value,
+                    placement: 'left',
+                    value: value.value,
                     options: opt,
-                    onUpdateValue:  (val: string, option: SelectBaseOption|null) =>
-                    {
-                        let s = opt.findIndex(i=> i.path == val);
-                        emits.emit('onSelect', opt[s]);
-                        selected.value = opt[s].label;
-                        
-                    },
+                    onUpdateValue: on_update_val,
                     renderLabel: fileSelectorLabel
                 },
                 {
@@ -64,16 +52,21 @@ emits:
                         bordered: false
                     },
                     {
-                        default: () => props.packet.name
+                        default: () => props.packet?.name
                     })
                 }
             )
         }
-        return pop
-        
+        return {
+            pop,
+        }
     },
-    render () 
+    render ()
     {
-        return h(this)
+        // const 
+        // {
+        //     pop
+        // } = this;
+        return h(this.pop)
     }
 })

@@ -35,13 +35,7 @@ const localProps =
     
 } as const
 
-export const StatusCardAsync = defineAsyncComponent({
-     loader: () => import ('./status_card.tsx'),
-     loadingComponent: h(NSpin)
-})
-
 export const StatusCard = defineComponent({
-name: 'StatusCard',
 props: localProps,
     setup (props, ctx) 
     {

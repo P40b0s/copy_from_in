@@ -16,6 +16,7 @@ use anyhow::Result;
 use transport::{BytesSerializer, FileRequest, FilesRequest, Packet, Pagination};
 use utilites::http::{empty_response, error_response, json_response, ok_response, BoxBody};
 use crate::db::PacketTable;
+use crate::error;
 use crate::state::AppState;
 use super::files::FileService;
 use super::WebsocketServer;
@@ -94,8 +95,15 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
     };
     if resp.is_err()
     {
-        error!("{}", resp.as_ref().err().unwrap());
-        Ok(utilites::http::error_response(resp.err().unwrap().to_string(), StatusCode::BAD_REQUEST))
+        //заготовка на конкретные ошибки и коды
+        match resp.as_ref().err().unwrap()
+        {
+            _ => 
+            {
+                error!("{}", resp.as_ref().err().unwrap());
+                Ok(utilites::http::error_response(resp.err().unwrap().to_string(), StatusCode::BAD_REQUEST))
+            }
+        }
     }
     else
     {
@@ -265,8 +273,18 @@ async fn get_file_body(req: Request<Incoming>) -> Result<Response<BoxBody>, crat
     let body = req.collect().await?.to_bytes();
     let file_request = serde_json::from_slice::<FileRequest>(&body)?;
     let path = file_request.file.path();
-    let body = utilites::io::open_file_with_encoding(path, None).await?;
-    return Ok(json_response(&body));
+    if file_request.file.extension() == "png" ||
+    file_request.file.extension() == "jpg"
+    {
+        let file = utilites::io::read_file_to_binary(path)?;
+        let base64 = utilites::Hasher::from_bytes_to_base64(&file);
+        return Ok(json_response(&base64));
+    }
+    else 
+    {
+        let body = utilites::io::open_file_with_encoding(path, None).await?;
+        return Ok(json_response(&body));
+    }
 }
 
 async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
