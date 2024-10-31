@@ -2,10 +2,8 @@
 n-drawer.file-drawler(v-model:show="is_open")
   n-drawer-content
     template(#header)
-      div(style="display: flex; flex-direction: row; align-items: center; width: 100%;")
-          n-tooltip(placement="left")  Выбор файла для просмотра 
-            template(#trigger)
-              drawler-file-selector(v-if="packet" :packet="packet" @onSelect="on_selected")
+      div(style="width: inherit")
+        drawler-file-selector(v-if="packet" :packet="packet" @onSelect="on_selected")
     transition(name="fade")
       .pdf-container(v-if="is_pdf" :class="{'bluring': in_progress, 'unbluring': !in_progress}")
         img(:src="current_image" @wheel="on_wheel")
@@ -37,7 +35,6 @@ import {type IPacket, type File, type FileRequest} from '../../models/types'
 import { type FileType, FileTypeEnum, type SelectedValue, supported_files} from './file_selector/file_selector_label';
 import Loader2 from '../Loader/Loader2.vue';
 import { commands_packets } from '../../services/tauri/commands';
-
 </script>
 
 
@@ -58,6 +55,7 @@ const is_image = ref(false);
 const current_image = ref<string>();
 const current_page = ref(1);
 const pages_count = ref(1);
+
 let file_request: FileRequest;
 /**параметры файла для запроса на бэк */
 let file: File;
@@ -67,12 +65,14 @@ watch(is_open, (o, n) =>
   {
     file_type.value = undefined;
     current_image.value = undefined;
+    is_open.value
   }
 })
+
 ///selected path
 const on_selected = async (s: SelectedValue) =>
 {
-    if (s.path != file_path.value)
+    //if (s.path != file_path.value)
     {
       current_image.value = undefined;
       is_file.value = false;
@@ -187,7 +187,7 @@ emitter.on('packetItemDoubleClick', (p) =>
 
 onUnmounted(()=> 
 {
-  emitter.off('packetItemDoubleClick')
+  emitter.removeAllListeners();
 })
 </script>
     
@@ -216,6 +216,7 @@ onUnmounted(()=>
   width: inherit;
   height: inherit;
 }
+
 .image-container img
 {
   width: inherit;
@@ -229,10 +230,10 @@ onUnmounted(()=>
   min-width: 600px;
   overflow-x: hidden;
   overflow-y: hidden;
-}
-.n-base-selection .n-base-selection-label
-{
-  height: initial !important;
+  .n-base-selection .n-base-selection-label
+  {
+    height: initial !important;
+  }
 }
 //TRANSITIONS
 .fade-enter-active 

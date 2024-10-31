@@ -276,7 +276,6 @@ export const SettingsEditor =  defineComponent({
                     style:
                     {
                         marginLeft: '5px'
-                        
                     } as CSSProperties,
                     disabled: is_new_task.value,
                     value: selected_task.value?.name,

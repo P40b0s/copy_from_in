@@ -7,16 +7,17 @@ import
     CSSProperties,
   } from 'vue'
 import { NSelect, NTag} from 'naive-ui';
-import { fileSelectorLabel, on_update_val, options, get_dir_type, SelectedValue } from './file_selector_label';
+import { fileSelectorLabel, options, SelectedValue } from './file_selector_label';
 import { type IPacket } from '../../../models/types';
 import { SelectBaseOption, type Value } from 'naive-ui/es/select/src/interface';
 import { emit } from '@tauri-apps/api/event';
+
 export const fileSelectorProps = 
 {
     placement: 
     {
-        type: String as PropType<"left" | "right">,
-        default: "left"
+        type: String as PropType<"left" | "right | bottom">,
+        default: "bottom"
     },
     /**Транспотрный пакет */
     packet: 
@@ -66,7 +67,7 @@ emits:
                         {
                             marginRight: '6px',
                         },
-                        type: get_dir_type(props.packet),
+                        type: "success",
                         bordered: false
                     },
                     {

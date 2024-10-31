@@ -54,33 +54,6 @@ export const options = async (packet: IPacket): Promise<SelectedValue[]>  =>
     }
 }
 
-export const on_update_val = (val: SelectedValue, option: SelectBaseOption|null) =>
-{
-    // const selected_path = val.toString();
-    // if(val.toString().indexOf(".pdf") >=0)
-    // {
-    //     emitter.emit('pdfSelectedForView', selected_path)
-    // }
-    // else
-    // {
-    //     emitter.emit('fileRequest', selected_path)
-    // }
-    console.warn(option);
-    
-    const selected_path = val.toString();
-    //emitter.emit('fileRequest', selected_path)
-    console.log(val);
-}
-
-export const get_dir_type = (packet: IPacket) =>
-{
-    
-    if(!packet?.packetInfo?.defaultPdf)
-        return 'error'
-    else
-        return 'success'
-}
-
 
 
 export type FileType = 
@@ -130,7 +103,7 @@ class SupportedFiles
         icon: Help,
         type: FileTypeEnum.NotSupported
     } as FileType
-    files = 
+    files =
     [
         {
             extension: "xml",
@@ -214,52 +187,6 @@ export const supported_files = new SupportedFiles();
 
 export const fileSelectorLabel = (option: SelectedValue , selected: boolean): VNodeChild => 
 {
-    // let icon = Help;
-    // const standart_color = "#b3ffba";
-    // let color = "#c23838"
-    // let description = "Выберите файл для просмотра";
-    // option.disabled = true;
-    // if (option.value.indexOf(".ltr") >=0)
-    // {
-    //     icon = AtOutline
-    //     color = standart_color;
-    //     description = "Сопроводительный файл к транспортному пакету"
-    //     option.disabled = false;
-    // }
-    // else if (option.value.indexOf(".rc") >=0)
-    // {
-    //     icon = CodeSlashSharp
-    //     color = standart_color;
-    //     description = "Файл с реквизитами документа (загружен с АРМ)"
-    //     option.disabled = false;
-    // }
-    // else if (option.value.indexOf(".xml") >=0)
-    // {
-    //     icon = CodeSlashSharp;
-    //     color = standart_color;
-    //     description = "Файл с реквизитами документа, или параметрами вложения"
-    //     option.disabled = false;
-    // }
-    // else if (option.value.indexOf(".pdf") >=0)
-    // {
-    //     icon = AttachOutline;
-    //     color = standart_color;
-    //     description = "Документ в формате pdf"
-    //     option.disabled = false;
-    // }
-    // else if (option.value.indexOf(".txt") >=0)
-    // {
-    //     icon = Text;
-    //     color = standart_color;
-    //     description = "Тестовый файл с аннотацией к документу или текстом документа"
-    //     option.disabled = false;
-    // }
-    // else if (option.value.indexOf(".zip") >=0)
-    // {
-    //     icon = Archive;
-    //     color = standart_color;
-    //     description = "Вложение транспортного пакета"
-    // }
     let ext = option.value.split(".")
     let file_type = supported_files.get_type(ext[ext.length -1])
     if(file_type == undefined)

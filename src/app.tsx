@@ -17,7 +17,8 @@ export const AppAsync = defineAsyncComponent({
     loader: () => import ('./app.tsx'),
     loadingComponent: h(NSpin)
 })
-
+//slot(name="test" :opened="is_open")
+//slots: test:({ opened }: {opened: boolean})
 export const App = defineComponent({
     setup () 
     {
