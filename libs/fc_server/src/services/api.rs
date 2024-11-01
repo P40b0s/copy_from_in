@@ -13,9 +13,9 @@ use serde_json::Value;
 use settings::Task;
 use tokio::net::TcpListener;
 use anyhow::Result;
-use transport::{BytesSerializer, FileRequest, FilesRequest, Packet, Pagination};
+use transport::{BytesSerializer, FileRequest, FilesRequest, Packet, Pagination, Senders};
 use utilites::http::{empty_response, error_response, json_response, ok_response, BoxBody};
-use crate::db::PacketTable;
+use crate::db::{AddresseTable, PacketTable};
 use crate::error;
 use crate::state::AppState;
 use super::files::FileService;
@@ -86,6 +86,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/packets/file") => get_file_body(req).await,
         (&Method::GET, "/api/v1/packets/pdf") => get_pdf_page(req).await,
         (&Method::GET, "/api/v1/packets/pdf/pages") => get_pdf_pages_count(req).await,
+        (&Method::GET, "/api/v1/senders") => get_senders(app_state).await,
         _ => 
         {
             let err = ["Эндпоинт ", req.uri().path(), " отсутсвует в схеме API"].concat();
@@ -110,6 +111,8 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         resp
     }
 }
+
+
 /// /settings/tasks
 async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
 {
@@ -122,6 +125,12 @@ async fn get_tasks(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate:
     }
     let settings = settings.unwrap();
     Ok(json_response(&settings))
+}
+async fn get_senders(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let senders = AddresseTable::select_all(app_state.get_db_pool()).await?;
+    let senders: Vec<Senders> = senders.into_iter().map(|s| s.into()).collect();
+    Ok(json_response(&senders))
 }
 
 async fn get_packets_count(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 

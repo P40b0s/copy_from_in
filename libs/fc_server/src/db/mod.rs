@@ -1,6 +1,5 @@
 mod packet_table;
 mod addresse_table;
-mod contact_info;
 use std::sync::Arc;
 pub use addresse_table::AddresseTable;
 use db_service::{SqlOperations, SqlitePool};

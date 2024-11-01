@@ -16,6 +16,7 @@ pub async fn start_packets_handler(pool: Arc<SqlitePool>)
         {
             let pool = Arc::clone(&pool);
             let p_table = PacketTable::new(&r);
+            
             let test = p_table.add_or_replace(pool).await;
             if test.is_err()
             {

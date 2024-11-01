@@ -3,7 +3,7 @@ mod contract;
 mod packet;
 mod pagination;
 mod files;
-pub use packet::Packet;
+pub use packet::{Packet, ContactInfo, ContactType, Senders};
 use anyhow::{Result, Context};
 use bytes::Bytes;
 pub use contract::Contract;
@@ -65,5 +65,11 @@ impl BytesSerializer for Contract{}
 impl BytesSerializer for Packet{}
 impl BytesSerializer for Vec<PacketInfo>{}
 impl BytesSerializer for Vec<Packet>{}
+impl BytesSerializer for Senders{}
+impl BytesSerializer for Vec<Senders>{}
+impl BytesSerializer for ContactInfo{}
+impl BytesSerializer for Vec<ContactInfo>{}
+impl BytesSerializer for ContactType{}
+impl BytesSerializer for Vec<ContactType>{}
 impl BytesSerializer for PacketInfo{}
 impl BytesSerializer for Pagination{}

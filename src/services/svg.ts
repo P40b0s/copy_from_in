@@ -20,6 +20,9 @@ import background from '../assets/svg/back.svg'
 import success_ico from '../assets/svg/success.svg'
 import online_ico from '../assets/svg/wifi_online.svg'
 import offline_ico from '../assets/svg/wifi_offline.svg'
+import edit_ico from '../assets/svg/edit2.svg'
+import pdf_ico from '../assets/svg/pdf.svg'
+import image_ico from '../assets/svg/image.svg'
 
 export {
     disease_ico,
@@ -43,5 +46,8 @@ export {
     journal_ico,
     bell_ico,
     online_ico,
-    offline_ico
+    offline_ico,
+    edit_ico,
+    pdf_ico,
+    image_ico
 }

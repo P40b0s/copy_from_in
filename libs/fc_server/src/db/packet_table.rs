@@ -176,6 +176,10 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
         .execute(&*pool).await?;
+        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
+        {
+            let _ = addreesses.add_or_ignore(Arc::clone(&pool)).await;
+        }
         Ok(())
     }
     async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
@@ -199,6 +203,10 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
         .execute(&*pool).await?;
+        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
+        {
+            let _ = addreesses.add_or_ignore(Arc::clone(&pool)).await;
+        }
         Ok(())
     }
 }

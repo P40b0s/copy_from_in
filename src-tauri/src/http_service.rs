@@ -6,7 +6,7 @@ use logger::{debug, error};
 use serde::{Deserialize, Serialize};
 use service::Client;
 use settings::Task;
-use transport::{File, FileRequest, FilesRequest, Packet, Pagination};
+use transport::{File, FileRequest, FilesRequest, Packet, Pagination, Senders};
 use tokio::net::TcpStream;
 use crate::{ws_serivice::WebsocketClient, Error};
 use utilites::http::{Bytes, HyperClient, HeaderName, ACCEPT, USER_AGENT};
@@ -222,7 +222,12 @@ impl PacketService
     {
         let result = get_with_body(&self.api_path, "packets/file", FileRequest { file: File {file_name, file_type, path}, page_number: None }).await?;
         Ok(result)
-    }   
+    }
+    pub async fn get_senders(&self) -> Result<Vec<Senders>>
+    {
+        let result = get(&self.api_path, "senders").await?;
+        Ok(result)
+    }
 }
 
 

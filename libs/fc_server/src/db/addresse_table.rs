@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use db_service::{from_json, get_fields_for_update, query,  to_json, CountRequest, DbError, FromRow, QuerySelector, Result, Row, Selector, SqlOperations, SqlitePool, SqliteRow};
-use transport::PacketInfo;
+use transport::{PacketInfo, Senders};
 use serde::{Deserialize, Serialize};
 
-use super::contact_info::{ContactInfo, ContactType};
+use transport::{ContactInfo, ContactType};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AddresseTable
@@ -13,9 +13,24 @@ pub struct AddresseTable
     pub organization: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub medo_addresse: Option<String>,
-    pub contact_info: Vec<super::contact_info::ContactInfo>,
+    pub contact_info: Vec<ContactInfo>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub icon: Option<String>,
+}
+
+impl From<AddresseTable> for Senders
+{
+    fn from(value: AddresseTable) -> Self 
+    {
+        Self
+        {
+            id: value.id,
+            organization: value.organization,
+            medo_addresse: value.medo_addresse,
+            contact_info: value.contact_info,
+            icon: value.icon
+        }
+    }
 }
 
 impl TryFrom<&PacketInfo> for AddresseTable
@@ -126,7 +141,6 @@ impl<'a> SqlOperations<'a> for AddresseTable
         let update_set = get_fields_for_update(Self::table_fields());
         let sql = ["UPDATE ", Self::table_name(),
         " SET ", &update_set ," WHERE ", Self::table_fields()[0]," = $1"].concat();
-
         query(&sql)
         .bind(self.id.to_string())
         .bind(&self.organization)
@@ -172,5 +186,10 @@ impl AddresseTable
         let selector = Selector::new(&q);
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count)
+    }
+    pub async fn select_all(pool: Arc<SqlitePool>) -> Result<Vec<Self>, DbError> 
+    {
+        let selector = Selector::new(Self::full_select());
+        Self::select(&selector, pool).await
     }
 }

@@ -5,7 +5,7 @@ use logger::debug;
 use settings::Task;
 use tauri::plugin::{Builder, TauriPlugin};
 use tauri::{Manager, Runtime, State};
-use transport::{File, FileRequest, FilesRequest, Packet, Pagination};
+use transport::{File, FileRequest, FilesRequest, Packet, Pagination, Senders};
 use crate::http_service;
 use crate::state::AppState;
 use crate::Error;
@@ -59,6 +59,14 @@ pub async fn get_file_body(FileRequest { file: File {file_name, file_type, path}
     Ok(res)
 }
 
+#[tauri::command]
+pub async fn get_senders(state: State<'_, Arc<AppState>>) -> Result<Vec<Senders>, Error>
+{
+    let res = state.packet_service.get_senders().await?;
+    Ok(res)
+}
+
+
 
 
 pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
@@ -71,7 +79,8 @@ pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R>
         get_files_list,
         get_pdf_pages_count,
         get_pdf_page,
-        get_file_body
+        get_file_body,
+        get_senders
         ])
         .setup(|app_handle| 
         {

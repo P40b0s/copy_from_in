@@ -39,7 +39,7 @@ export type Filter =
     document_uids: string[]
 }
 
-interface Clone<T>
+export interface Clone<T>
 {
     clone(source: T|undefined): T|undefined
 }
@@ -97,10 +97,15 @@ export type FilesRequest =
 {
     task_name: string,
     dir_name: string
-}
+}  
 
 
 export type VN = VNode<RendererNode, RendererElement, {
     [key: string]: any;
 }>
 export const taskClone = new TaskClone();
+
+// export interface Clone 
+// {
+//     clone(self: this): this;
+// }

@@ -6,7 +6,7 @@ import
     PropType,
   } from 'vue'
 import { NPopselect, NTag } from 'naive-ui';
-import { fileSelectorLabel, on_update_val, options, get_dir_type } from './file_selector_label';
+import { fileSelectorLabel, options } from './file_selector_label';
 import { type IPacket } from '../../../models/types';
 export const fileSelectorProps = 
 {

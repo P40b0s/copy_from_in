@@ -179,15 +179,16 @@ const on_wheel = async (e: WheelEvent) =>
   }
 }
 
-emitter.on('packetItemDoubleClick', (p) => 
+const editor_open_event = (p: IPacket) =>
 {
   packet.value = p;
   is_open.value = true;
-});
+}
 
+emitter.on('packetItemDoubleClick', editor_open_event);
 onUnmounted(()=> 
 {
-  emitter.removeAllListeners();
+  emitter.off('packetItemDoubleClick', editor_open_event);
 })
 </script>
     

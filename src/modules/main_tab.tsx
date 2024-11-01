@@ -11,6 +11,7 @@ import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { PacketsViewer } from './packets_viewer.tsx';
 import Loader2 from './Loader/Loader2.vue';
 import { SettingsEditor } from './settings_editor.tsx';
+import SendersViewer from './Senders/SendersViewer.vue';
 
 export const MainTab =  defineComponent({
     setup (props) 
@@ -62,7 +63,7 @@ export const MainTab =  defineComponent({
                 }
             },
             {
-                default:() => [packets_tab(), settings_tab()]
+                default:() => [packets_tab(), senders_tab(), settings_tab()]
             }
         )
     }
@@ -89,6 +90,28 @@ export const MainTab =  defineComponent({
             }
         )
     }
+    const senders_tab = () => 
+        {
+            return h(NTabPane,
+                {
+                    tab: 'Отправители',
+                    name: 'snd',
+                    style:
+                    {
+                        height: '100%'
+                    }
+                },
+                {
+                    default:() =>
+                    h(Suspense, 
+                    null,
+                    {
+                        default:()=> h(SendersViewer),
+                        fallback:() => h(Loader2)
+                    })
+                }
+            )
+        }
     const settings_tab = () => 
     {
         return h(NTabPane,
