@@ -1,9 +1,9 @@
 <template lang="pug">.info-td-name
-n-drawer(v-model:show="is_open" placement="left" style="min-width: 600px;")
+n-drawer(:show="props.is_open" placement="left" style="min-width: 600px;")
   n-drawer-content
     template(#header) Контактная информация
-    n-space(vertical v-if="contacts.length > 0")
-      n-table.contact-table(v-for="contact in contacts")
+    n-space(vertical v-if="sender.contact_info.length > 0")
+      n-table.contact-table(v-for="contact in sender.contact_info")
         thead        
           tr
             th(colspan="2") 
@@ -28,48 +28,50 @@ n-drawer(v-model:show="is_open" placement="left" style="min-width: 600px;")
 </template>
         
 <script lang="ts">
-import { ref, defineAsyncComponent, inject, onUnmounted } from 'vue';
+import { ref, defineAsyncComponent, inject, onUnmounted, computed } from 'vue';
 import { NIcon, NAvatar, NTooltip, NDrawer, NDrawerContent, NSpace, NTable} from 'naive-ui';
-import { type Emitter, type Events } from "../services/emit";
-import { packetService } from '../services';
-import { ContactInfoDb } from '../models/backend/senders';
+import { type Emitter, type Events } from "../../services/emit";
 import EditIco from '../assets/svg/edit2.svg'
-
-const ContactInfo = defineAsyncComponent({
-  loader: () => import('./ContactInfo.vue'),
-  loadingComponent: 
-  {
-    template : `
-    <n-spin size="large"/>
-  `}
-});
+import {Senders, type ContactInfo} from '../../models/senders'
 </script>
 
 <script lang="ts" setup>
 const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
-const is_open = ref(false);
-const contacts = ref<ContactInfoDb[]>([]);
-
-const show_contact_info = (info : ContactInfoDb[]) =>
+  const props = defineProps<{
+    is_open: boolean,
+    sender: Senders,
+}>();
+const emits = defineEmits<{
+    'update:is_open': [value: boolean]
+    'update:sender': [value: Senders]
+    'delete:sender': [value: Senders]
+}>();
+const del_is_disabled = ref(props.sender.organization.length == 0);
+const sender = computed(()=>
 {
-  contacts.value = info.sort((a,b) => (a.person ? a.person : -1) < (b.person ? b.person : -1) ? -1 : 1);
-  is_open.value = true;
+    return new Senders().clone(props.sender)
+})
 
-}
-const edit_contact = (contact : ContactInfoDb) =>
+// const show_contact_info = (info : ContactInfoDb[]) =>
+// {
+//   contacts.value = info.sort((a,b) => (a.person ? a.person : -1) < (b.person ? b.person : -1) ? -1 : 1);
+//   is_open.value = true;
+
+// }
+
+const edit_contact = (contact : ContactInfo) =>
 {
-  const sender = packetService.senders.find(f=>f.contact_info.find(ff=>ff.id == contact.id))
-  console.log(sender);
-  if(sender)
-  {
-    emitter.emit('startEditContacts', sender);
-  }
+  // const sender = packetService.senders.find(f=>f.contact_info.find(ff=>ff.id == contact.id))
+  // if(sender)
+  // {
+  //   emitter.emit('startEditContacts', sender);
+  // }
 }
 
-emitter.on('viewContactInfo', show_contact_info);
+
 onUnmounted(()=>
 {
-  emitter.off('viewContactInfo', show_contact_info)
+
 })
 
 

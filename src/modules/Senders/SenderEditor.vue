@@ -19,19 +19,24 @@ n-modal(:show="props.is_open"
                         n-input(v-model:value="sender.medo_addresse" :autosize="{minRows: 1, maxRows: 2}"  type="textarea" placeholder="Введите адрес МЭДО")
             tr
                 td  
-                    n-popconfirm(positive-text="Удалить"  @positive-click="accept_delete")
-                        template(#icon)
-                            n-icon(color="#d90d0d")
-                                TrashBin
-                        template(#trigger)
-                            n-tooltip 
-                                template(#trigger)
-                                    n-button(quatenary circle color="#d90d0d" :disabled="del_is_disabled")
-                                        template(#icon)
-                                            TrashBin
-                                span Удалить отправителя
-                        span Подтвердите удаление отправителя: 
-                            span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
+                    accept-delete(@accept_delete="accept_delete", :disabled="del_is_disabled", button_text="Удалить отправителя")
+                        template(#text)
+                            span Подтвердите удаление отправителя: 
+                                span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
+
+                    //- n-popconfirm(positive-text="Удалить"  @positive-click="accept_delete")
+                    //-     template(#icon)
+                    //-         n-icon(color="#d90d0d")
+                    //-             TrashBin
+                    //-     template(#trigger)
+                    //-         n-tooltip 
+                    //-             template(#trigger)
+                    //-                 n-button(quatenary circle color="#d90d0d" :disabled="del_is_disabled")
+                    //-                     template(#icon)
+                    //-                         TrashBin
+                    //-             span Удалить отправителя
+                    //-     span Подтвердите удаление отправителя: 
+                    //-         span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
 
     template(#action)
         div.actions
@@ -41,6 +46,7 @@ n-modal(:show="props.is_open"
         
 <script lang="ts">
 import {type Emitter, type Events} from '../../services/emit';
+import AcceptDelete from '../AcceptDelete.vue';
 import {  h, ref, inject, type VNodeChild, onUnmounted, watch, computed } from 'vue';
 import {  MailOpenOutline, } from '@vicons/ionicons5';
 import {  NTable, NDynamicInput, NInput, NSelect, NModal, NFormItem,  NButton, NPopconfirm, NIcon, type UploadFileInfo, type SelectOption, type SelectGroupOption, NTooltip} from 'naive-ui';

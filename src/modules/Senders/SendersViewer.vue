@@ -6,7 +6,10 @@ div.senders-div
             template(#icon)
                 n-icon(:component="AddCircleSharp" color="green")
     
-    //- contact-editor
+    contact-editor(v-if="edited_sender != undefined"
+        v-model:is_open="contact_editor_is_open" 
+        @update:sender="senders_updated_event"
+        v-model:sender="edited_sender")
     sender-editor(v-if="edited_sender != undefined"
         ref="sender_editor_window" 
         v-model:is_open="sender_editor_is_open" 
@@ -31,7 +34,7 @@ import { NStatistic, NDatePicker, NInput, NSpace, NLayout, NLayoutSider, NMenu, 
 import { type RowData } from 'naive-ui/es/data-table/src/interface';
 import {LiveSearch} from '../live_search.tsx'
 import SenderEditor from './SenderEditor.vue';
-//import ContactEditor from './ContactEditor.vue';
+import ContactEditor from './ContactEditor.vue';
 import { Senders } from '../../models/senders.ts';
 import { commands_packets } from '../../services/tauri/commands.ts';
 </script>
@@ -44,6 +47,7 @@ const snd = await commands_packets.get_senders();
 const senders = ref<Senders[]>(snd.value ?? []);
 const component_key = ref(0);
 const sender_editor_is_open = ref(false);
+const contact_editor_is_open = ref(false);
 const edited_sender = ref<Senders>();
 const sender_editor_window = ref<InstanceType<typeof SenderEditor>>();
 
@@ -57,6 +61,7 @@ const start_edit_sender = (s: Senders) =>
 const start_edit_contacts = (s: Senders) =>
 {
     edited_sender.value = s;
+    contact_editor_is_open.value = true;
     console.log("Нало редактирования контактов...")
 }
 
@@ -68,6 +73,12 @@ const senders_updated_event = (s: Senders) =>
     senders.value.splice(index, 1, s);
     component_key.value ++;
 }
+// const contacts_updated_event = (s: Senders) =>
+// {
+//     const index = senders.value.findIndex(s=>s.id == s.id);
+//     senders.value.splice(index, 1, s);
+//     component_key.value ++;
+// }
 
 const senders_delete_event = (s: Senders) =>
 {
