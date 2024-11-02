@@ -1,8 +1,9 @@
-use std::path::Path;
+use std::{marker::PhantomData, path::Path};
 
 use logger::debug;
 use medo_parser::PacketInfo;
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::json;
 use settings::Task;
 use utilites::Date;
 
@@ -198,3 +199,50 @@ pub struct Senders
     #[serde(skip_serializing_if="Option::is_none")]
     pub icon: Option<String>,
 }
+
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(bound = "T: Serialize + DeserializeOwned")]
+struct Metainfo<T> 
+{
+    info: String,
+    result: Result<T>,
+}
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(bound = "T: Serialize + DeserializeOwned")]
+struct Result<T>
+{
+    #[serde(alias = "obj1", alias="obj2")]
+    object: T
+}
+
+#[test]
+fn test()
+{
+    // let v = Metainfo
+    // {
+    //     info: "ASd".to_owned(),
+    //     result: Result
+    //     {
+    //         object: ContactType {
+    //             contact_type: "asd".to_owned(),
+    //             value: "41234123123123".to_owned()
+    //         }
+    //     }
+    // };
+    // let s = serde_json::to_string_pretty(&v).unwrap();
+    // println!("{}", &s);
+    let js = r#"{
+        "info": "ASd",
+        "result": {
+          "obj": {
+            "contact_type": "asd",
+            "value": "41234123123123"
+          }
+        }
+      }"#;
+    let des = serde_json::from_str::<Metainfo<ContactType>>(js).unwrap();
+   
+}
+
+//where for <'de> T : Deserialize<'de>, for <'de> Self : Deserialize<'de>

@@ -5,4 +5,5 @@ logs
 settings.toml
 test_data
 /libs/
-libs/
+./libs/
+../libs/

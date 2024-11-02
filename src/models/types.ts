@@ -105,7 +105,4 @@ export type VN = VNode<RendererNode, RendererElement, {
 }>
 export const taskClone = new TaskClone();
 
-// export interface Clone 
-// {
-//     clone(self: this): this;
-// }
+export type Callback<T> = (val: T) => void;

@@ -11,12 +11,28 @@ n-modal(:show="props.is_open"
                     image-uploader(v-model:icon="sender.icon")
             tr
                 td
-                    n-form-item.contacts-form(label="Организация" label-style="fontWeight: 700;" path="user.org" )
-                        n-input(v-model:value="sender.organization" :autosize="{minRows: 1,maxRows: 2}"  type="textarea" placeholder="Введите организацию")
+                    n-form-item.contacts-form(label="Организация" label-style="fontWeight: 700;" path="sender.organization" )
+                        n-input(v-model:value="sender.organization" :autosize="{minRows: 1, maxRows: 2}"  type="textarea" placeholder="Введите организацию")
             tr
                 td
-                    n-form-item.contacts-form(label="Адрес МЭДО" label-style="fontWeight: 700;"  path="user.post" )
-                        n-input(v-model:value="sender.medo_addresse" :autosize="{minRows: 1,maxRows: 2}"  type="textarea" placeholder="Введите адрес МЭДО")
+                    n-form-item.contacts-form(label="Адрес МЭДО" label-style="fontWeight: 700;"  path="sender.medo_addresse" )
+                        n-input(v-model:value="sender.medo_addresse" :autosize="{minRows: 1, maxRows: 2}"  type="textarea" placeholder="Введите адрес МЭДО")
+            tr
+                td  
+                    n-popconfirm(positive-text="Удалить"  @positive-click="accept_delete")
+                        template(#icon)
+                            n-icon(color="#d90d0d")
+                                TrashBin
+                        template(#trigger)
+                            n-tooltip 
+                                template(#trigger)
+                                    n-button(quatenary circle color="#d90d0d" :disabled="del_is_disabled")
+                                        template(#icon)
+                                            TrashBin
+                                span Удалить отправителя
+                        span Подтвердите удаление отправителя: 
+                            span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
+
     template(#action)
         div.actions
             n-button(type="success" @click="save_sender") Сохранить
@@ -25,12 +41,13 @@ n-modal(:show="props.is_open"
         
 <script lang="ts">
 import {type Emitter, type Events} from '../../services/emit';
-import {  h, ref, inject, type VNodeChild, onUnmounted, watch } from 'vue';
+import {  h, ref, inject, type VNodeChild, onUnmounted, watch, computed } from 'vue';
 import {  MailOpenOutline, } from '@vicons/ionicons5';
-import {  NTable, NDynamicInput, NInput, NSelect, NModal, NFormItem,  NButton, NIcon, type UploadFileInfo, type SelectOption, type SelectGroupOption, NTooltip} from 'naive-ui';
+import {  NTable, NDynamicInput, NInput, NSelect, NModal, NFormItem,  NButton, NPopconfirm, NIcon, type UploadFileInfo, type SelectOption, type SelectGroupOption, NTooltip} from 'naive-ui';
 import ImageUploader from './ImageUploader.vue';
 import { type SelectBaseOption, type SelectIgnoredOption } from 'naive-ui/es/select/src/interface';
 import { Senders } from '../../models/senders';
+import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
 </script>
 
 <script lang="ts" setup>
@@ -43,55 +60,40 @@ const emits = defineEmits<{
     'update:sender': [value: Senders]
     'delete:sender': [value: Senders]
 }>();
+const del_is_disabled = ref(props.sender.organization.length == 0);
 const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
-const sender = ref<Senders>(new Senders().clone(props.sender));
-
-
-
-const sender_icon = () =>
+const sender = computed(()=>
 {
-    return sender.value.icon as string|undefined;
-}
-console.log("почему то не появляется элемент....", props.is_open)
+    return new Senders().clone(props.sender)
+})
+
 const close_card = () =>
 {
     emits('update:is_open', false);
 }
-const update_show_modal = (value: boolean) =>
-{
-    if(value == false)
-        emits('update:is_open', false);
-}
-const senders_updated_event = (s: Senders) =>
-{
-    emits('update:sender', s);
-}
 
-const start_edit_sender_event = (s: Senders) => 
+const accept_delete = () =>
 {
-    sender.value = s;
-}
-const delete_question = (s: Senders) : string =>
-{
-   return "Подтвердите удаление отправителя " + s.organization;
-}
-
-const accept_delete = async (s: Senders) =>
-{
-    emits('delete:sender', s);
+    emits('delete:sender', sender.value);
     emits('update:is_open', false);
 }
-onUnmounted(()=> 
+onUnmounted(() =>
 {
-    
+    console.log("Компонент размонтирован")
 })
-
+const test_method = () =>
+{
+    //console.log("23894 09823904809 2384092 34092u3 r092u3r 092u3r098 2u304ru23098u")
+}
 
 const save_sender = async () =>
 {
     emits('update:sender', sender.value);
     emits('update:is_open', false);
 }
+defineExpose({
+    test_method
+});
 const renderLabel = (option: SelectBaseOption, selected: boolean): VNodeChild => 
 {
     return [

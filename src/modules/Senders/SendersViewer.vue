@@ -7,7 +7,12 @@ div.senders-div
                 n-icon(:component="AddCircleSharp" color="green")
     
     //- contact-editor
-    sender-editor(v-if="edited_sender != undefined" v-model:is_open="sender_editor_is_open", @update:sender="senders_updated_event" v-model:sender="edited_sender")
+    sender-editor(v-if="edited_sender != undefined"
+        ref="sender_editor_window" 
+        v-model:is_open="sender_editor_is_open" 
+        @delete:sender="senders_delete_event"
+        @update:sender="senders_updated_event"
+        v-model:sender="edited_sender")
     n-data-table(
         :key="component_key"
         :columns="columns"
@@ -40,13 +45,14 @@ const senders = ref<Senders[]>(snd.value ?? []);
 const component_key = ref(0);
 const sender_editor_is_open = ref(false);
 const edited_sender = ref<Senders>();
-
+const sender_editor_window = ref<InstanceType<typeof SenderEditor>>();
 
 const start_edit_sender = (s: Senders) =>
 {
     edited_sender.value = s;
     sender_editor_is_open.value = true;
-    console.log("Нало редактирования отправителей...", sender_editor_is_open.value);
+    sender_editor_window.value?.test_method();
+    console.log("Нало редактирования отправителей...", s);
 }
 const start_edit_contacts = (s: Senders) =>
 {
@@ -58,7 +64,6 @@ const { organColumn } = organ_column(start_edit_sender, start_edit_contacts);
 const sortStatesRef = ref([])
 const senders_updated_event = (s: Senders) =>
 {
-    console.log(s);
     const index = senders.value.findIndex(s=>s.id == s.id);
     senders.value.splice(index, 1, s);
     component_key.value ++;
@@ -69,6 +74,7 @@ const senders_delete_event = (s: Senders) =>
     const index = senders.value.findIndex(s=>s.id == s.id);
     senders.value.splice(index, 1);
     component_key.value --;
+    throw new Error('Не реализована логика для удаления на бэке!');
 }
 
 
@@ -88,7 +94,8 @@ const rowKey = (rowData: any) =>
 }
 const add_new_sender = () =>
 {
-    //emitter.emit('startEditSender', new Senders());
+    edited_sender.value = new Senders();
+    sender_editor_is_open.value = true;
 }
 
 const columns = 

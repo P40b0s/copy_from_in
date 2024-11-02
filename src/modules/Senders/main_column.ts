@@ -1,4 +1,4 @@
-import { NAlert, NAvatar, NGradientText, NIcon, NTag, NButton, NTooltip } from 'naive-ui';
+import { NAlert, NAvatar, NGradientText, NIcon, NTag, NButton, NTooltip, NHighlight } from 'naive-ui';
 import { RendererElement, RendererNode, VNode, h, reactive, ref, watchEffect } from 'vue';
 import { ThumbsUpOutline, SettingsOutline, List} from '@vicons/ionicons5';
 //import NoPhoto from  '../../assets/rastr/no-ico.png';
@@ -9,19 +9,14 @@ import OrganIcon from './OrganIcon.tsx';
 import { type TableColumn } from 'naive-ui/es/data-table/src/interface';
 import { ContactInfo, Senders } from '../../models/senders.ts';
 import { edit_ico, envelope_ico, info_ico } from '../../services/svg.ts';
+import { Callback } from '../../models/types.ts';
 interface FilterOptions
 {
   label?: string;
   value?: string;
 }
 const icons_width = () => '30px';
-function callback<T>(arg: T): T 
-{
-    return arg;
-}
-type SendersEditorCallback = (s: Senders) => void;
-type ContactsEditorCallback = (c: Senders) => void;
-export const organ_column = (s: SendersEditorCallback, c: ContactsEditorCallback) =>
+export const organ_column = (s: Callback<Senders>, c: Callback<Senders>) =>
 {
         // const expand = 
     // reactive({
@@ -35,7 +30,7 @@ export const organ_column = (s: SendersEditorCallback, c: ContactsEditorCallback
     
     const organColumn : TableColumn<Senders> =
     reactive({
-    title: 'Орган',
+    title: 'Отправители',
     key: 'organization',
     className: 'senders',
     sortOrder: 'ascend',
@@ -91,7 +86,7 @@ export const organ_column = (s: SendersEditorCallback, c: ContactsEditorCallback
             {
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: '100px',
+                //minHeight: '50px',
                 alignItems: 'left',
                 marginLeft: '6px',
                 marginRight: '6px',
@@ -139,20 +134,15 @@ export const organ_column = (s: SendersEditorCallback, c: ContactsEditorCallback
                     [
                         h(NGradientText,
                         {
-                        style:
-                        {
-                            fontSize: '14px',
-                            fontWeight: '600'
+                            style:
+                            {
+                                fontSize: '14px',
+                                fontWeight: '600'
+                            },
+                            type: "info",
                         },
-                        type: "info",
-                        },
                         {
-                        default: () => 
-                        {
-                            const addresse = row.medo_addresse;
-                            return addresse;
-                    
-                        }
+                            default: () => row.medo_addresse ?? ""
                         }),
                     ]
                     }
