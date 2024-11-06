@@ -50,7 +50,7 @@ export abstract class Plugin<C extends string>
 {
     protected abstract plugin: string;
     /** Запуск команды таури, если таури не заинжекчен то undefined если тип string то значит пришла ошибка*/
-    async post<I, T>(cmd: C, saved_obj: I) : Promise<Result<T>>
+    async post<P, T>(cmd: C, saved_obj: P) : Promise<Result<T>>
     {
         if (is_tauri())
         {
@@ -103,6 +103,31 @@ export abstract class Plugin<C extends string>
             {
                 resolve(new Result<T>(undefined, "Tauri не заинжекчен, невозможно выполнить команду"));
             });
+        }
+    }
+    /** Выполнение команды с нагрузкой*/
+    async get_with_payload<T, P>(cmd: C, payload: P) : Promise<Result<T>>
+    {
+        if (is_tauri())
+        {
+            try
+            {
+                const data = await invoke<T>(this.plugin + cmd, {payload: payload});
+                return new Result<T>(data)
+            }
+            catch(e: unknown)
+            {
+                console.error(e);
+                return new Promise<Result<T>>((resolve) => resolve(new Result<T>(undefined, String(e))))
+            }
+        }
+        else
+        {
+        console.error("Tauri не заинжекчен, невозможно выполнить команду");
+        return new Promise<Result<T>>((resolve) => 
+        {
+            resolve(new Result<T>(undefined, "Tauri не заинжекчен, невозможно выполнить команду"));
+        });
         }
     }
     functionGenerator = <T extends string, U = { [K in T]?: string }>(keys: T[]): U => 

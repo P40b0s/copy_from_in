@@ -30,7 +30,7 @@ const props = defineProps<{
   width?: number
 }>()
 
-const icon  = toRef(props, 'icon');
+const icon  = ref(props.icon);
 const previewImageUrl = ref<string|undefined>(icon?.value);
 const action = ref<string|undefined>(undefined);
 const beforeUpload  = async (data: {file: UploadFileInfo, fileList: UploadFileInfo[]}) =>

@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, sync::Arc};
 use logger::{debug, error};
 use settings::{Settings, Task};
-use transport::{Contract, Packet};
+use transport::{Contract, Packet, Senders};
 use service::Server;
 use crate::{copyer::{CopyerService, PacketsCleaner}, state::AppState, Error};
 
@@ -12,6 +12,10 @@ impl WebsocketServer
     pub async fn new_packet_event(packet: Packet)
     {
         Self::broadcast_message_to_all(Contract::NewPacket(packet)).await;  
+    }
+    pub async fn sender_update_event(sender: Senders)
+    {
+        Self::broadcast_message_to_all(Contract::SenderUpdate(sender)).await;  
     }
     pub async fn task_update_event(task: Task)
     {

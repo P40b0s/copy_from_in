@@ -24,7 +24,7 @@ const props = defineProps<{
     button_text: string
 }>();
 defineSlots<{
-    //text: (scope: { text: string }) => any
+    //text1: (scope: { value: string }) => any
     text: () => any
 }>()
 const emits = defineEmits<{

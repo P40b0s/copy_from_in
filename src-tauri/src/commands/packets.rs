@@ -66,8 +66,18 @@ pub async fn get_senders(state: State<'_, Arc<AppState>>) -> Result<Vec<Senders>
     Ok(res)
 }
 
-
-
+// #[tauri::command]
+// pub async fn update_sender(Senders {id, organization, medo_addresse, contact_info, icon} : Senders, state: State<'_, Arc<AppState>>) -> Result<(), Error>
+// {
+//     let res = state.packet_service.update_sender(Senders {id, organization, medo_addresse, contact_info, icon }).await?;
+//     Ok(res)
+// }
+#[tauri::command]
+pub async fn update_sender(payload: Senders, state: State<'_, Arc<AppState>>) -> Result<(), Error>
+{
+    let res = state.packet_service.update_sender(payload).await?;
+    Ok(res)
+}
 
 pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
 {
@@ -80,7 +90,8 @@ pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R>
         get_pdf_pages_count,
         get_pdf_page,
         get_file_body,
-        get_senders
+        get_senders,
+        update_sender
         ])
         .setup(|app_handle| 
         {

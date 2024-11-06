@@ -15,7 +15,7 @@ import { NButton, NIcon, NPagination, NPopconfirm, NScrollbar, NSpin, NTooltip, 
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
-import { background, envelope_ico, error_ico } from '../services/svg.ts';
+import { background, envelope_ico, error_ico, image_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
 import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
 import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands.ts';
@@ -25,6 +25,8 @@ import { LiveSearch } from './live_search.tsx';
 import { type Emitter, type Events } from "../services/emit";
 import emitter from '../services/emit.ts';
 import { sleepNow } from '../services/helpers.ts';
+import { Senders } from '../models/senders.ts';
+import { useSenders } from './Senders/senders.ts';
 
 export const PacketsViewerAsync = defineAsyncComponent({
     loader: () => import ('./packets_viewer.tsx'),
@@ -48,14 +50,16 @@ export const PacketsViewer =  defineComponent({
         const in_search = ref(false);
         //количество найденных значений
         const searched_count = ref(0);
-
+        const { get_icon, get_senders } = useSenders();
         const get_packets = async () =>
         {
+            await get_senders();
             total_count.value = await get_pages_count();
             let r = await commands_packets.get_packets_list(items_on_page, current_offset);
             if(r.is_ok())
                 packets.value = r.get_value();
         }
+        
         const new_packet_event = events.packets_update(async (packet) => 
         {
             if (packet.payload.task.visible && !in_search.value)
@@ -74,6 +78,7 @@ export const PacketsViewer =  defineComponent({
                 }
             }
         })
+       
         watch(() => state.server_is_online, async (new_state, old_state) => 
         {   
             if(!old_state && new_state && packets.value.length > 0)
@@ -165,7 +170,7 @@ export const PacketsViewer =  defineComponent({
                     alignItems: 'left',
                     //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
                     //backgroundSize: '50px 50px'
-                    backgroundImage: background
+                    //backgroundImage: background
                 }   as CSSProperties
             },
             [
@@ -178,7 +183,15 @@ export const PacketsViewer =  defineComponent({
                         flexDirection: 'row',
                         marginLeft: '5px',
                         //background: 'conic-gradient(from 116.56deg at calc(100%/3) 0   , #0000 90deg,#046D8B 0), conic-gradient(from -63.44deg at calc(200%/3) 100%,#0000 90deg,#046D8B 0)',
-                        backgroundImage: "linear-gradient(90deg, #303131ad 0%, #425b5c 51%, #61e1e5 100%)"
+                        //backgroundImage: "linear-gradient(90deg, #303131ad 0%, #425b5c 51%, #61e1e5 100%)"
+                        backgroundColor: "rgba(97, 225, 229, 0.85)",
+                        padding: "2px",
+                        background: "rgba(97, 225, 229, 0.85)",
+                        boxShadow: "0 8px 32px 0 rgba( 31, 38, 135, 0.37 )",
+                        backdropFilter: "blur( 8px )",
+                        "-webkit-backdrop-filter": "blur( 8px )",
+                        borderRadius: "10px",
+                        border: "1px solid rgba( 255, 255, 255, 0.18 )"
                     } as CSSProperties
                 },
                 [
@@ -213,7 +226,15 @@ export const PacketsViewer =  defineComponent({
                             fontSize:"16px",
                             fontWeight: "100",
                             flexGrow: '2',
-                            color: 'black !important!'
+                            color: 'black !important!',
+                            backgroundColor: "rgba(34, 96, 98, 0.86)",
+                            padding: "2px",
+                            background: "rgba(34, 96, 98, 0.85)",
+                            boxShadow: "0 8px 32px 0 rgba( 31, 38, 135, 0.37 )",
+                            backdropFilter: "blur( 8px )",
+                            "-webkit-backdrop-filter": "blur( 8px )",
+                            borderRadius: "10px",
+                            border: "1px solid rgba(56, 194, 199, 0.85)"
                             
                         } as CSSProperties
                     }),
@@ -253,6 +274,7 @@ export const PacketsViewer =  defineComponent({
                     style:
                     {
                         maxHeight: '78vh',
+                        marginTop: '5px'
                     } as CSSProperties,
                     ref: scrollbar_ref
                 },
@@ -265,6 +287,7 @@ export const PacketsViewer =  defineComponent({
             
             ]);
         }
+       
         const doc_status = (packet: IPacket) =>
         {
             const parse_date = new DateTime(packet.parseTime);
@@ -272,10 +295,10 @@ export const PacketsViewer =  defineComponent({
             return h(StatusCard,
             {
                 key: parse_date.to_string(DateFormat.SerializedDateTime),
-                avatar: packet.packetInfo?.error ? error_ico : envelope_ico,
+                avatar: packet.packetInfo?.error ? error_ico : get_icon(packet),
                 task_color: packet.task.color,
                 shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',
-                tooltip: packet.packetInfo?.requisites?.annotation ?? packet.name
+                files: packet.packetInfo?.files
             },
             {
                 default:() =>
@@ -314,6 +337,16 @@ export const PacketsViewer =  defineComponent({
                                 flexDirection: 'row',
                                 justifyItems: 'center',
                                 alignItems: 'center',
+                                width: "inherit",
+                                backgroundColor: packet.task.color,
+                                padding: "2px",
+                                background: "rgba(27, 126, 110, 0.35)",
+                                boxShadow: "0 8px 32px 0 rgba( 31, 38, 135, 0.37 )",
+                                backdropFilter: "blur( 8px )",
+                                "-webkit-backdrop-filter": "blur( 8px )",
+                                borderRadius: "10px",
+                                border: "1px solid",
+                                borderColor: packet.task.color
                             } as CSSProperties,
                         },
                         [
@@ -324,9 +357,7 @@ export const PacketsViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    paddingRight: '3px',
-                                    borderBottom: '2px solid ' + packet.task.color,
-                                    borderRight: '2px solid ' + packet.task.color,
+                                    paddingRight: '15px',
                                 } as CSSProperties
                             },
                             [
@@ -336,7 +367,7 @@ export const PacketsViewer =  defineComponent({
                                     h(NIcon, 
                                     {
                                         component: TimeOutline,
-                                        color: 'rgb(100, 165, 9)',
+                                        color: packet.task.color,
                                         size:'large',
                                         style:
                                         {
@@ -354,9 +385,7 @@ export const PacketsViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '2px solid ' + packet.task.color,
-                                    paddingRight: '3px',
-                                    borderRight: '2px solid ' + packet.task.color,
+                                    paddingRight: '15px',
                                 } as CSSProperties
                             },
                             [
@@ -384,7 +413,6 @@ export const PacketsViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    borderBottom: '2px solid ' + packet.task.color,
                                    
                                 } as CSSProperties
                             },
@@ -408,7 +436,18 @@ export const PacketsViewer =  defineComponent({
                             ]),
                             right_icons_panel(packet)
                         ]),
-                        requisites_or_error(packet)
+                        requisites_or_error(packet),
+                        h('div', 
+                        {
+                            style:
+                            {
+                                marginLeft:'17px',
+                                    //borderLeft: "17px solid",
+                                    //borderColor: packet.task.color,
+                                    //borderOpa
+                            } as CSSProperties
+                        },
+                        packet.packetInfo?.requisites?.annotation ?? "")
                     ])
                 ])
             })
@@ -618,14 +657,28 @@ export const PacketsViewer =  defineComponent({
             icon())
         }
 
+        //даже если включена опция copy_only packet_info всеравно не пустой:
+        // deliveryTime: "2024-10-17T16:15:26"
+
+        // files: [] (0)
+
+        // packetDirectory: "two (копия) copy"
+
+        // updateKey: ""
+
+        // visible: true
+
+        // wrongEncoding: false
 
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;
-            if(packet.packetInfo && !packet.packetInfo.error)
+            if(packet.packetInfo && !packet.packetInfo.error && packet.packetInfo.requisites)
             {
                 const sign_date = packet.packetInfo.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
-                description = (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
+                const mj_date = packet.packetInfo.requisites.mj?.date ? new DateTime(packet.packetInfo.requisites.mj?.date) : undefined;
+                const mj_number = packet.packetInfo.requisites.mj?.number;
+                description = (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "") + ((mj_date && mj_number) ? ` регистрация: (${mj_number} от ${mj_date})` : "");
                 return h('div',
                 {
                     style:
@@ -633,7 +686,7 @@ export const PacketsViewer =  defineComponent({
                         display: 'flex',
                         flexDirection: 'row',
                         alignItems: 'center',
-                        //border: '1px solid ' + packet.task?.color ?? 'rgb(100, 165, 9)',
+                       
                     } as CSSProperties
                 },
                 [
@@ -651,7 +704,8 @@ export const PacketsViewer =  defineComponent({
                         }),
                         default:() => "Реквизиты документа"
                     }),
-                    (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "")
+                    description,
+                    
                 ])
             }
             else if (packet.packetInfo?.error)
@@ -678,7 +732,7 @@ export const PacketsViewer =  defineComponent({
                                 marginRight: '2px'
                             } as CSSProperties,
                         }),
-                        default:() => "Ошибка парсинга пакета"
+                        default:() => "Ошибка разбора пакета"
                     }),
                     packet.packetInfo?.error
                 ])

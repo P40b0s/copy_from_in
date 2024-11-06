@@ -1,5 +1,5 @@
 <template lang="pug">
-n-modal(:show="props.is_open" 
+n-modal(:show="props.is_open"
         preset="card"
         @close="close_card"
         :style="{width: '800px'}")
@@ -24,20 +24,6 @@ n-modal(:show="props.is_open"
                             span Подтвердите удаление отправителя: 
                                 span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
 
-                    //- n-popconfirm(positive-text="Удалить"  @positive-click="accept_delete")
-                    //-     template(#icon)
-                    //-         n-icon(color="#d90d0d")
-                    //-             TrashBin
-                    //-     template(#trigger)
-                    //-         n-tooltip 
-                    //-             template(#trigger)
-                    //-                 n-button(quatenary circle color="#d90d0d" :disabled="del_is_disabled")
-                    //-                     template(#icon)
-                    //-                         TrashBin
-                    //-             span Удалить отправителя
-                    //-     span Подтвердите удаление отправителя: 
-                    //-         span(style="color: #d35555; font-weight: 800;") {{ sender.organization }}?
-
     template(#action)
         div.actions
             n-button(type="success" @click="save_sender") Сохранить
@@ -47,7 +33,7 @@ n-modal(:show="props.is_open"
 <script lang="ts">
 import {type Emitter, type Events} from '../../services/emit';
 import AcceptDelete from '../AcceptDelete.vue';
-import {  h, ref, inject, type VNodeChild, onUnmounted, watch, computed } from 'vue';
+import {  h, ref, inject, type VNodeChild, onUnmounted, watch, computed, toRef, unref } from 'vue';
 import {  MailOpenOutline, } from '@vicons/ionicons5';
 import {  NTable, NDynamicInput, NInput, NSelect, NModal, NFormItem,  NButton, NPopconfirm, NIcon, type UploadFileInfo, type SelectOption, type SelectGroupOption, NTooltip} from 'naive-ui';
 import ImageUploader from './ImageUploader.vue';
@@ -67,11 +53,8 @@ const emits = defineEmits<{
     'delete:sender': [value: Senders]
 }>();
 const del_is_disabled = ref(props.sender.organization.length == 0);
-const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
-const sender = computed(()=>
-{
-    return new Senders().clone(props.sender)
-})
+const sender =  ref(new Senders().clone(props.sender))
+watch(() => props.sender, (n) => sender.value = new Senders().clone(n))
 
 const close_card = () =>
 {
@@ -83,23 +66,12 @@ const accept_delete = () =>
     emits('delete:sender', sender.value);
     emits('update:is_open', false);
 }
-onUnmounted(() =>
-{
-    console.log("Компонент размонтирован")
-})
-const test_method = () =>
-{
-    //console.log("23894 09823904809 2384092 34092u3 r092u3r 092u3r098 2u304ru23098u")
-}
 
 const save_sender = async () =>
 {
     emits('update:sender', sender.value);
     emits('update:is_open', false);
 }
-defineExpose({
-    test_method
-});
 const renderLabel = (option: SelectBaseOption, selected: boolean): VNodeChild => 
 {
     return [

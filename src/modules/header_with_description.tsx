@@ -22,9 +22,14 @@ export const headerWithDescriptionProps =
     },
 } as const
 
+const emits = 
+{
+    'update:items': (values: string[]) => values
+}
 export const HeaderWithDescription =  defineComponent({
 props: headerWithDescriptionProps,
-    setup (props) 
+emits: emits,
+    setup (props, emits) 
     {
         const element = () => {
             return h('div',

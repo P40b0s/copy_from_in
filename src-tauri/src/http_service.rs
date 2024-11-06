@@ -228,6 +228,11 @@ impl PacketService
         let result = get(&self.api_path, "senders").await?;
         Ok(result)
     }
+    pub async fn update_sender(&self, payload: Senders) -> Result<()>
+    {
+        post(payload, &self.api_path, "senders").await?;
+        Ok(())
+    }
 }
 
 

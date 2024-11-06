@@ -32,7 +32,8 @@ import { type Emitter, type Events } from "../../services/emit";
 import { type Status } from 'naive-ui/es/progress/src/interface';
 import DrawlerFileSelector from './file_selector/drawler_file_selector';
 import {type IPacket, type File, type FileRequest} from '../../models/types'
-import { type FileType, FileTypeEnum, type SelectedValue, supported_files} from './file_selector/file_selector_label';
+import { type FileType, FileTypeEnum, supported_files} from '../../models/file_types';
+import {type SelectedValue } from './file_selector/file_selector_label';
 import Loader2 from '../Loader/Loader2.vue';
 import { commands_packets } from '../../services/tauri/commands';
 </script>

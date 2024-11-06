@@ -87,6 +87,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/packets/pdf") => get_pdf_page(req).await,
         (&Method::GET, "/api/v1/packets/pdf/pages") => get_pdf_pages_count(req).await,
         (&Method::GET, "/api/v1/senders") => get_senders(app_state).await,
+        (&Method::POST, "/api/v1/senders") => update_sender(req, app_state).await,
         _ => 
         {
             let err = ["Эндпоинт ", req.uri().path(), " отсутсвует в схеме API"].concat();
@@ -131,6 +132,15 @@ async fn get_senders(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crat
     let senders = AddresseTable::select_all(app_state.get_db_pool()).await?;
     let senders: Vec<Senders> = senders.into_iter().map(|s| s.into()).collect();
     Ok(json_response(&senders))
+}
+async fn update_sender(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+{
+    let body = req.collect().await?.to_bytes();
+    let senders = serde_json::from_slice::<Senders>(&body)?;
+    let table: AddresseTable = senders.clone().into();
+    table.add_or_replace(app_state.get_db_pool()).await?;
+    WebsocketServer::sender_update_event(senders).await;
+    Ok(empty_response(StatusCode::OK))
 }
 
 async fn get_packets_count(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 

@@ -23,6 +23,11 @@ import offline_ico from '../assets/svg/wifi_offline.svg'
 import edit_ico from '../assets/svg/edit2.svg'
 import pdf_ico from '../assets/svg/pdf.svg'
 import image_ico from '../assets/svg/image.svg'
+import archive_ico from '../assets/svg/zip.svg'
+import xml_ico from '../assets/svg/xml.svg'
+import file_ico from '../assets/svg/file.svg'
+import docx_ico from '../assets/svg/docx.svg'
+import certificate_ico from '../assets/svg/certificate.svg'
 
 export {
     disease_ico,
@@ -49,5 +54,10 @@ export {
     offline_ico,
     edit_ico,
     pdf_ico,
-    image_ico
+    image_ico,
+    archive_ico,
+    xml_ico,
+    file_ico,
+    docx_ico,
+    certificate_ico
 }

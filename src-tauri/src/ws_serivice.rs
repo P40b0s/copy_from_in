@@ -35,6 +35,7 @@ pub async fn start_ws_service(addr: String)
             Contract::CleanStart => TauriEmits::clean_start(),
             Contract::CleanComplete(c) => TauriEmits::clean_complete(c),
             Contract::NeedPacketsrefresh => TauriEmits::need_packets_refresh(),
+            Contract::SenderUpdate(s) => TauriEmits::sender_update(s),
         };
     }).await;
 }

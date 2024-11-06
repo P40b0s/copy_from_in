@@ -2,6 +2,7 @@ import { event} from "@tauri-apps/api";
 import { IPacket, Task } from "../../models/types"; 
 import { UnlistenFn, listen } from "@tauri-apps/api/event";
 import { AbstractEvents, Plugin, Unlistener } from "./abstract";
+import { Senders } from "../../models/senders";
 
 /**
  * задаем дженерик в виде литеральных типов, и создаем перечень эвентов
@@ -13,7 +14,8 @@ export class TauriEvents extends AbstractEvents<
 | 'task_deleted' 
 | 'clean_start' 
 | 'clean_complete'
-| 'need_packets_refresh'>
+| 'need_packets_refresh'
+| 'sender_update'>
 {
     public async packets_update(func: (arg: event.Event<IPacket>) => void): Promise<Unlistener>
     {
@@ -43,7 +45,10 @@ export class TauriEvents extends AbstractEvents<
     {
         return await this.subscribe('need_packets_refresh', func)
     }
-
+    public async sender_update(func: (arg: event.Event<Senders>) => void): Promise<Unlistener>
+    {
+        return await this.subscribe('sender_update', func)
+    }
     
 }
 const events = new TauriEvents();

@@ -15,10 +15,7 @@ import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';
 import { events } from '../services/tauri/events.ts';
 import { error_sound, new_packet_notify_sound } from '../services/sounds.ts';
-export const ServicesAsync = defineAsyncComponent({
-    loader: () => import ('./settings_editor.tsx'),
-    loadingComponent: h(NSpin)
-})
+
 
 export const Services =  defineComponent({
 setup () 

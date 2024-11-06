@@ -11,7 +11,6 @@ div.senders-div
         @update:sender="senders_updated_event"
         v-model:sender="edited_sender")
     sender-editor(v-if="edited_sender != undefined"
-        ref="sender_editor_window" 
         v-model:is_open="sender_editor_is_open" 
         @delete:sender="senders_delete_event"
         @update:sender="senders_updated_event"
@@ -37,25 +36,23 @@ import SenderEditor from './SenderEditor.vue';
 import ContactEditor from './ContactEditor.vue';
 import { Senders } from '../../models/senders.ts';
 import { commands_packets } from '../../services/tauri/commands.ts';
+import { useSenders } from './senders.ts';
+import { events } from '../../services/tauri/events.ts';
 </script>
 
 <script lang="ts" async setup>
 import { organ_column } from './main_column';
-import {type Emitter, type Events} from '../../services/emit';
-const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
-const snd = await commands_packets.get_senders();
-const senders = ref<Senders[]>(snd.value ?? []);
+const {senders, get_senders} = useSenders();
+await get_senders();
 const component_key = ref(0);
 const sender_editor_is_open = ref(false);
 const contact_editor_is_open = ref(false);
 const edited_sender = ref<Senders>();
-const sender_editor_window = ref<InstanceType<typeof SenderEditor>>();
 
 const start_edit_sender = (s: Senders) =>
 {
     edited_sender.value = s;
     sender_editor_is_open.value = true;
-    sender_editor_window.value?.test_method();
     console.log("Нало редактирования отправителей...", s);
 }
 const start_edit_contacts = (s: Senders) =>
@@ -67,12 +64,25 @@ const start_edit_contacts = (s: Senders) =>
 
 const { organColumn } = organ_column(start_edit_sender, start_edit_contacts);
 const sortStatesRef = ref([])
-const senders_updated_event = (s: Senders) =>
+const senders_updated_event = async (sender: Senders) =>
 {
-    const index = senders.value.findIndex(s=>s.id == s.id);
-    senders.value.splice(index, 1, s);
-    component_key.value ++;
+    await commands_packets.update_sender(sender);
 }
+const updated_unlisten = events.sender_update(async s=> 
+{
+    //const sender = s.payload;
+    //const index = senders.value.findIndex(s=>s.id == sender.id);
+    //senders.value.splice(index, 1, sender);
+    component_key.value ++;
+});
+onUnmounted(async ()=>
+{
+    const unlisten = await updated_unlisten;
+    if(unlisten?.unlisten)
+    {
+        unlisten.unlisten();
+    }
+})
 // const contacts_updated_event = (s: Senders) =>
 // {
 //     const index = senders.value.findIndex(s=>s.id == s.id);
@@ -84,7 +94,7 @@ const senders_delete_event = (s: Senders) =>
 {
     const index = senders.value.findIndex(s=>s.id == s.id);
     senders.value.splice(index, 1);
-    component_key.value --;
+    component_key.value ++;
     throw new Error('Не реализована логика для удаления на бэке!');
 }
 

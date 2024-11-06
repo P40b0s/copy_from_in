@@ -28,7 +28,7 @@ n-drawer(:show="props.is_open" placement="left" style="min-width: 600px;")
 </template>
         
 <script lang="ts">
-import { ref, defineAsyncComponent, inject, onUnmounted, computed } from 'vue';
+import { ref, defineAsyncComponent, inject, onUnmounted, computed, watch } from 'vue';
 import { NIcon, NAvatar, NTooltip, NDrawer, NDrawerContent, NSpace, NTable} from 'naive-ui';
 import { type Emitter, type Events } from "../../services/emit";
 import EditIco from '../assets/svg/edit2.svg'
@@ -36,7 +36,6 @@ import {Senders, type ContactInfo} from '../../models/senders'
 </script>
 
 <script lang="ts" setup>
-const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
   const props = defineProps<{
     is_open: boolean,
     sender: Senders,
@@ -47,10 +46,8 @@ const emits = defineEmits<{
     'delete:sender': [value: Senders]
 }>();
 const del_is_disabled = ref(props.sender.organization.length == 0);
-const sender = computed(()=>
-{
-    return new Senders().clone(props.sender)
-})
+const sender =  ref(new Senders().clone(props.sender))
+watch(() => props.sender, (n) => sender.value = new Senders().clone(n))
 
 // const show_contact_info = (info : ContactInfoDb[]) =>
 // {

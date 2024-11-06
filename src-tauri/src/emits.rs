@@ -1,5 +1,5 @@
 use settings::Task;
-use transport::Packet;
+use transport::{Packet, Senders};
 use tauri::Manager;
 
 use crate::HANDLE;
@@ -35,5 +35,9 @@ impl TauriEmits
     pub fn need_packets_refresh()
     {
         let _ = HANDLE.get().unwrap().app_handle().emit_all("need_packets_refresh", ());
+    }
+    pub fn sender_update(sender: Senders)
+    {
+        let _ = HANDLE.get().unwrap().app_handle().emit_all("sender_update", sender);
     }
 }

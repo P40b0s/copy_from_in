@@ -58,7 +58,7 @@ n-modal(:show="props.is_open"
 </template>
         
 <script lang="ts">
-import { ref, inject, computed } from 'vue';
+import { ref, inject, computed, watch } from 'vue';
 import AcceptDelete from '../AcceptDelete.vue';
 import { CallOutline, PersonAdd, TrashBinSharp} from '@vicons/ionicons5';
 import { NScrollbar, NInput, NTable, NInputGroup, NModal, NFormItem, NSpace, NButton, NIcon, NTooltip} from 'naive-ui';
@@ -69,9 +69,7 @@ import {type Emitter, type Events} from '../../services/emit';
 </script>
 
 <script lang="ts" setup>
-
-const emitter = inject<Emitter<Events>>('emitter') as Emitter<Events>;
-  const props = defineProps<{
+const props = defineProps<{
     is_open: boolean,
     sender: Senders,
 }>();
@@ -80,22 +78,14 @@ const emits = defineEmits<{
     'update:sender': [value: Senders]
     'delete:sender': [value: Senders]
 }>();
-const del_is_disabled = ref(props.sender.organization.length == 0);
-const sender = computed(()=>
-{
-    return new Senders().clone(props.sender)
-})
+const sender =  ref(new Senders().clone(props.sender))
+watch(() => props.sender, (n) => sender.value = new Senders().clone(n))
 
 const start_edit_sender_event = (s: Senders) =>
 {
     // sender.value = deep_clone(s);
     // show.value = true;
 }
-
-onUnmounted(()=> 
-{
-    
-})
 
 const cancel = () =>
 {

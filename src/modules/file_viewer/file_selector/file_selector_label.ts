@@ -1,10 +1,12 @@
-import { NIcon, SelectOption } from "naive-ui";
-import { VNodeChild, h } from "vue";
+import { NAvatar, NDivider, NIcon, SelectOption } from "naive-ui";
+import { CSSProperties, VNodeChild, h } from "vue";
 import { Archive, AttachOutline,Image, CodeSlashSharp, AtOutline, Help, Text } from '@vicons/ionicons5';
 import emitter from "../../../services/emit";
 import { type SelectBaseOption, type SelectGroupOption } from "naive-ui/es/select/src/interface";
 import { type IPacket, FilesRequest } from '../../../models/types';
 import { commands_packets } from "../../../services/tauri/commands";
+import { archive_ico, certificate_ico, docx_ico, envelope_ico, file_ico, image_ico, journal_ico, pdf_ico, xml_ico } from "../../../services/svg";
+import { supported_files } from "../../../models/file_types";
 
 const valueStyle =
 {
@@ -29,6 +31,9 @@ export type SelectedValue =
   path: string
 } & (SelectOption | SelectGroupOption);
 
+
+
+
 /**Опшены для селектора */
 export const options = async (packet: IPacket): Promise<SelectedValue[]>  =>
 {
@@ -50,175 +55,47 @@ export const options = async (packet: IPacket): Promise<SelectedValue[]>  =>
                 ext: m.file_type,
                 path: m.path
             } as SelectedValue
-        })
+        }).sort((a, b) => supported_files.sorting_order(a.ext) - supported_files.sorting_order(b.ext))
     }
 }
 
 
 
-export type FileType = 
-{
-    extension: string,
-    highlighting_lang?: string,
-    description: string,
-    color: string,
-    disabled: boolean,
-    icon: typeof Help,
-    type: FileTypeEnum
 
-}
-export enum FileTypeEnum
-{
-    /**Файл который можно прочитать как строку */
-    File,
-    /**Pdf файл */
-    Pdf,
-    /**Изображение */
-    Image,
-    /**Архив */
-    Archive,
-    /**Документ (doc, docx итд) */
-    Document,
-    /**Неподдерживаемый тип файла */
-    NotSupported
-}
-class SupportedFiles
-{
-    standart_color = "#b3ffba";
-    default = 
-    {
-        extension: "",
-        description: "Выберите файл для просмотра",
-        color: "#c23838",
-        disabled: true,
-        icon: Help,
-        type: FileTypeEnum.NotSupported
-    } as FileType
-    not_supported = 
-    {
-        extension: "",
-        description: "Просмотр данного файла не поддерживается",
-        color: "#c23838",
-        disabled: true,
-        icon: Help,
-        type: FileTypeEnum.NotSupported
-    } as FileType
-    files =
-    [
-        {
-            extension: "xml",
-            highlighting_lang: "xml",
-            description: "Файл с реквизитами документа, или параметрами вложения",
-            color: this.standart_color,
-            disabled: false,
-            icon: CodeSlashSharp,
-            type: FileTypeEnum.File
-        },
-        {
-            extension: "txt",
-            description: "Тестовый файл с аннотацией к документу или текстом документа",
-            color: this.standart_color,
-            disabled: false,
-            icon: Text,
-            type: FileTypeEnum.File
-        },
-        {
-            extension: "ltr",
-            description: "Сопроводительный файл к транспортному пакету",
-            highlighting_lang: "ini",
-            color: this.standart_color,
-            disabled: false,
-            icon: AtOutline,
-            type: FileTypeEnum.File
-        },
-        {
-            extension: "rc",
-            description: "Файл с реквизитами документа (загружен с АРМ)",
-            highlighting_lang: "xml",
-            color: this.standart_color,
-            disabled: false,
-            icon: CodeSlashSharp,
-            type: FileTypeEnum.File
-        },
-        {
-            extension: "zip",
-            description: "Zip архив с вложением транспортного пакета",
-            color: this.standart_color,
-            disabled: true,
-            icon: Archive,
-            type: FileTypeEnum.Archive
-        },
-        {
-            extension: "pdf",
-            description: "Документ в формате pdf",
-            color: this.standart_color,
-            disabled: false,
-            icon: AttachOutline,
-            type: FileTypeEnum.Pdf
-        },
-        {
-            extension: "png",
-            description: "Изображение в формате png",
-            color: this.standart_color,
-            disabled: false,
-            icon: Image,
-            type: FileTypeEnum.Image
-        },
-        {
-            extension: "jpg",
-            description: "Изображение в формате jpg",
-            color: this.standart_color,
-            disabled: false,
-            icon: Image,
-            type: FileTypeEnum.Image
-        },
-    ] as FileType[]
-    /**
-     * 
-     * @param ext Расширение файла
-     */
-    get_type(ext: string| undefined): FileType| undefined
-    {
-        return this.files.find(f=>f.extension == ext);
-    }
-}
-
-export const supported_files = new SupportedFiles();
 
 export const fileSelectorLabel = (option: SelectedValue , selected: boolean): VNodeChild => 
 {
-    let ext = option.value.split(".")
-    let file_type = supported_files.get_type(ext[ext.length -1])
+    let file_type = supported_files.get_type_by_filename(option.value);
     if(file_type == undefined)
-        file_type = supported_files.default;
+        file_type = supported_files.not_supported;
     option.disabled = file_type.disabled;
     const onlyIcon = 
     h('div', 
     selected ? {style: selectedValueStyle} : {style: valueStyle}, 
     [
-        h(NIcon,
+        h(NAvatar,
+        {
+            style: 
             {
-                style: 
-                {
-                    verticalAlign: '-0.15em',
-                    marginRight: '5px', 
-                },
-                color: file_type.color,
-                size: 20
-
+                verticalAlign: '-0.15em',
+                marginRight: '5px', 
+                minWidth:'10px'
             },
-            {
-                default: () => h(file_type.icon)
-            }
-        ),
+            color: 'transparent',
+            src: file_type.icon,
+            size: 30
+
+        }),
         h('div',
         {
             style: 
             {
                 display: "flex",
                 flexDirection: "column",
-                justifyItems: 'center'
-            }
+                justifyItems: 'center',
+                flexWrap: 'wrap',
+                maxWidth:'480px'
+            } as CSSProperties
         },
         [
             h('span',
@@ -233,8 +110,8 @@ export const fileSelectorLabel = (option: SelectedValue , selected: boolean): VN
             {
                 style:
                 {
-                    fontSize: '10px',
-                    color: supported_files.standart_color
+                    fontSize: '14px',
+                    color: file_type.color
                 }
             },
             file_type.description),
@@ -242,9 +119,11 @@ export const fileSelectorLabel = (option: SelectedValue , selected: boolean): VN
             {
                 style:
                 {
+                    flexWrap: 'wrap',
                     fontSize: '10px',
-                    color: supported_files.standart_color
-                }
+                    textWrap: 'wrap',
+                    color: supported_files.path_color
+                } as CSSProperties
             },
             option.path)
         ])

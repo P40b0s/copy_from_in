@@ -3,9 +3,12 @@ import { AppState } from '../models/app_state';
 import { DateFormat, DateTime, dateToString, parseDate, parseDateObj, parseDateObj2, timeToString } from '../services/date';
 import Store from './abstract_store';
 import { events} from '../services/tauri/events';
-import { commands_service, commands_settings } from '../services/tauri/commands'
+import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands'
 import { IPacket } from '../models/types';
 import { error_sound, new_packet_notify_sound } from '../services/sounds';
+import { Senders } from '../models/senders';
+import { event } from '@tauri-apps/api';
+import { image_ico } from '../services/svg';
 
 /**
  * Хранилище состояний
@@ -13,10 +16,12 @@ import { error_sound, new_packet_notify_sound } from '../services/sounds';
 interface IGlobalAppState extends Object 
 {
   server_is_online: boolean;
+  //senders: Senders[];
 }
 class GlobalAppState implements IGlobalAppState
 {
  server_is_online = false;
+ //senders = [];
 }
 
 class AppStateStore extends Store<IGlobalAppState> 
@@ -24,6 +29,7 @@ class AppStateStore extends Store<IGlobalAppState>
   protected data(): IGlobalAppState
   {
     this.check_online_intervally();
+    //this.subscribe_update_senders();
     return new GlobalAppState();
   }
   check_online_intervally()
@@ -43,21 +49,31 @@ class AppStateStore extends Store<IGlobalAppState>
       this.state.server_is_online = result.get_value();
     }
   }
-
-  // async get_packets_log()
+  // async get_senders()
   // {
-  //   const packets = await commands_settings.get_packets_list();
-  //   if (packets.is_err())
+  //   if(this.state.senders.length == 0)
   //   {
-  //     console.error("Ошибка получения лога пакетов с сервера " + packets.get_error());
-  //     this.state.current_log = [];
-  //   }
-  //   else
-  //   {
-  //     this.state.current_log = packets.get_value();
+  //     const snd = await commands_packets.get_senders();
+  //     this.state.senders = snd.value ?? [];
   //   }
   // }
- 
+  // get_icon(packet: IPacket)
+  // {
+  //   const snd = this.state.senders.find(f=>f.id == packet.packetInfo?.senderInfo?.sourceGuid);
+  //   return snd?.icon ?? image_ico
+  // }
+  // subscribe_update_senders()
+  // {
+  //   events.update_sender(s=> 
+  //   {
+  //     const sender = s.payload;
+  //     const index = this.state.senders.findIndex(f=>f.id == sender.id);
+  //     if(index > 0)
+  //     {
+  //       this.state.senders.splice(index, 1, sender);
+  //     }
+  //   });
+  // }
 }
 const store = new AppStateStore();
 

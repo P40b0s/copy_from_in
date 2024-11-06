@@ -32,6 +32,20 @@ impl From<AddresseTable> for Senders
         }
     }
 }
+impl From<Senders> for AddresseTable
+{
+    fn from(value: Senders) -> Self 
+    {
+        Self
+        {
+            id: value.id,
+            organization: value.organization,
+            medo_addresse: value.medo_addresse,
+            contact_info: value.contact_info,
+            icon: value.icon
+        }
+    }
+}
 
 impl TryFrom<&PacketInfo> for AddresseTable
 {

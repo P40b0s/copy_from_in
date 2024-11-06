@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 use settings::Task;
-
+use super::Senders;
 use crate::Packet;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -20,7 +20,8 @@ pub enum Contract
     ///Необходимо обновить список пакетов на стороне клиента
     NeedPacketsrefresh,
     Error(String),
-    ErrorConversion(String)
+    ErrorConversion(String),
+    SenderUpdate(Senders)
 }
 
 

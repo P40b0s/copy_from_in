@@ -53,7 +53,8 @@ class Packets extends Plugin<
  | 'get_pdf_pages_count' 
  | 'get_pdf_page' 
  | 'get_file_body'
- | 'get_senders'>
+ | 'get_senders'
+ | 'update_sender'>
 {
     plugin = "plugin:packets|";
     public async get_packets_list(limit: number, offset: number): Promise<Result<IPacket[]>>
@@ -87,6 +88,12 @@ class Packets extends Plugin<
     public async get_senders<T extends Senders[]>(): Promise<Result<T>>
     {
         return await this.get<T>('get_senders');
+    }
+    public async update_sender<T extends Senders>(senders: T): Promise<Result<void>>
+    {
+        console.log("update", senders)
+        //{senders: {id: senders.id, organization: senders.organization, medo_addresse: senders.medo_addresse, contact_info: senders.contact_info, icon: senders.icon } as Senders}
+        return await this.post('update_sender', senders);
     }
     
     
