@@ -14,7 +14,6 @@ pub async fn start_packets_handler(pool: Arc<SqlitePool>)
         let receiver = Arc::new(receiver);
         while let Ok(r) = receiver.recv().await
         {
-            let p_table = PacketTable::new(&r);
             if let Ok(addreesses) = AddresseTable::try_from(r.get_packet_info())
             {
                 if let Ok(count_result) = addreesses.add_or_ignore(Arc::clone(&pool)).await
@@ -25,12 +24,16 @@ pub async fn start_packets_handler(pool: Arc<SqlitePool>)
                     }
                 }
             }
+            let p_table = PacketTable::new(&r);
             let test = p_table.add_or_replace(Arc::clone(&pool)).await;
             if test.is_err()
             {
                 logger::error!("{}", test.err().unwrap().to_string());
             }
-            WebsocketServer::new_packet_event(r).await;
+            else 
+            {
+                WebsocketServer::new_packet_event(r).await;
+            }
         }
     });
 }

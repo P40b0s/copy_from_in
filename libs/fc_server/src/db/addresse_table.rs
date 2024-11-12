@@ -52,54 +52,60 @@ impl TryFrom<&PacketInfo> for AddresseTable
     type Error = String;
     fn try_from(value: &PacketInfo) -> Result<Self, Self::Error> 
     {
-        
-        let id = value.sender_info.as_ref().and_then(|s| s.source_guid.as_ref().cloned()).ok_or("id организации отправителя не найден".to_owned())?;
-        let organization = value.sender_info.as_ref().and_then(|s| s.organization.as_ref().cloned()).ok_or("наименование организации отправителя не найдено".to_owned())?;
-        let medo_addresse = value.sender_info.as_ref().and_then(|s| s.medo_addressee.as_ref().cloned());
-        //Сбор контактных данных
-        let executor = value.sender_info.as_ref().and_then(|e| e.executor.as_ref().cloned());
-        let mut contacts: Vec<ContactInfo> = vec![];
-        if let Some(executor) = executor
+        if let Some(source_id) = value.sender_info.as_ref().and_then(|s| s.source_guid.as_ref().cloned())
         {
-            let def = "".to_owned();
-            let org = executor.organization.as_ref().unwrap_or(&def);
-            let person = executor.person.as_ref().unwrap_or(&def);
-            let post = executor.post.as_ref().unwrap_or(&def);
-            let cont = executor.contact_info.as_ref().unwrap_or(&def);
-            if (org.len() + person.len() + post.len() + cont.len())  > 0
+            let organization = value.sender_info.as_ref().and_then(|s| s.organization.as_ref().cloned()).ok_or("наименование организации отправителя не найдено".to_owned())?;
+            let medo_addresse = value.sender_info.as_ref().and_then(|s| s.medo_addressee.as_ref().cloned());
+            //Сбор контактных данных
+            let executor = value.sender_info.as_ref().and_then(|e| e.executor.as_ref().cloned());
+            let mut contacts: Vec<ContactInfo> = vec![];
+            if let Some(executor) = executor
             {
-                let hash = utilites::Hasher::hash_from_strings(&[org, person, post, cont]);
-                let mut ct: Vec<ContactType> = vec![];
-                if cont.len() > 0
+                let def = "".to_owned();
+                let org = executor.organization.as_ref().unwrap_or(&def);
+                let person = executor.person.as_ref().unwrap_or(&def);
+                let post = executor.post.as_ref().unwrap_or(&def);
+                let cont = executor.contact_info.as_ref().unwrap_or(&def);
+                if (org.len() + person.len() + post.len() + cont.len())  > 0
                 {
-                    let c = ContactType
+                    let hash = utilites::Hasher::hash_from_strings(&[org, person, post, cont]);
+                    let mut ct: Vec<ContactType> = vec![];
+                    if cont.len() > 0
                     {
-                        contact_type: String::from("телефон"),
-                        value: cont.clone()
+                        let c = ContactType
+                        {
+                            contact_type: String::from("телефон"),
+                            value: cont.clone()
+                        };
+                        ct.push(c);
+                    }
+                    let contact = ContactInfo
+                    {
+                        id : Some(hash),
+                        organization: Some(org.clone()),
+                        person: Some(person.clone()),
+                        post: Some(post.clone()),
+                        photo: None,
+                        contacts: ct,
+                        note: None
                     };
-                    ct.push(c);
+                    contacts.push(contact);
                 }
-                let contact = ContactInfo
-                {
-                    id : Some(hash),
-                    organization: Some(org.clone()),
-                    person: Some(person.clone()),
-                    post: Some(post.clone()),
-                    photo: None,
-                    contacts: ct,
-                    note: None
-                };
-                contacts.push(contact);
             }
+            Ok(AddresseTable
+            {
+                id: source_id,
+                organization,
+                medo_addresse,
+                icon: None,
+                contact_info: contacts,
+            })
         }
-        Ok(AddresseTable
+        else 
         {
-            id,
-            organization,
-            medo_addresse,
-            icon: None,
-            contact_info: contacts,
-        })
+            return Err("id организации отправителя не найден".to_owned());
+        }
+       
     }
 }
 
@@ -146,8 +152,7 @@ impl<'a> SqlOperations<'a> for AddresseTable
             ", Self::table_fields()[1], " TEXT NOT NULL, 
             ", Self::table_fields()[2], " TEXT, 
             ", Self::table_fields()[3], " JSON DEFAULT('[]'),
-            ", Self::table_fields()[4], " BLOB,
-            FOREIGN KEY (id) REFERENCES packets(sender_id)
+            ", Self::table_fields()[4], " BLOB
             );"].concat()
     }
 

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt::Display, sync::Arc};
 use db_service::{from_json, get_fields_for_update, query, to_json, CountRequest, DbError, FromRow, IdSelector, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
 use transport::{PacketInfo, Packet};
 use super::addresse_table::AddresseTable;
@@ -36,6 +36,38 @@ impl PacketTable
         self.report_sended
     }
 }
+
+enum PacketTableFields
+{
+    Id, //0
+    task_name, //1
+    header_id, //2
+    directory, //3
+    packet_type, //4
+    delivery_time, //5
+    error, //6
+    default_pdf, //7
+    pdf_hash, //8
+    files, //9
+    requisites, //10
+    sender_id, //11
+    acknowledgment, //12
+    visible, //13
+    trace_message, //14
+    report_sended //15
+}
+//TODO сделать еще трейт со схемой этого поля, и можно будет использовать
+// impl Display for PacketTableFields
+// {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+//     {
+//         match self
+//         {
+//             Self::Id => f.write_str("id"),
+
+//         }
+//     }
+// }
 
 impl FromRow<'_, SqliteRow> for PacketTable
 {
@@ -123,7 +155,8 @@ impl<'a> SqlOperations<'a> for PacketTable
             ", Self::table_fields()[12], " JSON,
             ", Self::table_fields()[13], " INTEGER NOT NULL DEFAULT 1,
             ", Self::table_fields()[14], " TEXT,
-            ", Self::table_fields()[15], " INTEGER NOT NULL DEFAULT 0
+            ", Self::table_fields()[15], " INTEGER NOT NULL DEFAULT 0,
+             FOREIGN KEY (sender_id) REFERENCES addresses(id)
             );"].concat()
     }
     

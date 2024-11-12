@@ -1,7 +1,7 @@
-use std::{future::Future, ops::Deref, path::{Path, PathBuf}, pin::Pin, sync::{Arc, Mutex}};
+use std::{future::Future, ops::Deref, path::{Path, PathBuf}, pin::Pin, sync::{Arc, Mutex, RwLock}};
 use db_service::{SqlOperations, SqlitePool};
-use hashbrown::HashMap;
-use logger::error;
+use hashbrown::{HashMap, HashSet};
+use logger::{debug, error};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{Settings, Task};
 use utilites::io::{get_dirs, get_dirs_async};
@@ -294,13 +294,18 @@ impl FileExcludes
 
 pub struct SqliteExcludes
 {
-    db_pool: Arc<SqlitePool>
+    db_pool: Arc<SqlitePool>,
+    cache: tokio::sync::RwLock<HashSet<String>>
 }
 impl SqliteExcludes
 {
     pub fn new(pool: Arc<SqlitePool>) -> Self
     {
-        Self { db_pool: pool }
+        Self 
+        {
+            db_pool: pool,
+            cache: tokio::sync::RwLock::new(HashSet::new())
+        }
     }
     pub fn get_pool(&self) -> Arc<SqlitePool>
     {
@@ -312,23 +317,47 @@ impl ExcludesTrait for SqliteExcludes
     fn add<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<bool, Error>>
     {
         let pool = self.get_pool();
+        let hash = utilites::Hasher::hash_from_strings([task_name, dir]);
+        debug!("Добавление пакета {} для задачи {} в исключения", dir, task_name);
         let task_name = task_name.to_owned();
         let dir = dir.to_owned();
         Box::pin(async move
-        { 
-            let added = ExceptTable::new(&task_name, &dir).add_or_ignore(pool).await?;
-            Ok(added > 0)
+        {
+            let contains_guard = self.cache.read().await;
+            let contains = contains_guard.contains(&hash);
+            debug!("Хэш {} {} в кеше, всего: {}", &hash, contains, contains_guard.len());
+            drop(contains_guard);
+            if !contains
+            {
+                let added = ExceptTable::new(&task_name, &dir).add_or_ignore(pool).await?;
+                let mut insert_guard = self.cache.write().await;
+                insert_guard.insert(hash);
+                Ok(added > 0)
+            }
+            else 
+            {
+                Ok(false)
+            }
         })
     }
+
+    
 
     fn delete<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<(), Error>>
     {
         let pool = self.get_pool();
+        let hash = utilites::Hasher::hash_from_strings([task_name, dir]);
+        debug!("Удаление пакета {} {}", dir, task_name);
         let task_name = task_name.to_owned();
         let dir = dir.to_owned();
         Box::pin(async move
         { 
-            let _ = ExceptTable::new(&task_name, &dir).delete(pool).await?;
+            let res = ExceptTable::delete(&task_name, &dir, pool).await?;
+            if res > 0
+            {
+                let mut guard = self.cache.write().await;
+                guard.remove(&hash);
+            }
             Ok(())
         })
     }
@@ -340,9 +369,12 @@ impl ExcludesTrait for SqliteExcludes
         let tasks = tasks.to_owned();
         Box::pin(async move
         { 
+            let mut guard = self.cache.write().await;
+            *guard = HashSet::new();
+            drop(guard);
             for t in tasks
             {
-                if let Some(dirs) = utilites::io::get_dirs_async(t.get_source_dir()).await 
+                if let Ok(dirs) = utilites::io::get_dirs_async(t.get_source_dir()).await 
                 {
                     let dirs_count = dirs.len();
                     let task_count =   ExceptTable::truncate(dirs, t.get_task_name(), Arc::clone(&pool)).await? as usize;
@@ -364,14 +396,17 @@ impl ExcludesTrait for SqliteExcludes
     {
         let pool = self.get_pool();
         let task_name = task_name.to_owned();
+        //тут мы не можем проверить что удаляем, поэтому удаляем весь кэш
         Box::pin(async move
         { 
+            let mut guard = self.cache.write().await;
+            *guard = HashSet::new();
+            drop(guard);
             let excl = ExceptTable::delete_task(&task_name, pool).await?;
             logger::info!("Удалено {} директорий из задачи {}", excl,  &task_name);
             Ok(())
         })
     }
-
     fn replace<'a>(&'a self, task: &Task) -> BoxFuture<'a, Result<(), Error>>
     {
         let pool = self.get_pool();
@@ -379,7 +414,7 @@ impl ExcludesTrait for SqliteExcludes
         Box::pin(async move
         { 
             self.clear(task.get_task_name()).await?;
-            if let Some(dirs) = get_dirs_async(&task.source_dir).await
+            if let Ok(dirs) = get_dirs_async(&task.source_dir).await
             {
                 ExceptTable::truncate(dirs, task.get_task_name(), pool).await?;
             }

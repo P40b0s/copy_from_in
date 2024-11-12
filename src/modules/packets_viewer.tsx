@@ -294,7 +294,7 @@ export const PacketsViewer =  defineComponent({
             const parse_time = parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time)
             return h(StatusCard,
             {
-                key: parse_date.to_string(DateFormat.SerializedDateTime),
+                key: packet.id,
                 avatar: packet.packetInfo?.error ? error_ico : get_icon(packet),
                 task_color: packet.task.color,
                 shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',

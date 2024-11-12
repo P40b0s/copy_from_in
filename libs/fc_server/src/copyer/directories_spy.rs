@@ -162,7 +162,7 @@ impl DirectoriesSpy
             {  
                 if task.delete_after_copy
                 {
-                    if let Err(e) = std::fs::remove_dir_all(source_path)
+                    if let Err(e) = tokio::fs::remove_dir_all(source_path).await
                     {
                         error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
                     }
@@ -196,7 +196,7 @@ impl DirectoriesSpy
             {
                 if task.clean_types.contains(&dt)
                 {
-                    if let Ok(_) = std::fs::remove_dir_all(source_path)
+                    if let Ok(_) = tokio::fs::remove_dir_all(source_path).await
                     {
                         debug!("Пакет {} был удален, так как в настройках задачи {} включен флаг автоочистка", packet.get_packet_name(), packet.get_task().get_task_name());
                         return false;
@@ -267,8 +267,8 @@ impl DirectoriesSpy
         let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
         if task.is_active
         {
-            let paths = super::io::get_dirs(&task.source_dir);
-            if let Some(reader) = paths.as_ref()
+            let paths = utilites::io::get_dirs_async(&task.source_dir).await;
+            if let Ok(reader) = paths.as_ref()
             {
                 //let mut exclude_is_changed = false;
                 for d in reader
@@ -355,4 +355,15 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
         }
     }
     return false;
+}
+
+#[cfg(test)]
+mod tests
+{
+    #[tokio::test]
+    async fn test_get_dirs_async()
+    {
+        let paths = utilites::io::get_dirs_async("../../test_data/copy_from_in_test_data/in3").await;
+        println!("{:?}", paths);
+    }
 }
