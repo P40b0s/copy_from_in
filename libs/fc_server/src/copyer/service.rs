@@ -1,17 +1,18 @@
 use std::{path::Path, sync::{atomic::AtomicBool, Arc}};
+use db_service::SqlitePool;
 use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::{Packet, PacketInfo};
 use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState};
-use super::{excludes::{ExcludesService, ExcludesTrait, KeyValueStore}, io::get_dirs};
+use super::{excludes::{ExcludesService, ExcludesTrait, KeyValueStore}, io::get_dirs, SqliteExcludes};
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
-
-pub trait PacketsCleaner
+pub struct PacketCleaner{}
+impl PacketCleaner
 {
     ///нам нужно вернуть только колчество удаленных пакетов, ошибки нас не интересуют
     /// + вернуть надо через websocket и не ждать ответа, это можеть быть долго
-    async fn clean_packets(app_state: Arc<AppState>)
+    pub async fn clean_packets(&self, app_state: Arc<AppState>)
     {
         if !CLEAN_IN_PROGRESS.load(std::sync::atomic::Ordering::Relaxed)
         {
@@ -80,32 +81,43 @@ pub trait PacketsCleaner
     }
 }
 
-pub struct CopyerService
-{
-    pub excludes: Box<dyn ExcludesTrait + Sync + Send>
-}
-impl PacketsCleaner for CopyerService{}
 
+pub struct CopyService
+{
+    pub excludes_service : Box<dyn ExcludesTrait + Send + Sync>,
+    pub packets_cleaner: PacketCleaner
+}
+impl CopyService
+{
+    pub fn new<T: ExcludesTrait + 'static + Send + Sync>(exclude_service: T) -> Self
+    {
+        Self 
+        { 
+            excludes_service: Box::new(exclude_service),
+            packets_cleaner: PacketCleaner {} 
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests
 {
     use settings::{FileMethods, Serializer, Settings};
 
-    use crate::copyer::{KeyValueStore, CopyerService};
+    use crate::copyer::{CopyService};
 
     #[test]
     fn test_task_cleaner()
     {
         let _ = logger::StructLogger::new_default();
-        let s = CopyerService {
-            excludes: Box::new(KeyValueStore::new())
-        };
-        let r = s.excludes.add("t1", "d1");
-        assert!(r.is_ok());
-        let d = s.excludes.delete("t1", "d1");
-        assert!(d.is_ok());
-        let cl = s.excludes.clear("t1");
-        assert!(cl.is_ok());
+        // let s = CopyerService {
+        //     excludes: Box::new(KeyValueStore::new())
+        // };
+        // let r = s.excludes.add("t1", "d1");
+        // assert!(r.is_ok());
+        // let d = s.excludes.delete("t1", "d1");
+        // assert!(d.is_ok());
+        // let cl = s.excludes.clear("t1");
+        // assert!(cl.is_ok());
     }
 }

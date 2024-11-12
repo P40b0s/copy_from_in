@@ -50,7 +50,7 @@ export const PacketsViewer =  defineComponent({
         const in_search = ref(false);
         //количество найденных значений
         const searched_count = ref(0);
-        const { get_icon, get_senders } = useSenders();
+        const { get_icon, get_senders, get_organization } = useSenders();
         const get_packets = async () =>
         {
             await get_senders();
@@ -669,16 +669,41 @@ export const PacketsViewer =  defineComponent({
         // visible: true
 
         // wrongEncoding: false
-
+        const get_date = (packet: IPacket) =>
+        {
+            const sign_date = packet.packetInfo?.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
+            if(sign_date)
+            {
+                return `"от ${sign_date.to_string(DateFormat.DotDate)}"`
+            }
+            else return ""
+        }
+        const get_number = (packet: IPacket) =>
+        {
+            const number = packet.packetInfo?.requisites?.documentNumber;
+            if(number)
+            {
+                return `"№ ${number}"`
+            }
+            else return ""
+        }
+        const get_mj_requisites = (packet: IPacket) =>
+        {
+            const mj_date = packet.packetInfo?.requisites?.mj?.date ? new DateTime(packet.packetInfo.requisites.mj?.date) : undefined;
+            const mj_number = packet.packetInfo?.requisites?.mj?.number;
+            if(mj_date && mj_number)
+            {
+                return `зарегистрирован: №${mj_number} от ${mj_date})`
+            }
+            else return ""
+        }
         const requisites_or_error = (packet: IPacket) =>
         {
             let description : string|undefined;
             if(packet.packetInfo && !packet.packetInfo.error && packet.packetInfo.requisites)
             {
-                const sign_date = packet.packetInfo.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
-                const mj_date = packet.packetInfo.requisites.mj?.date ? new DateTime(packet.packetInfo.requisites.mj?.date) : undefined;
-                const mj_number = packet.packetInfo.requisites.mj?.number;
-                description = (packet.packetInfo.senderInfo?.organization ?? "") + " " + (sign_date?.to_string(DateFormat.DotDate) ?? "") + " " + (packet.packetInfo.requisites?.documentNumber ?? "") + ((mj_date && mj_number) ? ` регистрация: (${mj_number} от ${mj_date})` : "");
+                const organization = get_organization(packet);
+                description = organization + " " + get_date(packet) + " " + get_number(packet) + " " + get_mj_requisites(packet);
                 return h('div',
                 {
                     style:

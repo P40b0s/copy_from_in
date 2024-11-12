@@ -4,12 +4,11 @@ use logger::debug;
 use tokio::sync::Mutex;
 use settings::{FileMethods, Settings};
 
-use crate::{copyer::{ExcludesService, ExcludesTrait, KeyValueStore, CopyerService}, Error};
-
+use crate::{copyer::{CopyService, ExcludesService, ExcludesTrait, SqliteExcludes}, Error};
 pub struct AppState
 {
     pub settings: Mutex<Settings>,
-    pub copyer_service: Arc<CopyerService>,
+    pub copyer_service: Arc<CopyService>,
     db_pool: Arc<SqlitePool>
 }
 impl AppState
@@ -32,10 +31,7 @@ impl AppState
         Ok(Self
         {
             settings: Mutex::new(settings.unwrap()),
-            copyer_service: Arc::new(CopyerService 
-            {
-                excludes:   Box::new(KeyValueStore::new())
-            }),
+            copyer_service: Arc::new(CopyService::new(SqliteExcludes::new(Arc::clone(&pool)))),
             db_pool: pool
         })
     }
@@ -43,7 +39,7 @@ impl AppState
     {
         Arc::clone(&self.db_pool)
     }
-    pub fn get_service(&self) -> Arc<CopyerService>
+    pub fn get_copy_service(&self) -> Arc<CopyService>
     {
         Arc::clone(&self.copyer_service)
     }

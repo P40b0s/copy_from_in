@@ -9,7 +9,7 @@ use crate::state::AppState;
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
 
-use super::CopyerService;
+use super::{CopyService, ExcludesTrait};
 
 //для каждой задачи есть свой таймер, отнимаем 15 сек от времени задачи каждую итерацию
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
@@ -68,11 +68,11 @@ impl DirectoriesSpy
                     let service = Arc::clone(&state.copyer_service);
                     if tsk.generate_exclude_file
                     {
-                        service.excludes.replace(&tsk);
+                        let _ = service.excludes_service.replace(&tsk).await;
                         let mut guard = state.settings.lock().await;
                         let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
                         task.generate_exclude_file = false;
-                        guard.save(settings::Serializer::Toml);
+                        let _ = guard.save(settings::Serializer::Toml);
                     }
                     tokio::spawn(async move
                     {
@@ -262,7 +262,7 @@ impl DirectoriesSpy
     }
 
     ///проверяем новые пакеты у тасков с истекшим таймером, получаем список тасков у которых найдены новые пакеты
-    async fn scan_dir(task: Arc<Task>, cp_service: Arc<CopyerService>) -> Vec<(Arc<Task>, String)>
+    async fn scan_dir(task: Arc<Task>, cp_service: Arc<CopyService>) -> Vec<(Arc<Task>, String)>
     {
         let mut prepared_tasks : Vec<(Arc<Task>, String)> = vec![];
         if task.is_active
@@ -274,7 +274,7 @@ impl DirectoriesSpy
                 for d in reader
                 {
                     let cloned_task = Arc::clone(&task);
-                    if let Ok(is_added) = cp_service.excludes.add(&cloned_task.name, d)
+                    if let Ok(is_added) = cp_service.excludes_service.add(&cloned_task.name, d).await
                     {
                         if is_added
                         {

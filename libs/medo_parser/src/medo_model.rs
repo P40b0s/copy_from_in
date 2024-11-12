@@ -62,6 +62,8 @@ pub struct PacketInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub sender_info: Option<SenderInfo>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub sender_id: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub default_pdf: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub pdf_hash: Option<String>,
@@ -99,6 +101,7 @@ impl Default for PacketInfo
             files: vec![],
             requisites: None,
             sender_info: None,
+            sender_id: None,
             default_pdf: None,
             pdf_hash: None,
             acknowledgment: None,

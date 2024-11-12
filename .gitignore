@@ -7,3 +7,5 @@ src-tauri/logs
 dist/
 *.redb
 *.sq3
+*.sq3-shm
+*.sq3-wal

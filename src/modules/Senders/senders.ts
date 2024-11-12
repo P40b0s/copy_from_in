@@ -38,8 +38,13 @@ export function useSenders()
     }
     const get_icon = (packet: IPacket): string =>
     {
-        const snd = senders.value.find(f=>f.id == packet.packetInfo?.senderInfo?.sourceGuid);
+        const snd = senders.value.find(f=>f.id == packet.packetInfo?.senderId);
         return snd?.icon ?? image_ico
     }
-    return {senders, get_senders, get_icon}
+    const get_organization = (packet: IPacket): string =>
+    {
+        const snd = senders.value.find(f=>f.id == packet.packetInfo?.senderId);
+        return snd?.organization ?? ""
+    }
+    return {senders, get_senders, get_icon, get_organization}
 }

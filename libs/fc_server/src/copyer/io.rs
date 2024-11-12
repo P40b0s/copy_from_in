@@ -86,19 +86,25 @@ use crate::Error;
  {
     async move 
     {
-        let read_dir = std::fs::read_dir(source.as_ref());
+        let read_dir = tokio::fs::read_dir(source.as_ref()).await;
         if read_dir.is_err()
         {
             return Err(Error::Io(read_dir.err().unwrap()));
         }
-        if read_dir.unwrap().count() == 0
+        let mut count = 0;
+        let mut read_dir = read_dir.unwrap();
+        while let Some(_) = read_dir.next_entry().await? 
+        {
+            count+=1;
+        }
+        if count == 0
         {
             //если в начальной пусто то все правильно, если во вложенной то просто возвращаем 0 в предыдущую функцию
             //вызываться будет ниже
             return Ok(());
         }
         //let start = std::time::SystemTime::now();
-        let create_dir = std::fs::create_dir_all(&destination.as_ref());
+        let create_dir = tokio::fs::create_dir_all(&destination.as_ref()).await;
         if create_dir.is_err()
         {
             return Err(Error::Io(create_dir.err().unwrap()));
@@ -107,25 +113,20 @@ use crate::Error;
         let mut entry_count = 0;
         //let mut handles : Vec<JoinHandle<std::io::Result<(PathBuf, PathBuf)>>> = Vec::new();
         let mut set = JoinSet::new();
-        let read_iter = std::fs::read_dir(source.as_ref());
+        let read_iter = tokio::fs::read_dir(source.as_ref()).await;
         if read_iter.is_err()
         {
             return Err(Error::Io(read_iter.err().unwrap()));
         }
-        let dirs_iter = std::fs::read_dir(source.as_ref());
+        let dirs_iter = tokio::fs::read_dir(source.as_ref()).await;
         if dirs_iter.is_err()
         {
             return Err(Error::Io(dirs_iter.err().unwrap()));
         }
-        for entry in dirs_iter.unwrap() 
+        let mut dirs_iter = dirs_iter.unwrap();
+        while let Some(entry) = dirs_iter.next_entry().await? 
         {
-            let entry = entry;
-            if entry.is_err()
-            {
-                return Err(Error::Io(entry.err().unwrap()));
-            }
-            let entry = entry.unwrap();
-            let filetype = entry.file_type();
+            let filetype = entry.file_type().await;
             if filetype.is_err()
             {
                 return Err(Error::Io(filetype.err().unwrap()));
@@ -162,12 +163,17 @@ use crate::Error;
             //let ready = out?;
         }
         //после проверки всех файлов проверяем не появились ли в директории новые файлы, если появились запускаем процедуру сначала
-        let new_count_check = std::fs::read_dir(source.as_ref());
+        let new_count_check = tokio::fs::read_dir(source.as_ref()).await;
         if new_count_check.is_err()
         {
             return  Err(Error::Io(new_count_check.err().unwrap()));
         }
-        let count = new_count_check.unwrap().count();
+        let mut count = 0;
+        let mut new_count_check = new_count_check.unwrap();
+        while let Some(_) = new_count_check.next_entry().await? 
+        {
+            count+=1;
+        }
         if entry_count != count
         {
             debug!("За время копирования файлов в исходной директории зафиксированно изменение количества файлов с `{}` на `{}`, процедура копирования перезапущена...", entry_count, count);
@@ -177,7 +183,7 @@ use crate::Error;
         for f in files
         {
             debug!("Копирование `{}` в `{}`...", f.0.display(), f.1.display());
-            let iscopy = std::fs::copy(f.0, f.1);
+            let iscopy = tokio::fs::copy(f.0, f.1).await;
             if iscopy.is_err()
             {
                 return Err(Error::Io(iscopy.err().unwrap()));
@@ -198,7 +204,7 @@ async fn check_file<P: AsRef<Path>>(source_file_path: P, dest_file_path: P, chec
     loop
     {
         //в цикле сверяем время изменения файла и его длинну каждые N секунд, если время изменилось, ждем еще N секунд, иначе добавляем в список на копирование
-        let metadata = std::fs::metadata(source_file_path.as_ref())?;
+        let metadata = tokio::fs::metadata(source_file_path.as_ref()).await?;
         let mtime = metadata.modified();
         //if let Ok(md_time) = metadata.modified()
         if let Ok(md_time) = mtime

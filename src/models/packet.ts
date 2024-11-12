@@ -22,7 +22,8 @@ export interface IPacketInfo
     error?: string;
     files?: string[];
     requisites?: Requisites;
-    senderInfo?: SenderInfo;
+    //senderInfo?: SenderInfo;
+    senderId?: string,
     defaultPdf?: string;
     pdfHash?: string;
     acknowledgment?: Ack;
@@ -30,26 +31,26 @@ export interface IPacketInfo
     traceMessage?: string;
 }
 
-export interface SenderInfo
-{
-    organization?: string;
-    person?: string;
-    department?: string;
-    post?: string;
-    addressee?: string;
-    medoAddessee?: string;
-    sourceGuid?: string;
-    executor?: Executor;
-}
+// export interface SenderInfo
+// {
+//     organization?: string;
+//     person?: string;
+//     department?: string;
+//     post?: string;
+//     addressee?: string;
+//     medoAddessee?: string;
+//     sourceGuid?: string;
+//     executor?: Executor;
+// }
 
 
-export interface Executor
-{
-    organization?: string;
-    person?: string;
-    post?: string;
-    contactInfo?: string;
-}
+// export interface Executor
+// {
+//     organization?: string;
+//     person?: string;
+//     post?: string;
+//     contactInfo?: string;
+// }
 
 export interface MinistryOfJustice
 {

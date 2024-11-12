@@ -51,6 +51,8 @@ impl FromRow<'_, SqliteRow> for PacketTable
             report_sended: row.try_get("report_sended")?,
             packet_info: PacketInfo
             {
+                 //sender info нам нужен только при парсинге пакета, потом мы данные из него передаем в таблицу адресов
+                sender_info: None,
                 header_guid: row.try_get("header_id")?,
                 packet_directory: row.try_get("directory")?,
                 packet_type: row.try_get("packet_type")?,
@@ -58,7 +60,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
                 default_pdf: row.try_get("default_pdf")?,
                 files,
                 requisites: from_json(row, "requisites"),
-                sender_info: from_json(row, "sender_info"),
+                sender_id: row.try_get( "sender_id")?,
                 wrong_encoding: false,
                 error: row.try_get("error")?,
                 pdf_hash: row.try_get("pdf_hash")?,
@@ -95,7 +97,7 @@ impl<'a> SqlOperations<'a> for PacketTable
             "pdf_hash", //8
             "files", //9
             "requisites", //10
-            "sender_info", //11
+            "sender_id", //11
             "acknowledgment", //12
             "visible", //13
             "trace_message", //14
@@ -117,7 +119,7 @@ impl<'a> SqlOperations<'a> for PacketTable
             ", Self::table_fields()[8], " TEXT,
             ", Self::table_fields()[9], " JSON DEFAULT('[]'),
             ", Self::table_fields()[10], " JSON,
-            ", Self::table_fields()[11], " JSON,
+            ", Self::table_fields()[11], " TEXT,
             ", Self::table_fields()[12], " JSON,
             ", Self::table_fields()[13], " INTEGER NOT NULL DEFAULT 1,
             ", Self::table_fields()[14], " TEXT,
@@ -125,13 +127,13 @@ impl<'a> SqlOperations<'a> for PacketTable
             );"].concat()
     }
     
-    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let update_set = get_fields_for_update(Self::table_fields());
         let sql = ["UPDATE ", Self::table_name(),
         " SET ", &update_set ," WHERE ", Self::table_fields()[0]," = $1"].concat();
 
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
@@ -143,22 +145,18 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
         .bind(to_json(&self.packet_info.requisites))
-        .bind(to_json(&self.packet_info.sender_info))
+        .bind(self.packet_info.sender_id.as_ref())
         .bind(to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
         .execute(&*pool).await?;
-        if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
-        {
-            let _ = addreesses.add_or_replace(Arc::clone(&pool)).await;
-        }
-        Ok(())
+        Ok(res.rows_affected())
     }
-    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let sql = Self::insert_or_replace_query();
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
@@ -170,7 +168,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
         .bind(to_json(&self.packet_info.requisites))
-        .bind(to_json(&self.packet_info.sender_info))
+        .bind(self.packet_info.sender_id.as_ref())
         .bind(to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
@@ -180,12 +178,12 @@ impl<'a> SqlOperations<'a> for PacketTable
         // {
         //     let _ = addreesses.add_or_ignore(Arc::clone(&pool)).await;
         // }
-        Ok(())
+        Ok(res.rows_affected())
     }
-    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let sql = Self::insert_or_ignore_query();
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(self.get_task_name())
         .bind(self.packet_info.header_guid.as_ref())
@@ -197,7 +195,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
         .bind(to_json(&self.packet_info.requisites))
-        .bind(to_json(&self.packet_info.sender_info))
+        .bind(self.packet_info.sender_id.as_ref())
         .bind(to_json(&self.packet_info.acknowledgment))
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
@@ -207,7 +205,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         // {
         //     let _ = addreesses.add_or_ignore(Arc::clone(&pool)).await;
         // }
-        Ok(())
+        Ok(res.rows_affected())
     }
 }
 
@@ -245,7 +243,6 @@ impl PacketTable
         let like = vec![
             Self::like("directory", search_string),
             Self::like("requisites", search_string),
-            Self::like("sender_info", search_string),
         ];
         let select = [" where ".to_owned(), like.join(" OR ")].concat();
         let selector = Selector::new(&Self::full_select())

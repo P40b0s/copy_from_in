@@ -146,48 +146,49 @@ impl<'a> SqlOperations<'a> for AddresseTable
             ", Self::table_fields()[1], " TEXT NOT NULL, 
             ", Self::table_fields()[2], " TEXT, 
             ", Self::table_fields()[3], " JSON DEFAULT('[]'),
-            ", Self::table_fields()[4], " BLOB
+            ", Self::table_fields()[4], " BLOB,
+            FOREIGN KEY (id) REFERENCES packets(sender_id)
             );"].concat()
     }
 
-    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn update(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let update_set = get_fields_for_update(Self::table_fields());
         let sql = ["UPDATE ", Self::table_name(),
         " SET ", &update_set ," WHERE ", Self::table_fields()[0]," = $1"].concat();
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(&self.organization)
         .bind(&self.medo_addresse)
         .bind(to_json(&self.contact_info))
         .bind(self.icon.as_ref())
         .execute(&*pool).await?;
-        Ok(())
+        Ok(res.rows_affected())
     }
 
-    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn add_or_replace(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let sql = Self::insert_or_replace_query();
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(&self.organization)
         .bind(&self.medo_addresse)
         .bind(to_json(&self.contact_info))
         .bind(self.icon.as_ref())
         .execute(&*pool).await?;
-        Ok(())
+        Ok(res.rows_affected())
     }
-    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    async fn add_or_ignore(&'a self, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let sql = Self::insert_or_ignore_query();
-        query(&sql)
+        let res = query(&sql)
         .bind(self.id.to_string())
         .bind(&self.organization)
         .bind(&self.medo_addresse)
         .bind(to_json(&self.contact_info))
         .bind(self.icon.as_ref())
         .execute(&*pool).await?;
-        Ok(())
+        Ok(res.rows_affected())
     }
     
 }

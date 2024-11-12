@@ -37,6 +37,11 @@ impl Packet
             let path = Path::new(path).join(packet_info.default_pdf.as_ref().unwrap());
             packet_info.pdf_hash = utilites::Hasher::hash_from_path(path);
         }
+        //Добавил добавление source_giud при парсинге
+        if let Some(si) = packet_info.sender_info.as_ref()
+        {
+            packet_info.sender_id = si.source_guid.clone()
+        }
         let name = packet_info.packet_directory.clone();
         let parse_time = packet_info.delivery_time.clone();
         Self

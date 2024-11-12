@@ -3,7 +3,7 @@ use logger::{debug, error};
 use settings::{Settings, Task};
 use transport::{Contract, Packet, Senders};
 use service::Server;
-use crate::{copyer::{CopyerService, PacketsCleaner}, state::AppState, Error};
+use crate::{copyer::{CopyService, PacketCleaner}, state::AppState, Error};
 
 pub struct WebsocketServer;
 impl Server<Contract> for WebsocketServer{}
@@ -62,7 +62,8 @@ pub async fn start_ws_server(port: usize, app_state: Arc<AppState>)
                 Contract::CleanStart => 
                 {
                     WebsocketServer::start_clean_task().await;
-                    CopyerService::clean_packets(state).await;
+                    let cp_service = state.get_copy_service();
+                    cp_service.packets_cleaner.clean_packets(state).await;
                 }
                 //Contract::TaskUpdated(t) => task_updated(&addr, t).await,
                 //Contract::TaskDeleted(t) => task_deleted(&addr, t).await,

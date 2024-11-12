@@ -15,15 +15,20 @@ pub async fn start_packets_handler(pool: Arc<SqlitePool>)
         while let Ok(r) = receiver.recv().await
         {
             let p_table = PacketTable::new(&r);
+            if let Ok(addreesses) = AddresseTable::try_from(r.get_packet_info())
+            {
+                if let Ok(count_result) = addreesses.add_or_ignore(Arc::clone(&pool)).await
+                {
+                    if count_result > 0
+                    {
+                        WebsocketServer::sender_update_event(addreesses.into()).await;
+                    }
+                }
+            }
             let test = p_table.add_or_replace(Arc::clone(&pool)).await;
             if test.is_err()
             {
                 logger::error!("{}", test.err().unwrap().to_string());
-            }
-            if let Ok(addreesses) = AddresseTable::try_from(r.get_packet_info())
-            {
-                //TODO СДЕЛАТЬ чтобы add_or_ignore возвращал количество 
-                let _ = addreesses.add_or_ignore(Arc::clone(&pool)).await;
             }
             WebsocketServer::new_packet_event(r).await;
         }
