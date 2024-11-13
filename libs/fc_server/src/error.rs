@@ -11,16 +11,6 @@ pub enum Error
     #[error(transparent)]
     DbError(#[from] db_service::DbError),
     #[error(transparent)]
-    RedbError(#[from] redb::Error),
-    #[error(transparent)]
-    RedbTransactionError(#[from] redb::TransactionError),
-    #[error(transparent)]
-    RedbTableError(#[from] redb::TableError),
-    #[error(transparent)]
-    RedbStorageError(#[from] redb::StorageError),
-    #[error(transparent)]
-    RedbCommitError(#[from] redb::CommitError),
-    #[error(transparent)]
     Other(#[from] anyhow::Error),
     #[error("Ошибка валидации настроек: {}", from_validation_error(.0))]
     SettingsValidation(Vec<ValidationError>),
@@ -79,11 +69,6 @@ impl From<Error> for futures::future::BoxFuture<'static, anyhow::Result<u64, Err
       Error::HyperError(e) => async move { Err(Error::HyperError(e)) }.boxed(),
       Error::FileTimeCopyError(e) => async move { Err(Error::FileTimeCopyError(e)) }.boxed(),
       Error::DbError(e) => async move { Err(Error::DbError(e)) }.boxed(),
-      Error::RedbError(e) => async move { Err(Error::RedbError(e)) }.boxed(),
-      Error::RedbTransactionError(e) => async move { Err(Error::RedbTransactionError(e)) }.boxed(),
-      Error::RedbTableError(e) => async move { Err(Error::RedbTableError(e)) }.boxed(),
-      Error::RedbStorageError(e) => async move { Err(Error::RedbStorageError(e)) }.boxed(),
-      Error::RedbCommitError(e) => async move { Err(Error::RedbCommitError(e)) }.boxed(),
       Error::JsonError(e) => async move { Err(Error::JsonError(e)) }.boxed(),
       Error::PdfExtractError(e) => async move { Err(Error::PdfExtractError(e)) }.boxed(),
       Error::UtilitesError(e) => async move { Err(Error::UtilitesError(e)) }.boxed(),

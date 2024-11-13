@@ -19,14 +19,17 @@ import { TrashBin } from '@vicons/ionicons5';
 </script>
 
 <script lang="ts" setup generic="T">
+
 const props = defineProps<{
     disabled: boolean,
     button_text: string
 }>();
+
 defineSlots<{
     //text1: (scope: { value: string }) => any
     text: () => any
 }>()
+
 const emits = defineEmits<{
     'accept_delete': [...args: [] | [T]]
 }>();

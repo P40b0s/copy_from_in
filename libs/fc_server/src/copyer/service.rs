@@ -4,7 +4,7 @@ use settings::{Settings, Task};
 use tokio::runtime::Runtime;
 use transport::{Packet, PacketInfo};
 use crate::{copyer::io::get_files, db::PacketTable, services::WebsocketServer, state::AppState};
-use super::{excludes::{ExcludesService, ExcludesTrait, KeyValueStore}, io::get_dirs, SqliteExcludes};
+use super::{excludes::{ExcludesService, ExcludesTrait}, io::get_dirs, SqliteExcludes};
 static CLEAN_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 pub struct PacketCleaner{}

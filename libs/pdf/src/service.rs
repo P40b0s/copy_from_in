@@ -3,8 +3,8 @@ use super::error;
 use logger::error;
 use tokio::runtime::Handle;
 use utilites::Hasher;
-use image::{DynamicImage, ImageFormat};
-use pdfium_render::prelude::{PdfPageRenderRotation, PdfRenderConfig, Pdfium};
+//use image::{DynamicImage, ImageFormat};
+use pdfium_render::prelude::{PdfPageRenderRotation, PdfRenderConfig, Pdfium, DynamicImage, ImageFormat};
 
 pub struct PdfService 
 {
@@ -148,7 +148,7 @@ impl PdfService
     }
 
     // Извлечение страницы из pdf и преобразование ее в формат rgba8 pdf и выдача страницы в виде массива байт
-    async fn convert_page(&self, dyn_image: DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
+    async fn convert_page(&self, dyn_image: image::DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
     {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let current = Handle::current();

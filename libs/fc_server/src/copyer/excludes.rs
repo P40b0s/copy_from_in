@@ -5,7 +5,6 @@ use logger::{debug, error};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{Settings, Task};
 use utilites::io::{get_dirs, get_dirs_async};
-use redb::{Database, ReadableTable, ReadableTableMetadata, TableDefinition};
 use futures::future::{BoxFuture, FutureExt};
 
 use crate::{db::ExceptTable, Error};
@@ -17,19 +16,6 @@ impl<T> Deref for ExcludesService<T> where T: ExcludesTrait
     fn deref(&self) -> &Self::Target 
     {
         &self.0
-    }
-}
-
-///Сервис для обработки пакетов-исключений с помощью redb storage
-pub struct KeyValueStore
-{
-    db: Lazy<Mutex<Database>>
-}
-impl KeyValueStore
-{
-    pub fn new() -> Self
-    {
-        Self { db: Lazy::new(|| Mutex::new(Database::create("excludes.redb").unwrap())) }
     }
 }
 
@@ -49,103 +35,6 @@ pub trait ExcludesTrait
     ///Заменяет текущую таблицу если она есть, или создает новую
     fn replace<'a>(&'a self, task: &Task) -> BoxFuture<'a, Result<(), Error>>;
 }
-
-// impl ExcludesTrait for KeyValueStore
-// {
-//     fn add(&self, task_name: &str, dir: &str) -> Result<bool, Error>
-//     {
-//         let mut added = false;
-//         let db = self.db.lock().unwrap();
-//         let write_tr = db.begin_write()?;
-//         drop(db);
-//         {
-//             let td = TableDefinition::<&str, u8>::new(task_name);
-//             let mut table = write_tr.open_table(td)?;
-//             let get = table.get(dir)?;
-//             if get.is_none()
-//             {
-//                 drop(get);
-//                 let _ = table.insert(dir, 0)?;
-//                 added = true;
-//             }
-//         }
-//         write_tr.commit()?;
-//         return Ok(added);
-//     }
-
-//     fn delete(&self, task_name: &str, dir: &str) -> Result<(), Error>
-//     {
-//         let db = self.db.lock().unwrap();
-//         let write_tr = db.begin_write()?;
-//         drop(db);
-//         {
-//             let td = TableDefinition::<&str, u8>::new(task_name);
-//             let mut table = write_tr.open_table(td)?;
-//             let _ = table.remove(dir)?;
-//         }
-//         write_tr.commit()?;
-//         Ok(())
-//     }
-
-//     fn truncate(&self, tasks: &[Task]) -> Result<u64, Error>
-//     {
-//         let mut count: u64 = 0;
-//         let mut table_count: u64 = 0;
-//         for t in tasks
-//         {
-//             if let Some(dirs) = get_dirs(t.get_source_dir())
-//             {
-//                 let db = self.db.lock().unwrap();
-//                 let write_tr = db.begin_write()?;
-//                 drop(db);
-//                 {
-//                     let td = TableDefinition::<&str, u8>::new(t.get_task_name());
-//                     table_count = write_tr.open_table(td.clone())?.len()?;
-//                     let _ = write_tr.delete_table(td.clone())?;
-//                     let mut table = write_tr.open_table(td)?;
-//                     for d in &dirs
-//                     {
-//                         let _ = table.insert(d.as_str(), 0)?;
-//                     }
-//                 }
-//                 write_tr.commit()?;
-//                 //прибавляем к общему количеству разницу между количеством имеющихся директорий и количества записей в БД
-//                 if table_count >= dirs.len() as u64
-//                 {
-//                     count += table_count - dirs.len() as u64;
-//                 }
-//             }
-//         }
-//         Ok(count)
-//     }
-
-//     fn clear(&self, task_name: &str) -> Result<(), Error>
-//     {
-//         let db = self.db.lock().unwrap();
-//         let write_tr = db.begin_write()?;
-//         drop(db);
-//         {
-//             let td = TableDefinition::<&str, u8>::new(task_name);
-//             let _ = write_tr.delete_table(td)?;
-//         }
-//         write_tr.commit()?;
-//         Ok(())
-//     }
-    
-//     fn replace(&self, task: &Task) -> Result<(), Error> 
-//     {
-//         self.clear(task.get_task_name())?;
-//         if let Some(dirs) = get_dirs(&task.source_dir)
-//         {
-//             for d in &dirs
-//             {
-//                 let _ = self.add(task.get_task_name(), d);
-//             }
-//         }
-//         Ok(())
-//     }
-// }
-
 
 pub struct FileExcludes
 {

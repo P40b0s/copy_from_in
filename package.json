@@ -13,7 +13,7 @@
     "server": "RUST_BACKTRACE=1  cargo run -p fc_server",
     "build:win": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --target x86_64-pc-windows-gnu",
     "build:client:win": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --target x86_64-pc-windows-gnu",
-    "build:server:win": "cargo build -p fc_server --release --target x86_64-pc-windows-gnu",
+    "build:server:win": "cd libs/fc_server && cargo build --release --target x86_64-pc-windows-gnu",
     "build:lin": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build",
     "build:windev": "cross-env VITE_NETWORK_PROCESSOR=tauri vite build && tauri build --debug --target x86_64-pc-windows-gnu",
     "preview": "vite preview"

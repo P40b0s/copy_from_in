@@ -17,7 +17,7 @@ uuid = {version = "1.7.0", features = ["v4"]}
 once_cell = { version = "1.20.2", optional = true}
 crossbeam-channel = { version = "0.5.13", optional = true}
 utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}
-thiserror = "1.0.64"
+thiserror = "1.0.61"
 [features]
 all = ["dep:once_cell", "dep:crossbeam-channel", "dep:zip", "dep:regex", "dep:quick-xml"]
 model = []
