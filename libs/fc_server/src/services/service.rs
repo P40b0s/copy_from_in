@@ -29,7 +29,7 @@ pub async fn rescan_packet(packet: Packet, state: Arc<AppState>) -> Result<(), E
 {
     debug!("Получен запрос на пересканирование пакета {}", packet.get_packet_name());
     let service = state.get_copy_service();
-    let _ = service.excludes_service.delete(packet.get_task().get_task_name(), packet.get_packet_name());
+    let _ = service.excludes_service.delete(packet.get_task().get_task_name(), packet.get_packet_name()).await;
     PacketTable::delete_by_id(packet.get_id(), state.get_db_pool()).await;
     Ok(())
 }
@@ -38,7 +38,7 @@ pub async fn delete_packet(packet: Packet, state: Arc<AppState>) -> Result<(), E
 {
     debug!("Получен запрос на удаление пакета {}", packet.get_packet_name());
     let service = state.get_copy_service();
-    let _ = service.excludes_service.delete(packet.get_task().get_task_name(), packet.get_packet_name());
+    let _ = service.excludes_service.delete(packet.get_task().get_task_name(), packet.get_packet_name()).await;
     PacketTable::delete_by_id(packet.get_id(), state.get_db_pool()).await;
     let del_dir = packet.get_task().get_source_dir().join(packet.get_packet_info().get_packet_dir());
     let _ = std::fs::remove_dir_all(&del_dir);

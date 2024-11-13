@@ -67,7 +67,7 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 800,
+        "height": 1000,
         "resizable": true,
         "title": "Клиент для планировщика копирования пакетов МЭДО",
         "width": 1200

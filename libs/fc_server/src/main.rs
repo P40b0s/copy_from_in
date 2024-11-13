@@ -28,11 +28,15 @@ async fn main() -> Result<(), Error>
     let _ = services::start_http_server(params.http_port, Arc::clone(&app_state)).await;
     services::start_ws_server(params.ws_port, Arc::clone(&app_state)).await;
     start_packets_handler(app_state.get_db_pool()).await;
+    let settings = Arc::clone(&app_state);
+    let ds = DirectoriesSpy::new(settings, 15000);
+    ds.start_tasks().await;
+
     loop
     {
-        let settings = Arc::clone(&app_state);
-        let _ = DirectoriesSpy::process_tasks(settings).await;
-        tokio::time::sleep(tokio::time::Duration::from_secs(15)).await;
+        //let settings = Arc::clone(&app_state);
+        //let _ = DirectoriesSpy::process_tasks(settings).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(200)).await;
         //for testing
     }
 }

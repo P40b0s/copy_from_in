@@ -318,14 +318,12 @@ impl ExcludesTrait for SqliteExcludes
     {
         let pool = self.get_pool();
         let hash = utilites::Hasher::hash_from_strings([task_name, dir]);
-        debug!("Добавление пакета {} для задачи {} в исключения", dir, task_name);
         let task_name = task_name.to_owned();
         let dir = dir.to_owned();
         Box::pin(async move
         {
             let contains_guard = self.cache.read().await;
             let contains = contains_guard.contains(&hash);
-            debug!("Хэш {} {} в кеше, всего: {}", &hash, contains, contains_guard.len());
             drop(contains_guard);
             if !contains
             {
@@ -341,13 +339,10 @@ impl ExcludesTrait for SqliteExcludes
         })
     }
 
-    
-
     fn delete<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<(), Error>>
     {
         let pool = self.get_pool();
         let hash = utilites::Hasher::hash_from_strings([task_name, dir]);
-        debug!("Удаление пакета {} {}", dir, task_name);
         let task_name = task_name.to_owned();
         let dir = dir.to_owned();
         Box::pin(async move

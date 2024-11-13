@@ -105,7 +105,7 @@ impl ExceptTable
     pub async fn exists(task_name: &str, dir_name: &str, pool: Arc<SqlitePool>) -> Result<bool, DbError>
     {
         let q = ["SELECT COUNT(*) as count FROM ", Self::table_name()].concat();
-        let select = [" where dir_name=", "'", dir_name, "'", " AND ", " task_id=", "'", task_name, "'"].concat();
+        let select = [" where dir_name = '", dir_name, "'", " AND ", " task_id = '", task_name, "'"].concat();
         let selector = Selector::new(&q).add_raw_query(&select);
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count > 0)
@@ -115,18 +115,22 @@ impl ExceptTable
     pub async fn truncate(dirs: Vec<String>, task_id: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let del_count = Self::delete_task(task_id, Arc::clone(&pool)).await?;
-        let mut tx = pool.begin().await?;
-        let vals: Vec<String> = dirs.into_iter().map(|v| ["(", &v, ",", task_id, ")"].concat()).collect();
-        let q = ["INSERT INTO ", Self::table_name()," (dir_name, task_id) VALUES " , &vals.join(",")].concat();
-        let selector = Selector::new(&q);
-        db_service::query(&selector.query().0)
-        .execute(&mut *tx).await?;
-        tx.commit().await?;
+        let vals: Vec<String> = dirs.into_iter().map(|v| ["('", &v, "','", task_id, "')"].concat()).collect();
+        if vals.len() > 0
+        {
+            let mut tx = pool.begin().await?;
+            let q = ["INSERT INTO ", Self::table_name()," (dir_name, task_id) VALUES " , &vals.join(",")].concat();
+            let selector = Selector::new(&q);
+            db_service::query(&selector.query().0)
+            .execute(&mut *tx).await?;
+            tx.commit().await?;
+            return Ok(del_count);
+        }
         Ok(del_count)
     }
     pub async fn delete_task(task_id: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
-        let q = ["DELETE FROM ", Self::table_name()," WHERE task_id='", task_id, "'"].concat();
+        let q = ["DELETE FROM ", Self::table_name()," WHERE task_id = '", task_id, "'"].concat();
         let selector = Selector::new(&q);
         let exe = Self::execute(&selector, pool).await?;
         Ok(exe)
@@ -134,13 +138,11 @@ impl ExceptTable
     //Не удаляется!
     pub async fn delete(task_id: &str, dir_name: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
-        let q = ["DELETE FROM ", Self::table_name()," WHERE task_id='", task_id, "' AND dir_name='", dir_name, "'"].concat();
+        let q = ["DELETE FROM ", Self::table_name()," WHERE task_id = '", task_id, "' AND dir_name= '", dir_name, "'"].concat();
         let selector = Selector::new(&q);
         let exe = Self::execute(&selector, pool).await?;
         Ok(exe)
     }
-
-
     
     // fn id<S: AsRef<str>>(task_name: S, packet_dir: S) -> String
     // {

@@ -16,5 +16,5 @@ type Events =
     /**
      * На этом эвенте происходи открытие просмотрщика файлов
      */
-    packetItemDoubleClick: [IPacket]
+    openFileViewer: [IPacket]
 };

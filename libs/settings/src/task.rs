@@ -34,6 +34,7 @@ pub struct Task
     #[serde(default="is_default")]
     pub sound: bool,
     #[serde(default="is_default")]
+    ///Autoclean selected packets type while parsing
     pub autocleaning: bool,
     pub filters: Filter,
     #[serde(default="is_default_true")]

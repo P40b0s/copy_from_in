@@ -11,13 +11,13 @@ import
     watchEffect,
   } from 'vue'
 
-import { NButton, NIcon, NPagination, NPopconfirm, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
+import { NAvatar, NButton, NIcon, NPagination, NPopconfirm, NScrollbar, NSpin, NTooltip, NVirtualList, useNotification} from 'naive-ui';
 import { DateFormat, DateTime} from '../services/date.ts';
 import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
-import { background, envelope_ico, error_ico, image_ico } from '../services/svg.ts';
+import { background, envelope_ico, error_ico, image_ico, pdf_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
-import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
+import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, MenuOutline, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
 import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { events } from '../services/tauri/events.ts';
@@ -151,6 +151,11 @@ export const PacketsViewer =  defineComponent({
                             packets.value = r.get_value();
                         scrollbar_ref.value.scrollTo({top: 0})
                     },
+                    style:
+                    {
+                        marginTop: '5px',
+                        marginBottom: '5px'
+                    }
                 },
                 {
                     
@@ -287,7 +292,7 @@ export const PacketsViewer =  defineComponent({
             
             ]);
         }
-       
+        
         const doc_status = (packet: IPacket) =>
         {
             const parse_date = new DateTime(packet.parseTime);
@@ -298,7 +303,7 @@ export const PacketsViewer =  defineComponent({
                 avatar: packet.packetInfo?.error ? error_ico : get_icon(packet),
                 task_color: packet.task.color,
                 shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',
-                files: packet.packetInfo?.files
+                files: packet.packetInfo?.files,
             },
             {
                 default:() =>
@@ -309,21 +314,18 @@ export const PacketsViewer =  defineComponent({
                         display: 'flex',
                         flexDirection: 'column',
                         textAlign: 'left',
+                        padding: '5px'
                         //background: 'linear-gradient(0.25turn, #0000004a, 90%, '+ packet.task.color + ', #ebf8e100)',
                         //background: '#00000033',
                     } as CSSProperties,
-                    onClick: (m) =>
-                    {
-                        console.log(packet);
-                        emitter.emit('packetItemDoubleClick', packet);
-                    },
+                   
                 },
                 [
                     h('div',
                     {
                         style:
                         {
-                            fontWeight: '700',
+                            fontWeight: '500',
                             fontSize: '16px'
                         } as CSSProperties,
                         //class: packet.error ? 'standart-red' : 'standart-green'
@@ -436,18 +438,34 @@ export const PacketsViewer =  defineComponent({
                             ]),
                             right_icons_panel(packet)
                         ]),
-                        requisites_or_error(packet),
+                        requisites(packet),
+                        packet.packetInfo?.requisites?.annotation ?
                         h('div', 
                         {
                             style:
                             {
-                                marginLeft:'17px',
-                                    //borderLeft: "17px solid",
-                                    //borderColor: packet.task.color,
-                                    //borderOpa
+                                //marginLeft:'17px',
+                                fontWeight: '300',
+                                marginTop: '5px',
+                                backgroundColor: packet.task.color,
+                                background: "rgba(86, 189, 172, 0.07)",
+                                boxShadow: "0 8px 32px 0 rgba( 31, 38, 135, 0.37 )",
+                                padding: '2px',
                             } as CSSProperties
                         },
-                        packet.packetInfo?.requisites?.annotation ?? "")
+                        [
+                            h(NIcon, 
+                            {
+                                component: MenuOutline,
+                                color: packet.task.color,
+                                style:
+                                {
+                                    marginRight: '2px'
+                                } as CSSProperties,
+                            }),
+                            packet.packetInfo?.requisites?.annotation
+                        ]): h('span'),
+                        
                     ])
                 ])
             })
@@ -455,7 +473,7 @@ export const PacketsViewer =  defineComponent({
 
         const right_icons_panel = (packet: IPacket) =>
         {
-            const disabled = ref(false);
+           
             return  h('div',
             {
                 style:
@@ -463,10 +481,22 @@ export const PacketsViewer =  defineComponent({
                     flexGrow: 1,
                     justifyContent: 'end',
                     display: 'flex',
+                    gap: '5px'
                 } as CSSProperties
             },
             [
-                h(NTooltip, 
+               
+                open_file_viewer_button(packet),
+                report_icon(packet),
+                packet.packetInfo?.error ? rescan_item_button(packet) : h('span'),
+                del_button(packet),
+            ])
+        }
+
+        const rescan_item_button = (packet: IPacket) =>
+        {
+            const disabled = ref(false);
+            return h(NTooltip, 
                 {
                    
                 },
@@ -474,12 +504,6 @@ export const PacketsViewer =  defineComponent({
                     trigger:() =>
                     h(NButton,
                     {
-                        style:
-                        {
-                            visibility: packet.packetInfo?.error ? 'visible' : 'collapse',
-                            marginRight: '2px',
-                            
-                        } as CSSProperties,
                         disabled: disabled.value,
                         text: true,
                         size: 'large',
@@ -505,12 +529,34 @@ export const PacketsViewer =  defineComponent({
                             }),
                     }),
                     default:() => "Пересканировать текущий пакет"
-                }),
-                del_button(packet),
-                report_icon(packet)
-            ])
+                })
         }
-
+        const open_file_viewer_button = (packet: IPacket) =>
+        {
+            return  h(NTooltip,{placement: 'top'},
+            {
+                trigger:() =>
+                h(NAvatar,
+                {
+                    size: 18,
+                    src: pdf_ico,
+                    class: 'hover-button',
+                    style:
+                    {
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        alignSelf: 'center'
+                    }   as CSSProperties,
+                    onClick: () =>
+                    {
+                        console.log(packet);
+                        emitter.emit('openFileViewer', packet);
+                    },
+                    
+                }),
+                default:() => "Просмотр файлов пакета",
+            })
+        }
         const del_button =(packet: IPacket) =>
         {
             return h(NPopconfirm,
@@ -556,7 +602,6 @@ export const PacketsViewer =  defineComponent({
                         color: "#d90d0d",
                         style:
                         {
-                            marginLeft: '5px',
                         }    as CSSProperties,
                     },
                     {
@@ -697,7 +742,7 @@ export const PacketsViewer =  defineComponent({
             }
             else return ""
         }
-        const requisites_or_error = (packet: IPacket) =>
+        const requisites = (packet: IPacket) =>
         {
             let description : string|undefined;
             if(packet.packetInfo && !packet.packetInfo.error && packet.packetInfo.requisites)

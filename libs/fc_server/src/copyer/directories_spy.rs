@@ -3,7 +3,7 @@ use logger::{debug, error, info};
 use transport::{DeliveryTicketPacket, PacketInfo};
 use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier, FileMethods, Settings, Task};
-use tokio::sync::Mutex;
+use tokio::{runtime::Runtime, sync::Mutex};
 use transport::Packet;
 use crate::state::AppState;
 //use crossbeam_channel::{bounded, Receiver, Sender};
@@ -13,14 +13,83 @@ use super::{CopyService, ExcludesTrait};
 
 //для каждой задачи есть свой таймер, отнимаем 15 сек от времени задачи каждую итерацию
 static TIMERS: Lazy<Arc<Mutex<HashMap<String, u64>>>> = Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
-//static PACKETS: Lazy<Mutex<VecDeque<Packet>>> = Lazy::new(|| Mutex::new(VecDeque::with_capacity(LOG_LENGHT + 1)));
 static NEW_PACKET_EVENT: OnceCell<Arc<Sender<Packet>>> = OnceCell::new();
-static INIT: AtomicBool = AtomicBool::new(false);
-pub struct DirectoriesSpy;
-
+pub struct DirectoriesSpy
+{
+    timers: Lazy<Arc<Mutex<HashMap<String, u64>>>>,
+    state: Arc<AppState>,
+    delay: u64
+}
 
 impl DirectoriesSpy
 {
+    pub fn new(state: Arc<AppState>, tasks_check_delay: u64) -> Self
+    {
+        Self
+        {
+            timers: Lazy::new(|| Arc::new(Mutex::new(HashMap::new()))),
+            state,
+            delay: tasks_check_delay
+        }
+    }
+    pub async fn start_tasks(&self)
+    {
+        let handle  = tokio::runtime::Handle::current();
+        //let state = Arc::clone(&self.state);
+        tokio::task::block_in_place(move || 
+        {
+            let _ = handle.block_on(async move 
+            {
+                loop 
+                {
+                    let settings = self.state.get_settings().await;
+                    for t in &settings.tasks
+                    {
+                        let mut guard = self.timers.lock().await;
+                        if guard.contains_key(&t.name)
+                        {
+                            let countdown = guard.get(&t.name).unwrap() - self.delay;
+                            if countdown > 0
+                            {
+                                *guard.get_mut(&t.name).unwrap() = countdown;
+                                drop(guard);
+                            }
+                            else
+                            {
+                                *guard.get_mut(&t.name).unwrap() = t.timer;
+                                drop(guard);
+                                //таск 1 а вот пакетов может быть несколько
+                                let tsk = Arc::new(t.clone());
+                                let service = self.state.get_copy_service();
+                                if tsk.generate_exclude_file
+                                {
+                                    let _ = service.excludes_service.replace(&tsk).await;
+                                    let mut guard = self.state.settings.lock().await;
+                                    let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
+                                    task.generate_exclude_file = false;
+                                    let _ = guard.save(settings::Serializer::Toml);
+                                }
+                                tokio::spawn(async move
+                                {
+                                    let ready_tasks: Vec<(Arc<Task>, String)> = Self::scan_dir(tsk, service).await;
+                                    for ready_task in ready_tasks
+                                    {
+                                        Self::copy_files_process(ready_task.0, ready_task.1).await;
+                                    }
+                                });
+                            }
+                        }
+                        else
+                        {
+                            guard.insert(t.name.clone(), t.timer);
+                            drop(guard);
+                        }
+                    }
+                    tokio::time::sleep(tokio::time::Duration::from_millis(self.delay)).await;
+                }
+            });
+        });
+    }
     pub async fn subscribe_new_packet_event() -> Receiver<Packet>
     {
         let (sender, receiver) = bounded::<Packet>(2);
@@ -28,69 +97,66 @@ impl DirectoriesSpy
         receiver
     }
     ///Будет вызываться каждые 15 секунд, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
-    pub async fn process_tasks(state: Arc<AppState>) -> anyhow::Result<()>
-    {
-        
-        //let settings = state.get_settings().await;
-        // if !INIT.load(std::sync::atomic::Ordering::SeqCst)
-        // {
-        //     for t in &settings.tasks
-        //     {
-        //         Settings::load_exclude(t)
-        //     }
-        //     INIT.store(true, std::sync::atomic::Ordering::Relaxed);
-        // }
-        Self::process_timers(Arc::clone(&state)).await;
-        Ok(())
-    }
+    // pub async fn process_tasks(state: Arc<AppState>)
+    // {
+    //     let handle  = tokio::runtime::Handle::current();
+    //     tokio::task::block_in_place(move || 
+    //     {
+    //         let _ = handle.block_on(async move 
+    //         {
 
-    async fn process_timers(state: Arc<AppState>)
-    {
-        let settings = state.get_settings().await;
-        for t in &settings.tasks
-        {
-            let mut guard = TIMERS.lock().await;
-            if guard.contains_key(&t.name)
-            {
-                let countdown = guard.get(&t.name).unwrap() - 15000;
-                //debug!("{}", countdown);
-                if countdown > 0
-                {
-                    *guard.get_mut(&t.name).unwrap() = countdown;
-                    drop(guard);
-                }
-                else 
-                {
-                    *guard.get_mut(&t.name).unwrap() = t.timer;
-                    drop(guard);
-                    //таск 1 а вот пакетов может быть несколько
-                    let tsk = Arc::new(t.clone());
-                    let service = Arc::clone(&state.copyer_service);
-                    if tsk.generate_exclude_file
-                    {
-                        let _ = service.excludes_service.replace(&tsk).await;
-                        let mut guard = state.settings.lock().await;
-                        let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
-                        task.generate_exclude_file = false;
-                        let _ = guard.save(settings::Serializer::Toml);
-                    }
-                    tokio::spawn(async move
-                    {
-                        let ready_tasks: Vec<(Arc<Task>, String)> = Self::scan_dir(tsk, service).await;
-                        for ready_task in ready_tasks
-                        {
-                            Self::copy_files_process(ready_task.0, ready_task.1).await;
-                        }
-                    });
-                }
-            }
-            else
-            {
-                guard.insert(t.name.clone(), t.timer);
-                drop(guard);
-            }
-        }
-    }
+    //             Self::process_timers(Arc::clone(&state)).await;
+    //         });
+    //     });
+    // }
+
+    // async fn process_timers(state: Arc<AppState>)
+    // {
+    //     let settings = state.get_settings().await;
+    //     for t in &settings.tasks
+    //     {
+    //         let mut guard = TIMERS.lock().await;
+    //         if guard.contains_key(&t.name)
+    //         {
+    //             let countdown = guard.get(&t.name).unwrap() - 15000;
+    //             //debug!("{}", countdown);
+    //             if countdown > 0
+    //             {
+    //                 *guard.get_mut(&t.name).unwrap() = countdown;
+    //                 drop(guard);
+    //             }
+    //             else 
+    //             {
+    //                 *guard.get_mut(&t.name).unwrap() = t.timer;
+    //                 drop(guard);
+    //                 //таск 1 а вот пакетов может быть несколько
+    //                 let tsk = Arc::new(t.clone());
+    //                 let service = Arc::clone(&state.copyer_service);
+    //                 if tsk.generate_exclude_file
+    //                 {
+    //                     let _ = service.excludes_service.replace(&tsk).await;
+    //                     let mut guard = state.settings.lock().await;
+    //                     let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
+    //                     task.generate_exclude_file = false;
+    //                     let _ = guard.save(settings::Serializer::Toml);
+    //                 }
+    //                 tokio::spawn(async move
+    //                 {
+    //                     let ready_tasks: Vec<(Arc<Task>, String)> = Self::scan_dir(tsk, service).await;
+    //                     for ready_task in ready_tasks
+    //                     {
+    //                         Self::copy_files_process(ready_task.0, ready_task.1).await;
+    //                     }
+    //                 });
+    //             }
+    //         }
+    //         else
+    //         {
+    //             guard.insert(t.name.clone(), t.timer);
+    //             drop(guard);
+    //         }
+    //     }
+    // }
 
     async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
@@ -141,7 +207,6 @@ impl DirectoriesSpy
                 {
                     new_packet_found(packet).await;
                 }
-                
             },
         }
     }
@@ -150,32 +215,23 @@ impl DirectoriesSpy
         packet_dir_name: &str, 
         task : &Task) -> bool
     {
-        //если это оставить то рескан не сработает, надо тогда удалять еще пакет по адресу копирования, пока так нормально
-        // if super::io::path_is_exists(&target_path)
-        // {
-        //     warn!("Пакет {} уже существует по адресу {} копирование пакета отменено",packet_dir_name, target_path.display());
-        //     return false;
-        // }
-        // else 
-        // {
-            if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
-            {  
-                if task.delete_after_copy
-                {
-                    if let Err(e) = tokio::fs::remove_dir_all(source_path).await
-                    {
-                        error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-                    }
-                }
-                info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
-                return true;
-            }
-            else
+        if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
+        {  
+            if task.delete_after_copy
             {
-                error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
-                return false;
+                if let Err(e) = tokio::fs::remove_dir_all(source_path).await
+                {
+                    error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                }
             }
-        //}
+            info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
+            return true;
+        }
+        else
+        {
+            error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+            return false;
+        }
     }
 
 
@@ -229,7 +285,7 @@ impl DirectoriesSpy
         let packet_type = &packet.get_packet_info().packet_type;
         if packet_type.is_none()
         {
-            let err = format!("Ошибка обработки пакета {} -> тип пакета в схеме xml не найден", source_path.display());
+            let err = format!("Ошибка обработки пакета {} -> тип пакета (xdms:type) в схеме xml не найден", source_path.display());
             error!("{}", &err);
             let pi = Packet::new_err(packet.get_packet_name(),  task, err.as_str());
             new_packet_found(pi).await;
@@ -270,23 +326,16 @@ impl DirectoriesSpy
             let paths = utilites::io::get_dirs_async(&task.source_dir).await;
             if let Ok(reader) = paths.as_ref()
             {
-                //let mut exclude_is_changed = false;
                 for d in reader
                 {
-                    let cloned_task = Arc::clone(&task);
-                    if let Ok(is_added) = cp_service.excludes_service.add(&cloned_task.name, d).await
+                    if let Ok(is_added) = cp_service.excludes_service.add(&task.name, d).await
                     {
                         if is_added
                         {
-                            //exclude_is_changed = true;
-                            prepared_tasks.push((cloned_task, d.to_owned()));
+                            prepared_tasks.push((Arc::clone(&task), d.to_owned()));
                         }
                     }
                 }
-                // if exclude_is_changed
-                // {
-                //     Settings::save_exclude(&task.name);
-                // }
             }
         }
         prepared_tasks
@@ -296,7 +345,7 @@ impl DirectoriesSpy
 ///Обнаружен новый пакет при ошибке отправляем всем ошибку
 async fn new_packet_found(mut packet: Packet)
 {
-    logger::debug!("Сервером отправлен новый пакет {:?}, {}", &packet, logger::backtrace!());
+    logger::debug!("Сервером отправлен новый пакет {}, {}", &packet.get_packet_name(), logger::backtrace!());
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
     if let Some(sender) = NEW_PACKET_EVENT.get()

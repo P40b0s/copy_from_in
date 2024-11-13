@@ -186,10 +186,10 @@ const editor_open_event = (p: IPacket) =>
   is_open.value = true;
 }
 
-emitter.on('packetItemDoubleClick', editor_open_event);
+emitter.on('openFileViewer', editor_open_event);
 onUnmounted(()=> 
 {
-  emitter.off('packetItemDoubleClick', editor_open_event);
+  emitter.off('openFileViewer', editor_open_event);
 })
 </script>
     
@@ -202,6 +202,8 @@ onUnmounted(()=>
   align-items: center;
   justify-content: space-between;
   align-content: space-between;
+  //overflow: hidden;
+  
 }
 .image-container
 {
@@ -228,8 +230,8 @@ onUnmounted(()=>
 }
 .file-drawler
 {
-  width: 600px;
-  min-width: 600px;
+  width: 650px;
+  min-width: 650px;
   overflow-x: hidden;
   overflow-y: hidden;
   .n-base-selection .n-base-selection-label
