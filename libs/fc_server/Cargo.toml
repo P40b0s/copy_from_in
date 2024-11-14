@@ -1,6 +1,6 @@
 [package]
 name = "fc_server"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 
 description = "Сервер копирования пакетов МЭДО"
@@ -40,9 +40,9 @@ clap= {version = "4.5.7", features = ["derive"]}
 clap_derive="4.5.4"
 async-channel="2.3.1"
 futures = "0.3.31"
-utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites", features = ["encoding"]}
 db_service = {git = "https://github.com/P40b0s/db_service.git"}
 hashbrown = {version ="0.15.0" , features = ['serde']}
+utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites", features = ["encoding"]}
 
 [dependencies.service]
 git = "https://github.com/P40b0s/websocket_service.git"

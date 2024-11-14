@@ -206,13 +206,9 @@ impl PdfService
 #[cfg(test)]
 mod async_tests
 {
-    use std::future::Future;
 
     use futures::future::join_all;
     use logger::debug;
-    use tokio::task::JoinSet;
-    
-    //use tokio::test;
     #[tokio::test]
     async fn test_async_render()
     {

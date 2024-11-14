@@ -345,7 +345,10 @@ impl DirectoriesSpy
 ///Обнаружен новый пакет при ошибке отправляем всем ошибку
 async fn new_packet_found(mut packet: Packet)
 {
-    logger::debug!("Сервером отправлен новый пакет {}, {}", &packet.get_packet_name(), logger::backtrace!());
+    if packet.is_err()
+    {
+        logger::error!("{}", packet.get_error().as_ref().unwrap());
+    }
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
     if let Some(sender) = NEW_PACKET_EVENT.get()
@@ -360,7 +363,7 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
     {
         if let Some(e) = new_packet.error.as_ref()
         {
-            logger::error!("Ошибка парсера {} в пакете {}, уведомление отправлено не будет", e, packet_name);
+            logger::error!("{}, уведомление отправлено не будет", e);
             return false;
         }
         else

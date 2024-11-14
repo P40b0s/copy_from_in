@@ -158,7 +158,9 @@ impl Packet
     {
         let mut paths: Vec<PathBuf>  = vec![];
         let mut base_dir = Some(String::new());
-        if let Some(d) = self.path.as_ref().unwrap().into_iter().last()
+        let empty_pb = PathBuf::new();
+        let packet_name = self.path.as_ref().unwrap_or(&empty_pb);
+        if let Some(d) = self.path.as_ref().and_then(|p| p.into_iter().last())
         {
             if let Some(d) = d.to_str()
             {
@@ -167,16 +169,20 @@ impl Packet
         }
         if base_dir.is_none()
         {
-            return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", packet_name.display())));
         }
-        if let Ok(is_file) = self.path.as_ref().unwrap().metadata().and_then(|m| Ok(m.is_file()))
+        if let Some(is_file) = self.path.as_ref()
+        .and_then(|f| f.metadata().ok()
+        .and_then(|m| Some(m.is_file())))
         {
             if is_file
             {
-                return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
             }
         }
-        if let Ok(created) = self.path.as_ref().unwrap().metadata().and_then(|m|m.created())
+        if let Some(created) = self.path.as_ref()
+        .and_then(|f| f.metadata().ok()
+        .and_then(|m| m.created().ok()))
         {
             self.packet_date_time = Some(Date::from_system_time(created).format(DateFormat::Serialize));
         }
@@ -184,6 +190,7 @@ impl Packet
         let base_dir = base_dir.unwrap();
         self.packet_dir = Some(base_dir.clone());
         //let mut comm: Communication = Communication::default();
+
         let mut file_count = 0;
         if let Some(files) = get_entries(self.path.as_ref().unwrap())
         {
@@ -244,6 +251,7 @@ impl Packet
             }
             if file_count == 0
             {
+                logger::debug!("filecount {}, self.founded_files {:?} packet {:?} ", file_count, &self.founded_files, &self);
                 return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
             }
             return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));

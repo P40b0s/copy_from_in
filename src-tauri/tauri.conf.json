@@ -61,12 +61,9 @@
     "security": {
       "csp": null
     },
-    "updater": {
-      "active": false
-    },
     "windows": [
       {
-        "fullscreen": false,
+        "fullscreen": true,
         "height": 1000,
         "resizable": true,
         "title": "Клиент для планировщика копирования пакетов МЭДО",
