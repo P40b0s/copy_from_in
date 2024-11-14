@@ -67,7 +67,7 @@ export const PacketsViewer =  defineComponent({
                 const exist_index = packets.value.findIndex(f=>f.id == packet.payload.id);
                 if (exist_index >= 0)
                 {
-                    naive_notify(notify, 'info', `Пакет ${packet.payload.name}-${packet.payload.id} был заменен`, "После пересканирования пакет был заменен");
+                    naive_notify(notify, 'info', `Пакет ${packet.payload.name} задачи ${packet.payload.task} был заменен`, "После пересканирования пакет был заменен");
                     packets.value.splice(exist_index, 1, packet.payload);
                 }
                 else if(current_page.value == 1)
@@ -75,6 +75,7 @@ export const PacketsViewer =  defineComponent({
                     packets.value.splice(0, 0, packet.payload);
                     if(packets.value.length > items_on_page)
                         packets.value.pop();
+                    total_count.value++;
                 }
             }
         })
@@ -719,7 +720,7 @@ export const PacketsViewer =  defineComponent({
             const sign_date = packet.packetInfo?.requisites?.signDate ? new DateTime(packet.packetInfo.requisites?.signDate) : undefined;
             if(sign_date)
             {
-                return `"от ${sign_date.to_string(DateFormat.DotDate)}"`
+                return `от ${sign_date.to_string(DateFormat.DotDate)}`
             }
             else return ""
         }
@@ -728,7 +729,7 @@ export const PacketsViewer =  defineComponent({
             const number = packet.packetInfo?.requisites?.documentNumber;
             if(number)
             {
-                return `"№ ${number}"`
+                return `№ ${number}`
             }
             else return ""
         }
@@ -738,7 +739,7 @@ export const PacketsViewer =  defineComponent({
             const mj_number = packet.packetInfo?.requisites?.mj?.number;
             if(mj_date && mj_number)
             {
-                return `зарегистрирован: №${mj_number} от ${mj_date})`
+                return `(регистрация: №${mj_number} от ${mj_date.to_string(DateFormat.DotDate)})`
             }
             else return ""
         }

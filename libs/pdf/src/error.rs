@@ -16,6 +16,8 @@ pub enum Error
     PdfiumError(#[from] pdfium_render::prelude::PdfiumError),
     #[error(transparent)]
     ImageError(#[from] image::ImageError),
+    #[error("Ошибка создание изображения из файла: {0} страницы {1}")]
+    ExtractDynamicImageError(String, u32),
     //Ошибка если дата и размер копируемого файла не может синхронизироваться больше 2 минут
     #[error("Превышено максимальное количество попыток при попытке копирования файла `{0}`, файл должен успевать копироваться в систему в течении 2 минут")]
     FileTimeCopyError(String)

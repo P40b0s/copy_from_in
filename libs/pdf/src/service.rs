@@ -1,11 +1,13 @@
 use std::{io::Cursor, sync::Arc};
+use crate::Error;
+
 use super::error;
+use image::{GrayImage, ImageFormat, RgbaImage, DynamicImage};
 use logger::error;
 use tokio::runtime::Handle;
 use utilites::Hasher;
-//use image::{DynamicImage, ImageFormat};
-use pdfium_render::prelude::{PdfPageRenderRotation, PdfRenderConfig, Pdfium, DynamicImage, ImageFormat};
-
+use pdfium_render::prelude::{PdfBitmapFormat, PdfPageRenderRotation, PdfRenderConfig, Pdfium};
+//use pdfium_render::prelude::*;
 pub struct PdfService 
 {
     config: Arc<PdfRenderConfig>,
@@ -23,29 +25,23 @@ impl PdfService
     }
     fn get_instance() -> Result<Pdfium, error::Error> 
     {
-        let lib_paths = vec!
-        [
-            //путь для debug
-            Pdfium::pdfium_platform_library_name_at_path("libs/pdf/libs/"),
-            Pdfium::pdfium_platform_library_name_at_path("pdf/libs/"),
-            //обычный путь
-            Pdfium::pdfium_platform_library_name_at_path("./libs/")
-        ];
-        let mut last_err : pdfium_render::prelude::PdfiumError = pdfium_render::prelude::PdfiumError::UnrecognizedPath;
-        for path in lib_paths
+        let dirs = ["libs/pdf/libs/", "pdf/libs/", "./libs/", "libs/"];
+        let binding_result = 
+        Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(dirs[0]))
+        .or_else(|_| Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(dirs[1])))
+        .or_else(|_| Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(dirs[2])))
+        .or_else(|_| Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(dirs[3])));
+        if let Ok(result) = binding_result
         {
-            let binding_result = Pdfium::bind_to_library(path);
-            if let Ok(result) = binding_result
-            {
-                return Ok(Pdfium::new(result));
-            }
-            else 
-            {
-                last_err = binding_result.err().unwrap();   
-            }
+            return Ok(Pdfium::new(result));
         }
-        error!("{}", last_err.to_string());
-        return Err(error::Error::PdfiumError(last_err)); 
+        else
+        {
+            let unrecognition_err : pdfium_render::prelude::PdfiumError = pdfium_render::prelude::PdfiumError::UnrecognizedPath;
+            error!("библиотека pdfium не найдена в {} -> {}", dirs.join(","), unrecognition_err.to_string());
+            return Err(error::Error::PdfiumError(unrecognition_err)); 
+        }
+       
     }
     
     ///Извлечение изображения из pdf и выдача в формате строки base64
@@ -90,14 +86,30 @@ impl PdfService
                     return;
                 }
                 let current_page = current_page.unwrap();
-                let dyn_image = current_page.as_image();
-                let _ = sender.send(Ok(dyn_image));
+                let bytes = current_page.as_rgba_bytes();
+                let width = current_page.width() as u32;
+                let height = current_page.height() as u32;
+                let image = match current_page.format().unwrap_or_default() 
+                {
+                    PdfBitmapFormat::BGRA
+                    | PdfBitmapFormat::BRGx
+                    | PdfBitmapFormat::BGRx
+                    | PdfBitmapFormat::BGR => 
+                    {
+                        RgbaImage::from_raw(width, height, bytes).map(DynamicImage::ImageRgba8)
+                    }
+                    PdfBitmapFormat::Gray => 
+                    {
+                        GrayImage::from_raw(width, height, bytes).map(DynamicImage::ImageLuma8)
+                    }
+                };
+                let _ = sender.send(image.ok_or(Error::ExtractDynamicImageError(path.clone(), page_number)));
             })
         });
 
-        if let Ok(png) = receiver.await
+        if let Ok(page) = receiver.await
         {
-            let image = png?;
+            let image = page?;
             let png = self.convert_page(image, path2, page_number).await?;
             let base64 = Hasher::from_bytes_to_base64(&png);
             return Ok(base64);
@@ -148,7 +160,7 @@ impl PdfService
     }
 
     // Извлечение страницы из pdf и преобразование ее в формат rgba8 pdf и выдача страницы в виде массива байт
-    async fn convert_page(&self, dyn_image: image::DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
+    async fn convert_page(&self, dyn_image: DynamicImage, path: String, page_number: u32) -> Result<Vec<u8>, error::Error>
     {
         let (sender, receiver) = tokio::sync::oneshot::channel();
         let current = Handle::current();

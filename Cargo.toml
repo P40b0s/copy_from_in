@@ -13,7 +13,7 @@ members = [
     "libs/transport",
     "libs/pdf"
 ]
-default-members = ["src-tauri"]
+default-members = ["src-tauri", "libs/fc_server"]
 
 
 
