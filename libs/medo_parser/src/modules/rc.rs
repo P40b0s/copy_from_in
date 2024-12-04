@@ -58,11 +58,7 @@ impl MedoParser for RcParser
     fn parse(file: &PathBuf, _paths: Option<&mut Vec<PathBuf>>) -> Result<Self, MedoParserError> 
     {
         let decoded = open_file(file, Some(FileEncoding::Windows1251))?;
-        let de: Result<RcParser, DeError> = quick_xml::de::from_reader(decoded.1.as_bytes());
-        if de.is_err()
-        {
-            return Err(MedoParserError::SerdeError(format!("Ошибка разбора файла rc: {}, {}", file.display(), de.err().unwrap())));
-        }
-        Ok(de.unwrap())
+        let de: RcParser = quick_xml::de::from_reader(decoded.1.as_bytes())?;
+        Ok(de)
     }
 }

@@ -10,7 +10,7 @@ use serde_json::{json, Value};
 use regex;
 use encoding::{Encoding, DecoderTrap};
 use encoding::all::WINDOWS_1251;
-use settings::Date;
+use utilites::Date;
 use super::io::*;
 use crate::helpers;
 // const LTR: &str = r#"[ПИСЬМО КП ПС СЗИ]
@@ -36,7 +36,7 @@ const ABSOLUTE_PATH : &str = "/hard/xar/medo_testdata/0";
 #[test]
 fn test_ltr()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let eror_enc = Path::new(ABSOLUTE_PATH)
     .join("ltrs")
     .join("error_encoding.ltr");
@@ -52,7 +52,7 @@ fn test_ltr()
     let theme = "ЭСД МЭДО (МД-1654 от 2022-10-29 {e4595e23-16f9-4a17-ae0b-e2a2385640d7})";
     if let Ok(decoded) = super::open_file(&default, None)
     {
-        let ltr = Ltr::parse(&default).unwrap();
+        let ltr = Ltr::parse_file(&default).unwrap();
         
         //write_string_to_file(&decoded, "ltr_file");
         assert_eq!(ltr.addresses.iter().nth(0).unwrap(), addr);
@@ -66,7 +66,7 @@ fn test_ltr()
     .join("wo_addresse_2.ltr");
     if let Ok(decoded) = super::open_file(&wo_addresse_2, None)
     {
-        let lltr = Ltr::parse(&wo_addresse_2);
+        let lltr = Ltr::parse_file(&wo_addresse_2);
         error!("Ошибка разбора файла {} \r\n{}", &wo_addresse_2.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -75,7 +75,7 @@ fn test_ltr()
     .join("wo_addresse.ltr");
     if let Ok(decoded) = super::open_file(&wo_addresse, None)
     {
-        let lltr = Ltr::parse(&wo_addresse);
+        let lltr = Ltr::parse_file(&wo_addresse);
         error!("Ошибка разбора файла {} \r\n{}", &wo_addresse.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -84,7 +84,7 @@ fn test_ltr()
     .join("wo_files.ltr");
     if let Ok(decoded) = super::open_file(&wo_files, None)
     {
-        let lltr = Ltr::parse(&wo_files);
+        let lltr = Ltr::parse_file(&wo_files);
         error!("Ошибка разбора файла {} \r\n{}", &wo_files.display(), lltr.as_ref().err().unwrap());
         assert_eq!(lltr.is_err(), true);
     }
@@ -93,7 +93,7 @@ fn test_ltr()
     .join("wo_theme.ltr");
     if let Ok(decoded) = super::open_file(&wo_theme, None)
     {
-        let lltr = Ltr::parse(&wo_theme).unwrap();
+        let lltr = Ltr::parse_file(&wo_theme).unwrap();
        
         assert_eq!(lltr.theme, None);
     }
@@ -102,7 +102,7 @@ fn test_ltr()
     .join("wo_date.ltr");
     if let Ok(decoded) = super::open_file(&wo_date, None)
     {
-        let lltr = Ltr::parse(&wo_date).unwrap();
+        let lltr = Ltr::parse_file(&wo_date).unwrap();
        
         assert_eq!(lltr.date, None);
     }
@@ -112,7 +112,7 @@ fn test_ltr()
     .join("envelope.ltr");
     if let Ok(decoded) = super::open_file(&xz_error, None)
     {
-        let lltr = Ltr::parse(&xz_error).unwrap();
+        let lltr = Ltr::parse_file(&xz_error).unwrap();
        
         assert_eq!(lltr.date, None);
     }
@@ -121,21 +121,22 @@ fn test_ltr()
 #[test]
 fn strange_error_ltr()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let xz_error = Path::new(ABSOLUTE_PATH)
     .join("54334177")
     .join("envelope.ltr");
     if let Ok(decoded) = super::open_file(&xz_error, None)
     {
-        let lltr = Ltr::parse(&xz_error).unwrap();
+        let lltr = Ltr::parse_file(&xz_error).unwrap();
        
         assert_eq!(lltr.date, None);
     }
 }
+
 #[test]
 fn test_all_ltrs()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let dirs = Path::new(ABSOLUTE_PATH);
     let dirs_count = 100;
     let mut processed = 0;
@@ -151,7 +152,7 @@ fn test_all_ltrs()
                     {
                         if let Ok(decoded) = super::open_file(&f.path(), None)
                         {
-                            let ltr = Ltr::parse(&f.path());
+                            let ltr = Ltr::parse_file(&f.path());
                             if ltr.is_ok()
                             {
                                 processed = processed + 1;
@@ -174,7 +175,7 @@ fn test_all_ltrs()
 //в общем будет видно потом
 fn win_1251_file()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("54146104")
     .join("document.xml");
@@ -195,7 +196,7 @@ fn win_1251_file()
 //в общем будет видно потом
 fn xz_encoding()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("53865418")
     .join("document.xml");
@@ -218,7 +219,7 @@ fn xz_encoding()
 #[test]
 fn xz_encoding_packet()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("53865418");
 
@@ -241,7 +242,7 @@ fn xz_encoding_packet()
 //в общем будет видно потом
 fn test_parse_container_2_5()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("54146104");
     let mut packet = Packet::parse(&win);
@@ -257,7 +258,7 @@ fn test_parse_container_2_5()
 #[test]
 fn test_parse_container_2_7_1()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("СФ_53596025_1_1");
     let packet = Packet::parse(&win);
@@ -280,7 +281,7 @@ fn test_parse_container_2_7_1()
 ///   "error": "Ошибка в сериализаторе serde: /home/dev/medo_testdata/medo/0/27466149/container/passport.xml, missing field `description`"
 fn test_packet_27466149()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/27466149");
     let mut packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -297,7 +298,7 @@ fn test_packet_27466149()
 ///задвоение в поле destination, наконец то решено!
 fn test_packet_53294501()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/53294501");
     let packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -312,7 +313,7 @@ fn test_packet_53294501()
 #[test]
 fn test_acknowledgment()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/1/52691083");
     let mut packet = Packet::parse(&win);
     if packet.get_error().is_none()
@@ -328,7 +329,7 @@ fn test_acknowledgment()
 
 fn test_all_dirs()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let mut bench = Instant::now();
     let path = Path::new(ABSOLUTE_PATH)
     .join("in_docs");
@@ -392,7 +393,7 @@ fn test_all_dirs_as_packets()
 {
     let errors_path = "/hard/xar/medo_testdata/errors";
     let c_in_data = Path::new("/hard/xar/medo_testdata/medo/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let bench = Instant::now();
     //let path = Path::new(ABSOLUTE_PATH)
     //.join("in_docs");
@@ -425,7 +426,7 @@ fn test_all_dirs_as_packets()
 #[test]
 fn test_rc_files()
 {
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let errors_path = "/hard/xar/medo_testdata/errors";
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
     let  packet = Packet::parse(&d);
@@ -441,6 +442,7 @@ fn test_rc_files()
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
+    assert!(packet.get_error().is_none())
 }
 
 
@@ -450,7 +452,7 @@ fn test_converting_rc()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "//hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -476,7 +478,7 @@ fn test_converting_2_7_1()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/projects/fullstack/complite_in_parser/test_data/in_docs/271/53580416_1");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -502,7 +504,7 @@ fn test_converting_ack()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/52690151");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -529,7 +531,7 @@ fn test_wrong_xml()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/29943971 - копия");
     let packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -555,7 +557,7 @@ fn test_converting_2_5()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/54139378");
     let mut packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -579,10 +581,10 @@ fn test_converting_2_5()
 #[test]
 fn test_convert_system_time()
 {
-    logger::StructLogger::initialize_logger();
-    let dt = std::time::SystemTime::now();
-    let converted = Date::convert_system_time(dt);
-    logger::debug!("{}", converted.unwrap());
+    //logger::StructLogger::new_default();
+    //let dt = std::time::SystemTime::now();
+    //let converted = Date::from_system_time(dt);
+    //logger::debug!("{}", converted);
 }
 
 
@@ -595,7 +597,7 @@ fn test_duplicate_field()
     let errors_path = "/hard/xar/medo_testdata/errors";
     let converted_path = "/hard/xar/medo_testdata/converted";
     //let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
-    logger::StructLogger::initialize_logger();
+    logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/error_duplicate_fields/2");
     let mut packet = Packet::parse(&d);
     if packet.get_error().is_none()
@@ -625,7 +627,12 @@ fn test_duplicate_field()
 
 
 
-
+// #[test]
+// fn test_errors()
+// {
+//     let err = MedoParserError::PacketError("123321".to_owned());
+//     println!("{}", err.to_string());
+// }
 
 
 

@@ -1,7 +1,9 @@
 .main-container {
   display: grid; 
+  min-height: 100vh;
+  width: 100%;
   grid-template-columns: 1fr; 
-  grid-template-rows: 2.8em 20fr 2.5em; 
+  grid-template-rows: auto 1fr auto; 
   gap: 0px 0px; 
   grid-template-areas: 
     "menu"
@@ -9,5 +11,13 @@
     "footer"; 
 }
 .menu { grid-area: menu; }
-.footer { grid-area: footer; }
-.main-body { grid-area: main-body; }
+.footer 
+{ 
+  grid-area: footer; 
+
+}
+.main-body 
+{ 
+  grid-area: main-body;
+
+}

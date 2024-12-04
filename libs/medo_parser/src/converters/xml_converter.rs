@@ -1,6 +1,6 @@
 use crate::{medo_model::{Ack, Executor, MinistryOfJustice, PacketInfo, Requisites, SenderInfo}, DatesHelper, Uid, XmlParser};
 use logger::warn;
-use settings::Date;
+use utilites::Date;
 use super::UniversalConverter;
 
 impl UniversalConverter for XmlParser
@@ -46,11 +46,11 @@ fn identification(value: &XmlParser, packet: &mut PacketInfo) -> bool
         {
             packet.header_guid = Some(uid.into_owned());
         }
-        packet.packet_type = header.get_type().into_owned();
+        packet.packet_type = Some(header.get_type().into_owned());
         //организация отправившая пакет и ее uid
         sender.organization = Some(organization.into_owned());
         sender.source_guid = Some(source.get_uid().into_owned());
-        sender.medo_addessee = match value.get_medo_addressee()
+        sender.medo_addressee = match value.get_medo_addressee()
         {
             Some(e) => Some(e.into_owned()),
             None => 

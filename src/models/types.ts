@@ -1,26 +1,15 @@
 import { RendererElement, RendererNode, VNode } from "vue";
+import type { IPacketInfo } from './packet';
 
-export interface IDocument
-{
-    organization?: string,
-    organizationUid: string,
-    docType?: string,
-    sourceMedoAddressee?: string
-    docUid?: string
-    number?: string,
-    signDate?: string,
-   
-}
-// для всех
-// parseTime, name, organization, docType, number, signDate
 export interface IPacket
 {
+    id: string;
+    //Директория пакета
     name: string,
     parseTime: string,
-    document?: IDocument,
-    error?: string,
+    packetInfo?: IPacketInfo,
     task: Task,
-    report_sended: boolean,
+    reportSended: boolean,
 }
 
 export type Task = 
@@ -36,7 +25,11 @@ export type Task =
     is_active: boolean,
     generate_exclude_file: boolean,
     color: string,
+    sound: boolean,
     clean_types: string[],
+    autocleaning: boolean,
+    //Отображать ли результат обработки этого таска в списке пакетов
+    visible: boolean,
     filters: Filter
 }
 export type CopyModifer = 'CopyAll' | 'CopyOnly' | 'CopyExcept';
@@ -46,7 +39,7 @@ export type Filter =
     document_uids: string[]
 }
 
-interface Clone<T>
+export interface Clone<T>
 {
     clone(source: T|undefined): T|undefined
 }
@@ -74,8 +67,11 @@ class TaskClone implements Clone<Task>
                 copy_modifier: source.copy_modifier,
                 is_active: source.is_active,
                 color: source.color,
+                sound: source.sound,
                 clean_types: source.clean_types,
                 generate_exclude_file: source.generate_exclude_file,
+                autocleaning: source.autocleaning,
+                visible: source.visible,
                 filters: f
             } 
             return t;
@@ -84,7 +80,29 @@ class TaskClone implements Clone<Task>
     }
 }
 
+export type File = 
+{   
+    file_name: string,
+    file_type: string,
+    path: string
+}
+/// Структура для запроса страницы файла или всего файла из API
+export type FileRequest = 
+{
+    file: File,
+    page_number?: number,
+}
+
+export type FilesRequest = 
+{
+    task_name: string,
+    dir_name: string
+}  
+
+
 export type VN = VNode<RendererNode, RendererElement, {
     [key: string]: any;
 }>
 export const taskClone = new TaskClone();
+
+export type Callback<T> = (val: T) => void;

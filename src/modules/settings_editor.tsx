@@ -6,18 +6,18 @@ import
     CSSProperties,
     onMounted,
     ref,
+    onUnmounted,
   } from 'vue'
 import { open } from '@tauri-apps/api/dialog';
-import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption} from 'naive-ui';
+import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
-import { settings } from '../services/tauri-service.ts';
-import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin } from '@vicons/ionicons5';
+import { commands_settings } from '../services/tauri/commands.ts';
+import { events } from '../services/tauri/events.ts';
+import { AddSharp, CheckmarkCircleOutline, FolderOpenOutline, TrashBin, WarningSharp } from '@vicons/ionicons5';
 import { HeaderWithDescription } from './header_with_description.tsx';
 import { Filter } from '../models/types';
-export const SettingsEditorAsync = defineAsyncComponent({
-    loader: () => import ('./settings_editor.tsx'),
-    loadingComponent: h(NSpin)
-})
+import { naive_notify } from '../services/notification.ts';
+import { sleepNow } from '../services/helpers.ts';
 
 const form_validation_rules = () : FormRules =>
 {
@@ -84,30 +84,70 @@ const form_validation_rules = () : FormRules =>
     }
 }
 export const SettingsEditor =  defineComponent({
-    setup () 
+    async setup () 
     {
+        const notify = useNotification();
         const tasks = ref<Task[]>([]);
         const selected_task = ref<Task>();
         const is_new_task = ref(false);
-        const save_error = ref<string|undefined>();
-        onMounted(async ()=>
+        const get_tasks = async () =>
         {
-            let s = await settings.load_settings()
-            if(s != undefined)
+            let s = await commands_settings.load_settings()
+            if (s.is_ok())
             {
-                //если пришла строка то ошибка
-                if(typeof s === "string")
+                tasks.value = s.get_value();
+                selected_task.value =  taskClone.clone(tasks.value[0]);
+            }
+            else
+            {
+                console.error(s.get_error());
+            }
+        }
+        const updated_event = events.task_updated(async (task) => 
+        {
+            const new_task = task.payload;
+            const saved = tasks.value.findIndex(t=>t.name == new_task.name);
+            //новая задача
+            if (saved == -1)
+            {
+                tasks.value.push(new_task);
+                naive_notify(notify, 'success', "Добавлена задача " + new_task.name, "", 2000);
+            }
+            //задача уже есть в списке
+            else
+            {
+                tasks.value.splice(saved, 1, new_task);
+                if (selected_task.value && selected_task.value.name == new_task.name)
                 {
-                    console.error(s);
-                } 
-                else
-                {
-                    tasks.value = s;
-                    selected_task.value =  taskClone.clone(s[0]);
+                    selected_task.value = tasks.value[saved];
                 }
-                //console.log(tasks.value);
+                if(is_new_task.value == false)
+                    naive_notify(notify, 'success', "Задача " + new_task.name + " была изменена", "", 2000);
+                else
+                    naive_notify(notify, 'success', "Задача " + new_task.name + " была сохранена", "", 2000);
+            }
+            is_new_task.value = false;
+            (selected_task.value as Task).generate_exclude_file = false;
+            tasks.value[saved].generate_exclude_file = false;
+        })
+        const delete_event = events.task_deleted(async (task) => 
+        {
+            const task_name = task.payload;
+            const saved = tasks.value.findIndex(t=>t.name == task_name);
+            if (saved != -1)
+            {
+                tasks.value.splice(saved, 1);
+                naive_notify(notify, 'success', "Удалена задача " + task_name, "", 2000);
+                selected_task.value = tasks.value[0];
             }
         })
+        onUnmounted(()=>
+        {
+            updated_event.then(v=> v.unsubscribe())
+            delete_event.then(t=>t.unsubscribe())
+        })
+        await get_tasks();
+      
         const settings_names = (): Array<SelectOption | SelectGroupOption> =>
         {
             return tasks.value.map(r=>
@@ -122,8 +162,7 @@ export const SettingsEditor =  defineComponent({
 
         const copy_modifers = (): Array<SelectOption | SelectGroupOption> =>
         {
-           
-                return [
+            return [
                 {
                     label: "Копировать все",
                     value: 'CopyAll',
@@ -140,7 +179,6 @@ export const SettingsEditor =  defineComponent({
                     disabled: false
                 },
             ]
-            
         }
       
         const list = () =>
@@ -151,7 +189,8 @@ export const SettingsEditor =  defineComponent({
                 {
                     display: 'flex',
                     flexDirection: 'row',
-                    width: '100%'
+                    width: '100%',
+                    height: '100%'
                 }   as CSSProperties
             },
             [
@@ -166,7 +205,6 @@ export const SettingsEditor =  defineComponent({
                 },
                 [
                     settings_selector(),
-                    error(),
                     settings_dashboard(),
                     
                 ]
@@ -175,22 +213,9 @@ export const SettingsEditor =  defineComponent({
             ]
             );
         }
-        const error = () =>
-        {
-            return h("span", {
-            style:
-                {
-                    color: 'red',
-                    visibility: save_error.value ? 'visible' : 'collapse'
-                } as CSSProperties
-            },
-            save_error.value
-            )
-        }
-
+       
         const settings_selector = () =>
         {
-            const save_button_label = ref<string | VN>("СОХРАНИТЬ");
             return h("div",
             {
                 style:
@@ -230,7 +255,10 @@ export const SettingsEditor =  defineComponent({
                                 is_active: true,
                                 generate_exclude_file: true,
                                 clean_types: [],
-                                color: '#4f46',
+                                sound: false,
+                                autocleaning: false,
+                                color: '#0ff00f',
+                                visible: true,
                                 filters: f
                             }
                             is_new_task.value = true;
@@ -248,7 +276,6 @@ export const SettingsEditor =  defineComponent({
                     style:
                     {
                         marginLeft: '5px'
-                        
                     } as CSSProperties,
                     disabled: is_new_task.value,
                     value: selected_task.value?.name,
@@ -258,63 +285,101 @@ export const SettingsEditor =  defineComponent({
                         selected_task.value = taskClone.clone(tasks.value.find(f=>f.name == v));
                     }
                 }),
-                h(NButton,
-                {
-                    type: 'primary',
-                    style:
-                    {
-                        marginLeft: '5px',
-                        width: '100px'
-                    }    as CSSProperties,
-                    onClick: async () => 
-                    {
-                        const saved = tasks.value.findIndex(t=>t.name == selected_task.value?.name);
-                        tasks.value.splice(saved, 1, selected_task.value as Task);
-                        const result = await settings.save_task(tasks.value[saved]);
-                        if (result === 'string')
-                        {
-                            console.error(result);
-                            save_error.value = result;
-                        }
-                        else
-                        {
-                            is_new_task.value = false;
-                            //await notify("Настройки успешно сохранены", "Настройки успешно сохранены")
-                            (selected_task.value as Task).generate_exclude_file = false;
-                            tasks.value[saved].generate_exclude_file = false;
-                            save_button_label.value = h(NIcon, {component: CheckmarkCircleOutline, color: 'green', size: 'large'})
-                            setTimeout(() => 
-                            {
-                                save_button_label.value = "СОХРАНИТЬ"
-                            }, 1000);
-                              
-                        }
-                    }
-                },
-                {
-                    default:() => save_button_label.value
-                }),
+                save_button(),
+                (selected_task.value != undefined && is_new_task.value == false) ? del_button() : [],
+                (selected_task.value != undefined && is_new_task.value) ? cancel_button() : []
+                
+                
             ]
             )
         }
+
+        const save_button = () :VN =>
+        {
+            const save_button_label = ref<string | VN>("СОХРАНИТЬ");
+            return h(NButton,
+            {
+                type: 'primary',
+                style:
+                {
+                    marginLeft: '5px',
+                    width: '100px'
+                }    as CSSProperties,
+                onClick: async () => 
+                {
+                    if(selected_task.value != undefined)
+                    {
+                        const result = await commands_settings.save_task(selected_task.value);
+                        if (result.is_err())
+                        {
+                            save_button_label.value = h(NIcon, {component: WarningSharp, color: 'red', size: 'large'})
+                            const res = result.get_error().split("\\n");
+                            if (res.length == 1)
+                                naive_notify(notify, 'error', "Ошибка сохранения настроек", result.get_error());
+                            else
+                                naive_notify(notify, 'error', "Ошибка сохранения настроек", () => 
+                            {
+                                return h('div',null,
+                                    res.map(r=> h('div', 
+                                    {
+                                        style:{
+                                            color: 'red'
+                                        } as CSSProperties
+                                    },
+                                    r))
+                                );
+                            });   
+                        }
+                    }
+                }
+            },
+            {
+                default:() => save_button_label.value
+            });
+        }
+        const cancel_button = () :VN =>
+        {
+            const save_button_label = ref<string | VN>("ОТМЕНА");
+            return h(NButton,
+            {
+                type: 'warning',
+                style:
+                {
+                    marginLeft: '5px',
+                    width: '100px',
+                }    as CSSProperties,
+                onClick: async () => 
+                {
+                    selected_task.value = tasks.value[0];
+                    tasks.value.pop();
+                    is_new_task.value = false;
+                }
+            },
+            {
+                default:() => save_button_label.value
+            });
+        }
+
         const formRef = ref<FormInst | null>(null);
         const settings_dashboard = () =>
         {
             if(selected_task.value != undefined)
             {
-                return h(NCard,{
+                return h(NCard,
+                {
                     style:
                     {
                         marginTop:'5px'
                     } as CSSProperties
 
                 },
-                    h(NScrollbar,
+                    () => h(NScrollbar,
                     {
                         trigger: 'hover',
+                        
                         style:
                         {
-                            maxHeight: '570px',
+                            maxHeight: '78vh',
                             padding: '10px'
                         } as CSSProperties
                     },
@@ -332,11 +397,15 @@ export const SettingsEditor =  defineComponent({
                         },
                         [
                             left_form(),
+                            h('div',   {style:
+                                {
+                                    flexGrow: '2',
+                                    marginTop:'5px'
+                                } as CSSProperties}),
                             right_form(),
-                            del_button(),
-                            
                         ])
-                    }))
+                    })
+                )
             } else return [];
         }
 
@@ -344,14 +413,31 @@ export const SettingsEditor =  defineComponent({
         {
             return h(NPopconfirm,
             {
+                style:
+                {
+                   
+                } as CSSProperties,
                 positiveText: "Удалить",
                 onPositiveClick: async () => 
                 {
-                    const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
-                    tasks.value.splice(current_task, 1);
-                    let dl = await settings.delete_task(selected_task.value as Task)
-                    selected_task.value = tasks.value[0];
-                    is_new_task.value = false;
+                    //const current_task = tasks.value.findIndex(t=> t.name == selected_task.value?.name)
+                    //tasks.value.splice(current_task, 1);
+                    let dl = await commands_settings.delete_task(selected_task.value as Task)
+                    if (dl.is_err())
+                    {
+                        naive_notify(notify, 'error', "Ошибка удаления задачи " + selected_task.value?.name, () => 
+                        {
+                            return h('div', 
+                            {
+                                style:
+                                {
+                                    color: 'red'
+                                } as CSSProperties,
+                            },
+                            dl.get_error()
+                            );
+                        });
+                    }
                 }
             },
             {
@@ -361,13 +447,9 @@ export const SettingsEditor =  defineComponent({
                     {
                         type: 'error',
                         color: "#d90d0d",
-                        size: 'large',
-                        text: true,
                         style:
                         {
-                            position: 'absolute',
-                            top: '15px',
-                            right: '15px'
+                            marginLeft: '5px',
                         }    as CSSProperties,
                     },
                     {
@@ -389,9 +471,8 @@ export const SettingsEditor =  defineComponent({
                     model: selected_task.value,
                     style:
                     {
-                       // width: '600px',
                         flexGrow: '3',
-                        marginTop:'5px'
+                        marginTop:'5px',
                     } as CSSProperties
                 },
                 {
@@ -444,7 +525,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.source_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).source_dir = v,
                         },
@@ -457,17 +538,17 @@ export const SettingsEditor =  defineComponent({
                                     text: true,
                                     onClick: async ()=>
                                     {
-                                        // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор исходной директории",
-                                            defaultPath: selected_task.value?.source_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).source_dir = selected as string
-                                            }
+                                        // Open a selection dialog for files
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор исходной директории",
+                                        //     defaultPath: selected_task.value?.source_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).source_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {
@@ -488,7 +569,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.target_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
                         },
@@ -502,16 +583,16 @@ export const SettingsEditor =  defineComponent({
                                     onClick: async ()=>
                                     {
                                         // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор целевой директории",
-                                            defaultPath: selected_task.value?.target_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).target_dir = selected as string
-                                            }
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор целевой директории",
+                                        //     defaultPath: selected_task.value?.target_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).target_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {
@@ -532,7 +613,7 @@ export const SettingsEditor =  defineComponent({
                         default:() =>
                         h(NInput,
                         {
-                            readonly: true,
+                            readonly: false,
                             value: selected_task.value?.report_dir,
                             onUpdateValue:(v)=> (selected_task.value as Task).report_dir = v
                         },
@@ -546,16 +627,16 @@ export const SettingsEditor =  defineComponent({
                                     onClick: async ()=>
                                     {
                                         // Open a selection dialog for image files
-                                        const selected = await open({
-                                            multiple: false,
-                                            title: "Выбор директории отправки уведомлений",
-                                            defaultPath: selected_task.value?.report_dir,
-                                            directory: true,
-                                            });
-                                            if(selected != null)
-                                            {
-                                                (selected_task.value as Task).report_dir = selected as string
-                                            }
+                                        // const selected = await open({
+                                        //     multiple: false,
+                                        //     title: "Выбор директории отправки уведомлений",
+                                        //     defaultPath: selected_task.value?.report_dir,
+                                        //     directory: true,
+                                        //     });
+                                        //     if(selected != null)
+                                        //     {
+                                        //         (selected_task.value as Task).report_dir = selected as string
+                                        //     }
                                     }
                                 },
                                 {
@@ -691,7 +772,8 @@ export const SettingsEditor =  defineComponent({
                     style:
                     {
                         marginTop:'5px',
-                        marginLeft: '5px'
+                        marginLeft: '5px',
+                        marginRight: '10px'
                     } as CSSProperties
                 },
                 {
@@ -806,6 +888,47 @@ export const SettingsEditor =  defineComponent({
                             } 
                         })
                     }),
+                    
+                    h(NFormItem,
+                    {
+                        path: 'autocln',
+                    },
+                    {
+                        label:() => h(HeaderWithDescription,{
+                            name: "Автоочистка",
+                            description: "Пакеты указанные в поле \"Типы пакетов для операции очистки\" при поступлении будут удалятся автоматически",
+                            fontSize: '14px'
+                        }),
+                        default:() =>
+                        h(NSwitch,
+                        {
+                            value: selected_task.value?.autocleaning,
+                            onUpdateValue:(v: boolean)=>
+                            {
+                                (selected_task.value as Task).autocleaning = v;
+                            } 
+                        })
+                        }),
+                        h(NFormItem,
+                        {
+                            path: 'visible',
+                        },
+                        {
+                            label:() => h(HeaderWithDescription,{
+                                name: "Отображение в списке пакетов",
+                                description: "Отображать ли процесс данной задачи во вкладке \"Пакеты\"",
+                                fontSize: '14px'
+                            }),
+                            default:() =>
+                            h(NSwitch,
+                            {
+                                value: selected_task.value?.visible,
+                                onUpdateValue:(v: boolean)=>
+                                {
+                                    (selected_task.value as Task).visible = v;
+                                } 
+                            })
+                        }),
             ]})
         }
         return {list}

@@ -1,0 +1,72 @@
+syntax = "proto3";
+package packets;
+
+message PacketTable {
+    string id = 1;
+    PacketInfo packet_info = 2;
+    string task_name = 3;
+    bool report_sended = 4;
+}
+message SenderInfo {
+    optional string organization = 1;
+    optional string person = 2;
+    optional string department = 3;
+    optional string post = 4;
+    optional string addressee = 5;
+    optional string medo_addressee = 6;
+    optional string source_guid = 7;
+    optional Executor executor = 8;
+    optional string icon = 9;
+}
+
+message Executor {
+    optional string organization = 1;
+    optional string person = 2;
+    optional string post = 3;
+    optional string contact_info = 4;
+}
+
+message MinistryOfJustice {
+    string number = 1;
+    string date = 2;
+}
+
+message Ack {
+    optional string comment = 1;
+    bool accepted = 2;
+    optional string time = 3;
+}
+
+
+message PacketInfo {
+    optional string header_guid = 1;
+    string packet_directory = 2;
+    optional string packet_type = 3;
+    ///Время создания локальной директории
+    ///(фактически когда пакет пришел к нам)
+    ///зависит от времени на сервере, тому что берет локальное время создания
+    string delivery_time = 4;
+    bool wrong_encoding = 5;
+    optional string error = 6;
+    repeated string files = 7;
+    optional Requisites requisites = 8;
+    optional SenderInfo sender_info = 9;
+    optional string default_pdf = 10;
+    optional string pdf_hash = 11;
+    optional Ack acknowledgment = 12;
+    optional string trace_message = 13;
+    string update_key = 14;
+    bool visible = 15;
+}
+
+
+message Requisites {
+    optional string document_guid = 1;
+    optional string act_type = 2;
+    optional string document_number = 3;
+    optional string sign_date = 4;
+    optional uint32 pages = 5;
+    optional string annotation = 6;
+    optional MinistryOfJustice mj = 7;
+}
+

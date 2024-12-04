@@ -8,8 +8,15 @@ authors = ["Alex_Xar <P40b0s@gmail.com>"]
 members = [
     "src-tauri",
     "libs/medo_parser",
-    "libs/settings",]
-default-members = ["src-tauri"]
+    "libs/settings", 
+    "libs/fc_server",
+    "libs/transport",
+    "libs/pdf"
+]
+default-members = ["src-tauri", "libs/fc_server"]
+
+
+
 [dependencies]
 
 

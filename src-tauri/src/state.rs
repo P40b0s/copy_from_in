@@ -1,38 +1,25 @@
-use std::process::exit;
+use std::sync::Arc;
+
+use tauri::AppHandle;
 use tokio::sync::Mutex;
 use settings::{FileMethods, Settings};
 
+use crate::http_service::{SettingsService, UtilitesService, PacketService};
+
 pub struct AppState
 {
-    pub settings: Mutex<Settings>,
-}
-impl Default for AppState
-{
-    fn default() -> Self 
-    {
-        let settings = Settings::load(settings::Serializer::Toml);
-        if settings.is_err()
-        {
-            for e in settings.err().unwrap()
-            {
-                logger::error!("{}", e.to_string());
-            }
-            logger::error!("Ошибка десериализации файла настроек, выход из программы...");
-            exit(01);
-        }
-        Self
-        {
-            settings: Mutex::new(settings.unwrap()),
-        }
-    }
+    //pub settings: Mutex<Settings>,
+    pub settings_service: SettingsService,
+    pub utilites_service: UtilitesService,
+    pub packet_service: PacketService,
 }
 
 
 impl AppState
 {
-    pub async fn get_settings(&self) -> Settings
-    {
-        let guard = self.settings.lock().await;
-        guard.clone()
-    }
+    // pub async fn get_settings(&self) -> Settings
+    // {
+    //     let guard = self.settings.lock().await;
+    //     guard.clone()
+    // }
 }

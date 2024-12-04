@@ -3,19 +3,22 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
+    Suspense,
   } from 'vue'
 
-import { NConfigProvider, NNotificationProvider, NSpin, dateRuRU, ruRU } from 'naive-ui';
+import { NConfigProvider, NNotificationProvider, NSpin, NotificationType, dateRuRU, ruRU, useNotification } from 'naive-ui';
 import {MainTab} from './modules/main_tab.tsx';
 import './main_grid.scss'
 import { darkTheme } from 'naive-ui';
 import { Services } from './modules/services.tsx';
-
+import FileViewer from './modules/file_viewer/FileViewer.vue';
+import Loader2 from './modules/Loader/Loader2.vue';
 export const AppAsync = defineAsyncComponent({
     loader: () => import ('./app.tsx'),
     loadingComponent: h(NSpin)
 })
-
+//slot(name="test" :opened="is_open")
+//slots: test:({ opened }: {opened: boolean})
 export const App = defineComponent({
     setup () 
     {
@@ -38,7 +41,14 @@ export const App = defineComponent({
                     },
                     [
                         h(Services, {class: 'menu'}),
-                        h(MainTab),
+                        h(MainTab, {class: "main-body"}),
+                        h('div', {class: 'footer'}, ""),
+                        h(Suspense, 
+                        null,
+                        {
+                            default:()=> h(FileViewer),
+                            fallback:() => h(Loader2)
+                        })
                         //h(Modals),
                         //h(TimeWarningsViewer, {items: time_warnings.value, class: 'footer'}),
                     ]),

@@ -3,18 +3,15 @@ import
     h,
     defineComponent,
     defineAsyncComponent,
-    CSSProperties
+    CSSProperties,
+    Suspense
   } from 'vue'
 
 import { NCard, NSpin, NTabPane, NTabs} from 'naive-ui';
 import { PacketsViewer } from './packets_viewer.tsx';
+import Loader2 from './Loader/Loader2.vue';
 import { SettingsEditor } from './settings_editor.tsx';
-import { Services } from './services.tsx';
-
-export const MainTabAsync = defineAsyncComponent({
-    loader: () => import ('./main_tab.tsx'),
-    loadingComponent: h(NSpin)
-})
+import SendersViewer from './Senders/SendersViewer.vue';
 
 export const MainTab =  defineComponent({
     setup (props) 
@@ -25,7 +22,8 @@ export const MainTab =  defineComponent({
             {
                 style:
                 {
-                    marginBottom: '0px'
+                    marginBottom: '0px',
+                    height: '100%'
                 } as CSSProperties
             },
             {
@@ -40,7 +38,13 @@ export const MainTab =  defineComponent({
                 },
                 [
                 ]),
-                default:() =>  tab_view()
+                default:() =>  tab_view(),
+                    // h(Suspense, 
+                    // null,
+                    // {
+                    //     default:()=> h(FileViewer),
+                    //     fallback:() => h(Loader2)
+                    // })])
             }
         )
     }
@@ -52,48 +56,81 @@ export const MainTab =  defineComponent({
                 justifyContent: 'space-evenly',
                 type: 'line',
                 size: 'large',
-                defaultValue: "log"
+                defaultValue: "pak",
+                style:
+                {
+                      height: '100%'
+                }
             },
             {
-                default:() => [log_tab(), settings_tab()]
+                default:() => [packets_tab(), senders_tab(), settings_tab()]
             }
         )
     }
 
-    const log_tab = () => 
+    const packets_tab = () => 
     {
         return h(NTabPane,
             {
                 tab: 'Пакеты',
-                name: 'log',
-
+                name: 'pak',
+                style:
+                {
+                      height: '100%'
+                }
             },
             {
-                default:() => h(PacketsViewer)
+                default:() =>
+                h(Suspense, 
+                null,
+                {
+                    default:()=> h(PacketsViewer),
+                    fallback:() => h(Loader2)
+                })
             }
         )
     }
-    const service_tab = () => 
-    {
-        return h(NTabPane,
-            {
-                tab: 'Сервис',
-                name: 'serv'
-            },
-            {
-                default:() => h(Services)
-            }
-        )
-    }
+    const senders_tab = () => 
+        {
+            return h(NTabPane,
+                {
+                    tab: 'Отправители',
+                    name: 'snd',
+                    style:
+                    {
+                        height: '100%'
+                    }
+                },
+                {
+                    default:() =>
+                    h(Suspense, 
+                    null,
+                    {
+                        default:()=> h(SendersViewer),
+                        fallback:() => h(Loader2)
+                    })
+                }
+            )
+        }
     const settings_tab = () => 
     {
         return h(NTabPane,
             {
                 tab: 'Настройки',
-                name: 'set'
+                name: 'set',
+                style:
+                {
+                    height: '100%'
+                }
             },
             {
-                default:() => h(SettingsEditor)
+                default:() => 
+                h(Suspense, 
+                null,
+                {
+                    default:()=> h(SettingsEditor),
+                    fallback:() => h(Loader2)
+                })
             }
         )
     }

@@ -1,83 +1,64 @@
-use std::{fmt::{self, Display}};
+use thiserror::Error;
+use serde::Serialize;
 
-use serde::de;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Error)]
 pub enum MedoParserError
 {   
+    #[error("`{0}`")]
+    Io(#[from] std::io::Error),
+    #[error("`{0}`")]
     ParseError(String),
-    SerdeError(String),
-    None
-}
-pub type Result<T> = std::result::Result<T, MedoParserError>;
-impl std::error::Error for MedoParserError {}
+    #[error("При парсинге `{0}` небыл передан обязательный для xml парсера агрумент `paths`")]
+    ParserPathError(String),
+    #[error("`{0}`")]
+    UnzipError(String),
+    #[error("`{0}`")]
+    ZipEmpty(String),
+    #[error("`{0}`")]
+    PacketError(String),
+    #[error("Ошибка обработки файла .ltr: `{0}`")]
+    LtrError(String),
+    #[error("Ошибка десериализации: `{0}`")]
+    SerdeError(#[from] serde_json::Error),
+    #[error(transparent)]
+    XmlError(#[from] quick_xml::DeError),
 
-impl de::Error for MedoParserError
-{
-    fn custom<T: Display>(msg: T) -> Self 
-    {
-        MedoParserError::ParseError(msg.to_string())
-    }
-}
-impl fmt::Display for MedoParserError
-{
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result 
-    {
-        match self 
-        {
-            MedoParserError::ParseError(p) => write!(f, "{}", p),
-            MedoParserError::SerdeError(p) => write!(f, "{}", p),
-            MedoParserError::None =>  Ok(()),
-        }
-    }
 }
 
-impl From<serde_json::Error> for MedoParserError
+
+impl Serialize for MedoParserError 
 {
-    fn from(error: serde_json::Error) -> Self 
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+    S: serde::Serializer 
     {
-        MedoParserError::SerdeError(format!("{} {} {} {}",error.to_string(), error.is_data(), error.column(), error.line()))
+        serializer.serialize_str(self.to_string().as_ref())
     }
 }
 
-impl From<quick_xml::DeError> for MedoParserError
-{
-    fn from(value: quick_xml::DeError) -> Self 
-    {
-        match value 
-        {
-            quick_xml::DeError::Custom(c) =>
-            {
-                let c = c.replace("missing field", "отсуствует поле");
-                MedoParserError::SerdeError(format!("Ошибка десериализации: {}", c.to_string()))
-            },
-            _ => MedoParserError::SerdeError(format!("Ошибка десериализации: {}", value.to_string()))
-        }
-       
-    }
-}
-impl From<Option<quick_xml::DeError>> for MedoParserError
-{
-    fn from(value: Option<quick_xml::DeError>) -> Self 
-    {
-        match value 
-        {
-            Some(val) =>
-            {
-                match val
-                {
-                    quick_xml::DeError::Custom(c) =>
-                    {
-                        let c = c.replace("missing field", "отсуствует поле");
-                        MedoParserError::SerdeError(format!("Ошибка десериализации: {}", c.to_string()))
-                    },
-                    _ => MedoParserError::SerdeError(format!("Ошибка десериализации: {}", val.to_string()))
-                }
-            },
-            None => MedoParserError::None
-        }
-    }
-}
+
+// impl From<Option<quick_xml::DeError>> for MedoParserError
+// {
+//     fn from(value: Option<quick_xml::DeError>) -> Self 
+//     {
+//         match value 
+//         {
+//             Some(val) =>
+//             {
+//                 match val
+//                 {
+//                     quick_xml::DeError::Custom(c) =>
+//                     {
+//                         let c = c.replace("missing field", "отсуствует поле");
+//                         MedoParserError::SerdeError(format!("Ошибка десериализации: {}", c.to_string()))
+//                     },
+//                     _ => MedoParserError::SerdeError(format!("Ошибка десериализации: {}", val.to_string()))
+//                 }
+//             },
+//             None => MedoParserError::None
+//         }
+//     }
+// }
 
 // impl serde::de::Error for quick_xml::DeError 
 // {

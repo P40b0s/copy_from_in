@@ -213,7 +213,7 @@ mod test
     #[test]
     pub fn date_output() 
     {
-        logger::StructLogger::initialize_logger();
+        StructLogger::new_default();
         let date = Date::parse("26-10-2022T13:23:52").unwrap();
         debug!("Парсинг 26-10-2022T13:23:52 - {} ", date.write(DateFormat::DotDate));
         let date2 = Date::parse("26 октября 2020 г.").unwrap();

@@ -4,3 +4,8 @@ test_data
 src-tauri/logs
 *.log
 /dist
+dist/
+*.redb
+*.sq3
+*.sq3-shm
+*.sq3-wal

@@ -1,0 +1,13 @@
+GET http://localhost:3009/api/v1/packets/pdf HTTP/1.1
+content-type: application/json
+
+{
+    "file":
+    {
+        "file_name": "177911665.pdf",
+        "file_type": "pdf",
+        "path": "../../test_data/copy_from_in_test_data/in2/70178878_1 copy 11/container/177911665.pdf"
+    },
+    "page_number": 1
+
+}

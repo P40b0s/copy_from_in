@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
+use utilites::Date;
+#[cfg(feature = "all")]
+use crate::packet::Packet;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Requisites
 {
@@ -36,21 +39,16 @@ impl Default for Requisites
         }
     }
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct PublicationInfo
-{
-    pub number: String,
-    pub date: String,
-}
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg(any(feature = "model", feature = "all"))]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PacketInfo
 {
     #[serde(skip_serializing_if="Option::is_none")]
     pub header_guid : Option<String>,
     pub packet_directory: String,
-    pub packet_type: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub packet_type: Option<String>,
     ///Время создания локальной директории
     ///(фактически когда пакет пришел к нам)
     ///зависит от времени на сервере, тому что берет локальное время создания
@@ -64,6 +62,8 @@ pub struct PacketInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub sender_info: Option<SenderInfo>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub sender_id: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub default_pdf: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub pdf_hash: Option<String>,
@@ -71,8 +71,6 @@ pub struct PacketInfo
     pub acknowledgment: Option<Ack>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub trace_message: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub publication_info: Option<PublicationInfo>,
     //время обновления пакета
     pub update_key: String,
     pub visible: bool,
@@ -83,6 +81,11 @@ impl PacketInfo
     pub fn get_packet_dir(&self) -> PathBuf
     {
        Path::new(&self.packet_directory).to_owned()
+    }
+    #[cfg(feature = "all")]
+    pub fn parse<P: AsRef<Path>>(path: P) -> Self
+    {
+        Packet::parse(path).into()
     }
 }
 
@@ -98,21 +101,21 @@ impl Default for PacketInfo
             files: vec![],
             requisites: None,
             sender_info: None,
+            sender_id: None,
             default_pdf: None,
             pdf_hash: None,
             acknowledgment: None,
             wrong_encoding: false,
-            packet_type: "неизвестно".to_owned(),
-            delivery_time: "01-01-2000T00:00:00".to_owned(),
+            packet_type: None,
+            delivery_time: Date::now().format(utilites::DateFormat::Serialize),
             trace_message: None,
-            publication_info: None,
-            update_key: "01-01-2000T00:00:00".to_owned(),
+            update_key: Date::now().format(utilites::DateFormat::Serialize),
             visible: true
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SenderInfo
 {
@@ -127,13 +130,31 @@ pub struct SenderInfo
     #[serde(skip_serializing_if="Option::is_none")]
     pub addressee: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub medo_addessee: Option<String>,
+    pub medo_addressee: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub source_guid: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub executor: Option<Executor>
+    pub executor: Option<Executor>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub icon: Option<String>
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
+impl SenderInfo
+{
+    pub fn is_null(&self) -> bool
+    {
+        self.organization.is_none()
+        &&  self.person.is_none()
+        &&  self.department.is_none()
+        &&  self.post.is_none()
+        &&  self.addressee.is_none()
+        &&  self.medo_addressee.is_none()
+        &&  self.source_guid.is_none()
+        &&  self.executor.is_none()  
+        &&  self.icon.is_none()
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Executor
 {
@@ -158,21 +179,22 @@ impl Default for SenderInfo
             department: None,
             post: None,
             addressee: None,
-            medo_addessee: None,
+            medo_addressee: None,
             source_guid: None,
-            executor: None
+            executor: None,
+            icon: None
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct MinistryOfJustice
 {
     pub number: String,
     pub date: String
 }
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Ack
 {

@@ -1,7 +1,7 @@
-use std::{path::PathBuf, borrow::Cow};
+use std::{borrow::Cow, path::{Path, PathBuf}};
 use serde::{Serialize, Deserialize};
-use settings::Date;
-use crate::{get_entries, helpers::DatesHelper, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};
+use utilites::{Date, DateFormat};
+use crate::{get_entries, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -27,7 +27,7 @@ pub struct Packet
     #[serde(skip_serializing_if="Option::is_none")]
     packet_date_time: Option<String>,
     wrong_encoding: bool,
-    error: PacketError,
+    error: Option<String>,
     #[serde(skip_serializing)]
     path: Option<PathBuf>
 }
@@ -40,14 +40,14 @@ impl Packet
     }
     fn add_error(&mut self, error: MedoParserError)
     {
-        self.error =  PacketError::Error(error.to_string());
+        self.error =  Some(error.to_string());
     }
     pub fn get_error(&self) -> Option<Cow<str>>
     {
         match &self.error
         {
-            PacketError::Error(e) => Some(Cow::from(e)),
-            PacketError::None => None
+            Some(e) => Some(Cow::from(e)),
+            None => None
         }
     }
     ///Проверка распарсился ли транспоттный пакет
@@ -126,7 +126,7 @@ impl Packet
         self.get_xml().and_then(|x|x.get_header().and_then(|h|Some(h.get_source().get_uid())))
     }
 
-    pub fn parse(path: &PathBuf) -> Self
+    pub fn parse<P: AsRef<Path>>(path: P) -> Self
     {
         let mut p = Packet 
         {
@@ -134,10 +134,10 @@ impl Packet
             rc: None,
             founded_files: None,
             wrong_encoding: false,
-            error: PacketError::None,
+            error: None,
             packet_dir: None,
             packet_date_time: None,
-            path: Some(path.to_owned())
+            path: Some(path.as_ref().into())
         };
         let result = p.parse_transport_packet();
         if result.is_err()
@@ -158,7 +158,9 @@ impl Packet
     {
         let mut paths: Vec<PathBuf>  = vec![];
         let mut base_dir = Some(String::new());
-        if let Some(d) = self.path.as_ref().unwrap().into_iter().last()
+        let empty_pb = PathBuf::new();
+        let packet_name = self.path.as_ref().unwrap_or(&empty_pb);
+        if let Some(d) = self.path.as_ref().and_then(|p| p.into_iter().last())
         {
             if let Some(d) = d.to_str()
             {
@@ -167,22 +169,34 @@ impl Packet
         }
         if base_dir.is_none()
         {
-            return Err(MedoParserError::ParseError(format!("Ошибка определения базовой директории пакета {}", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", packet_name.display())));
         }
-        if let Ok(created) = self.path.as_ref().unwrap().metadata().and_then(|m|m.created())
+        if let Some(is_file) = self.path.as_ref()
+        .and_then(|f| f.metadata().ok()
+        .and_then(|m| Some(m.is_file())))
         {
-            self.packet_date_time = Date::convert_system_time(created);
+            if is_file
+            {
+                return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
+            }
+        }
+        if let Some(created) = self.path.as_ref()
+        .and_then(|f| f.metadata().ok()
+        .and_then(|m| m.created().ok()))
+        {
+            self.packet_date_time = Some(Date::from_system_time(created).format(DateFormat::Serialize));
         }
 
         let base_dir = base_dir.unwrap();
         self.packet_dir = Some(base_dir.clone());
         //let mut comm: Communication = Communication::default();
+
         let mut file_count = 0;
         if let Some(files) = get_entries(self.path.as_ref().unwrap())
         {
             if files.len() == 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display())));
             }
             file_count = 0;
             //Добавляем все файлы виз директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
@@ -233,13 +247,14 @@ impl Packet
         {
             if file_count > 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
             }
             if file_count == 0
             {
-                return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                logger::debug!("filecount {}, self.founded_files {:?} packet {:?} ", file_count, &self.founded_files, &self);
+                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
             }
-            return Err(MedoParserError::ParseError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
         }
         Ok(self.clone())
     }

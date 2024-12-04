@@ -1,21 +1,12 @@
 [package]
 name = "settings"
-version = "0.3.0"
+version = "0.3.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde = {version = "1.0.196", features = ["derive"]}
-serde_json = "1.0.113"
-uuid = {version = "1.7.0", features = ["v4"]} 
-#logger = {path = "../../../../rust/logger"}
+serde = {version = "1.0.210", features = ["derive"]}
+serde_json = "1.0.128"
 logger = {git = "https://github.com/P40b0s/logger.git", branch = "main"}
-toml = {version = "0.8.12", features = ['parse']}
-blake2 = "0.10.6"
-regex="*"
-base64 = "0.13.1"
-time = { version = "0.3.34", features = ["formatting", "parsing", "macros"] }
-hashbrown = {version ="0.14.3" , features = ['serde']}
-once_cell="*"
-chrono="0.4.31"
+utilites = {git = "https://github.com/P40b0s/help_utilites.git", package = "utilites"}

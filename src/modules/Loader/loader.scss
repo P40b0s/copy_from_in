@@ -1,0 +1,26 @@
+.spinner {
+    width: 40px;
+    aspect-ratio: 1;
+    display: grid;
+    border-radius: 65%;
+    background: conic-gradient(#25b09b 25%,#f03355 0 50%,#514b82 0 75%,#ffa516 0);
+    animation: s 2s infinite linear;
+  }
+  .spinner::before,
+  .spinner::after {
+     content: "";
+     grid-area: 1/1;
+     margin: 10%;
+     border-radius: 50%;
+     background: inherit;
+     animation: inherit;
+  }
+  .spinner::after {
+     margin: 25%;
+     animation-duration: 3s;
+  }
+  
+  @keyframes s 
+  {
+    100% {transform: rotate(1turn)}
+  }

@@ -31,7 +31,14 @@ pub struct Task
     pub generate_exclude_file: bool,
     #[serde(default="def_col")]
     pub color: String,
-    pub filters: Filter
+    #[serde(default="is_default")]
+    pub sound: bool,
+    #[serde(default="is_default")]
+    ///Autoclean selected packets type while parsing
+    pub autocleaning: bool,
+    pub filters: Filter,
+    #[serde(default="is_default_true")]
+    pub visible: bool,
 }
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 //#[serde(rename_all = "camelCase")]
@@ -44,6 +51,10 @@ pub struct Filter
 }
 
 fn is_default() -> bool
+{
+    false
+}
+fn is_default_true() -> bool
 {
     false
 }
@@ -61,7 +72,7 @@ fn empty_doc_types() -> Vec<String>
 }
 fn def_dirs() -> PathBuf
 {
-    PathBuf::from("---")
+    PathBuf::from("")
 }
 fn def_str() -> String
 {
@@ -78,8 +89,8 @@ impl Default for Task
     {
         Task
         {
-            source_dir: PathBuf::from("in"),
-            target_dir: PathBuf::from("out"),
+            source_dir: PathBuf::from(""),
+            target_dir: PathBuf::from(""),
             report_dir: PathBuf::from(""),
             timer: 20000,
             name: "default_task".to_owned(),
@@ -90,11 +101,14 @@ impl Default for Task
             clean_types: vec![],
             generate_exclude_file: false,
             color: def_col(),
+            sound: false,
+            autocleaning: false,
             filters: Filter
             {
                 document_types: vec![],
                 document_uids: vec![]
-            }
+            },
+            visible: true
             
         }
     }

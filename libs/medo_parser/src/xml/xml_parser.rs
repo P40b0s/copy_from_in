@@ -17,7 +17,7 @@ impl MedoParser for XmlParser
         }
         else
         {
-            return Err(MedoParserError::ParseError(format!("Не передан обязательный для xml парсера агрумент paths {}, {}", file.display(), backtrace!())));
+            return Err(MedoParserError::ParserPathError(file.display().to_string()));
         }
     }
 }
@@ -109,7 +109,7 @@ impl XmlParser
 
 
 ///Попытка распознать корневой xml файл
-fn process_root_xml(file_path: &PathBuf, paths: &mut Vec<PathBuf>) -> crate::Result<(Communication, Option<super::Ltr>, Option<Container>, bool)>
+fn process_root_xml(file_path: &PathBuf, paths: &mut Vec<PathBuf>) -> Result<(Communication, Option<super::Ltr>, Option<Container>, bool), MedoParserError>
 {
     let clear_xml = clear_xml(file_path, None)?;
     let de: Result<Communication, DeError> = quick_xml::de::from_reader(clear_xml.0.as_bytes());
@@ -171,12 +171,12 @@ fn process_ltr(file_path: &PathBuf) -> Result<Ltr, MedoParserError>
 
         if let Some(f) = filtered.next()
         {
-            let ltr = Ltr::parse(&f.path())?;
+            let ltr = Ltr::parse_file(&f.path())?;
             return Ok(ltr);
         }    
     }
     logger::warn!("В директории {} файл ltr не найден (в файле содержится адрес отправителя) уведомления по данному пакету не смогут быть доставлены", base_dir.display());
-    return Err(MedoParserError::ParseError(format!("В директории {} файл ltr не найден (в файле содержится адрес отправителя) уведомления по данному пакету не смогут быть доставлены", base_dir.display()))); 
+    return Err(MedoParserError::LtrError(["В директории ", &base_dir.display().to_string(), " файл не обнаружен"].concat())); 
 }
 
 ///Если в рутовом xml присуствует ссылка на зиповский архив - контейнер, то его надо анзипнуть и распарсить
@@ -188,27 +188,11 @@ fn process_container_xml(file_path: &PathBuf, zip_file: &String, paths: &mut Vec
     //путь к архиву
     dir.push(zip_file);
     let xml_in_container = unzip(&dir, paths)?;
-    logger::info!("unzip container {}", &dir.display());
-    //if let  Ok(xml_in_container) = xml_in_container.as_ref()
-    //{
     let clear_xml = clear_xml(&xml_in_container, None)?;
-    let de: Result<Container, DeError> = quick_xml::de::from_reader(clear_xml.0.as_bytes());
+    let de: Container = quick_xml::de::from_reader(clear_xml.0.as_bytes())?;
     //TODO попадается дубликат поля надо с этим что то делать, может уго удалять просто?
-    //у меня есть уже текст надо просто полностью его удалить
-    if de.is_err()
-    {
-        return Err(MedoParserError::SerdeError(format!("{}, {}", &xml_in_container.display(), de.err().unwrap())));
-    }
-    else
-    {
-        logger::info!("Обработан файл {}", &xml_in_container.display());
-    }
-    Ok(de.unwrap())
-    //}
-    // else
-    // {
-    //     return Err(MedoParserError::ParseError(format!("{}",xml_in_container.err().unwrap())));
-    // }
+    logger::info!("Обработан файл {}", &xml_in_container.display());
+    Ok(de)
 }
 
 ///анзипим файлы контейнера попутно добавляя из в paths, и отдаем на обработку xml файл passport.xml (обычно у него такое наименование, но иногда может быть и другое, так что просто ищем в архиве первый попавшийся файл xml)
@@ -227,7 +211,7 @@ fn unzip(zip_file: &PathBuf, paths: &mut Vec<PathBuf>) -> Result<PathBuf, MedoPa
         let archive = zip::ZipArchive::new(file);
         if archive.is_err()
         {
-            return Err(MedoParserError::ParseError(format!("Ошибка открытия архива {} {}", zip_file.display(), archive.err().unwrap().to_string())));
+            return Err(MedoParserError::UnzipError(format!("Ошибка открытия архива {} {}", zip_file.display(), archive.err().unwrap().to_string())));
         }
         let mut archive = archive.unwrap();
         for i in 0..archive.len() 
@@ -256,12 +240,12 @@ fn unzip(zip_file: &PathBuf, paths: &mut Vec<PathBuf>) -> Result<PathBuf, MedoPa
         }
         else
         {
-            return Err(MedoParserError::ParseError(format!("В архиве {} не найдено ни одного файла xml", zip_file.display())));
+            return Err(MedoParserError::ZipEmpty(format!("В архиве {} не найдено ни одного файла xml", zip_file.display())));
         }
     }
     else
     {
-        return Err(MedoParserError::ParseError(format!("Файл {} не существует в текущей директории", zip_file.display())));
+        return Err(MedoParserError::UnzipError(format!("zip файл {} не существует в текущей директории", zip_file.display())));
     }
 }
 

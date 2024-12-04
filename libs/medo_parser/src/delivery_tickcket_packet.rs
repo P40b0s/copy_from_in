@@ -1,8 +1,6 @@
-use std::{time::SystemTime, fs, path::Path};
-
-use serde::{Deserialize, Serialize};
-use encoding::{all::WINDOWS_1251, DecoderTrap, Encoding};
-use settings::DateTimeFormat;
+use std::{fs, path::Path};
+use encoding::{all::WINDOWS_1251, Encoding};
+use utilites::DateFormat;
 
 pub struct DeliveryTicketPacket
 {
@@ -41,8 +39,8 @@ impl DeliveryTicketPacket
 
 fn create_ticket(ack_uid: &str, destination_organ_uid :&str, destination_organ_name: &str) -> String
 {
-    let date_time = SystemTime::now();
-    let created_datetime = settings::Date::now().write(settings::DateFormat::Serialize);
+    //let date_time = SystemTime::now();
+    let created_datetime = utilites::Date::now().format(DateFormat::Serialize);
     let header_uid = uuid::Uuid::new_v4().to_string();
 
     let ticket = format!("<?xml version=\"1.0\" encoding=\"utf-8\"?>

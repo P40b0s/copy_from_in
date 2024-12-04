@@ -1,2 +1,0 @@
-[24-05-2023 10:59:33]:⚠ Предупреждение -> Ошибка чтения файла /hard/xar/projects/fullstack/complite_in_parser/medo_settings/traces.toml, текущий объект инициализирован с настроками по умолчанию
-[24-05-2023 10:59:33]:⚙ DEBUG -> TracePackets { trace: [TracePacket { sender_id: "1279-123123-41243-1241-124", doc_number: "254-фз", comment: "тест коммент для отслеживаемого дока" }, TracePacket { sender_id: "АЙДЫ ОРГАНА", doc_number: "666-фз", comment: " я тебя очень жду" }] }

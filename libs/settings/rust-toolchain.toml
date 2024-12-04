@@ -1,0 +1,5 @@
+#1.77.2 after use new file api - getsystemtimepreciseasfiletime not work on windows 7 and server 2008
+[toolchain]
+channel = "1.77.2"
+components = [ "rustfmt", "rustc-dev" ]
+targets = ["x86_64-pc-windows-gnu"]
