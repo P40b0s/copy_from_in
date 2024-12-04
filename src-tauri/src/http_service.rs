@@ -144,12 +144,6 @@ impl UtilitesService
         WebsocketClient::send_message(transport::Contract::CleanStart).await;
     }
 
-    pub async fn truncate_tasks_excepts(&self) -> Result<u32>
-    {
-        let result = get(&self.api_path, "packets/truncate").await?;
-        Ok(result)
-    }
-
     pub async fn rescan_packet(&self, payload: Packet) -> Result<()>
     {
         post(payload, &self.api_path, "packets/rescan").await?;

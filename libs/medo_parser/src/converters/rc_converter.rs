@@ -31,7 +31,7 @@ impl UniversalConverter for RcParser
             ..SenderInfo::default()
         };
         to.sender_info = Some(s);
-        logger::error!("В пакете rc отсутсвуют свойства отправителя {}", &to.packet_directory);
+        logger::warn!("В пакете rc отсутсвуют свойства отправителя {}", &to.packet_directory);
         if to.default_pdf.is_none()
         {
             let mut pdfs = to.files.iter().filter(|f| f.contains(".pdf"));

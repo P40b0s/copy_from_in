@@ -20,13 +20,10 @@ class Settings extends Plugin<'update' | 'get' | 'delete'>
     }
 }
 
-class Service extends Plugin<'truncate_tasks_excepts' | 'clear_dirs' | 'ws_server_online' | 'rescan_packet' | 'delete_packet'>
+class Service extends Plugin<'clear_dirs' | 'ws_server_online' | 'rescan_packet' | 'delete_packet'>
 {
     plugin = "plugin:service|";
-    public async truncate_tasks_excepts<R extends number>(): Promise<Result<R>>
-    {
-        return await this.get<R>('truncate_tasks_excepts');
-    }
+  
     public async clean_dirs<R extends void>(): Promise<Result<R>>
     {
         return await this.get<R>('clear_dirs');

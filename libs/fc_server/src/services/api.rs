@@ -75,7 +75,7 @@ async fn router(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Resp
         (&Method::GET, "/api/v1/settings/tasks") => get_tasks(app_state).await,
         (&Method::PUT, "/api/v1/settings/tasks/update") => update_task(req, app_state).await,
         (&Method::DELETE, "/api/v1/settings/tasks/delete") => delete_task(req, app_state).await,
-        (&Method::GET, "/api/v1/packets/truncate") => truncate(app_state).await,
+        //(&Method::GET, "/api/v1/packets/truncate") => truncate(app_state).await,
         (&Method::GET, "/api/v1/packets/clean") => clean(app_state).await,
         (&Method::POST, "/api/v1/packets/rescan") => rescan(req, app_state).await,
         (&Method::POST, "/api/v1/packets/delete") => delete(req, app_state).await,
@@ -353,6 +353,7 @@ async fn delete_task(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     {
         if let Some(name) = data.get("name")
         {
+            let _ = app_state.get_copy_service().excludes_service.clear(name).await?;
             let  _ = super::settings::delete(name, app_state).await?;
             let response = ok_response(["Задача ", name, " удалена"].concat());
             WebsocketServer::task_delete_event(name).await;
@@ -375,12 +376,12 @@ async fn clean(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Err
     let response = empty_response(StatusCode::OK);
     Ok(response)
 }
-async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
-{
-    let trunc = super::service::truncate_tasks_excepts(app_state).await?;
-    let response = ok_response(trunc.to_string());
-    Ok(response)
-}
+// async fn truncate(app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
+// {
+//     let trunc = super::service::truncate_tasks_excepts(app_state).await?;
+//     let response = ok_response(trunc.to_string());
+//     Ok(response)
+// }
 
 async fn rescan(req: Request<Incoming>, app_state: Arc<AppState>) -> Result<Response<BoxBody>, crate::Error> 
 {

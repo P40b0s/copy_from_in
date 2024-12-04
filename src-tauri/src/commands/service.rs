@@ -18,13 +18,6 @@ pub async fn clear_dirs(state: State<'_, Arc<AppState>>) -> Result<(), Error>
 }
 
 #[tauri::command]
-pub async fn truncate_tasks_excepts(state: State<'_, Arc<AppState>>) -> Result<u32, Error>
-{
-  let res = state.utilites_service.truncate_tasks_excepts().await?;
-  Ok(res)
-}
-
-#[tauri::command]
 pub async fn ws_server_online(state: tauri::State<'_, Arc<AppState>>) -> Result<bool, Error>
 {
   Ok(WebsocketClient::is_connected().await)
@@ -51,7 +44,6 @@ pub fn service_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R>
       clear_dirs,
       ws_server_online,
       rescan_packet,
-      truncate_tasks_excepts,
       delete_packet,
       ])
     .setup(|app_handle| 

@@ -27,9 +27,9 @@ pub trait ExcludesTrait
     fn add<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<bool, Error>>;
     ///Удалить директорию из определенного таска, например если нужно заново пересканировать этот пакет
     fn delete<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<(), Error>>;
-    ///Обрезать файл с исключениями (*.task) удаляет из файла все директории которые отсутсвуют в текущий момент 
-    /// по пути source_dir в текущей задаче
-    fn truncate<'a>(&'a self, tasks: &[Task]) -> BoxFuture<'a, Result<u64, Error>>;
+    //Обрезать файл с исключениями (*.task) удаляет из файла все директории которые отсутсвуют в текущий момент 
+    // по пути source_dir в текущей задаче
+    //fn truncate<'a>(&'a self, tasks: &[Task]) -> BoxFuture<'a, Result<u64, Error>>;
     ///Удаление таблицы
     fn clear<'a>(&'a self, task_name: &str) -> BoxFuture<'a, Result<(), Error>>;
     ///Заменяет текущую таблицу если она есть, или создает новую
@@ -235,7 +235,7 @@ impl ExcludesTrait for SqliteExcludes
         let task_name = task_name.to_owned();
         let dir = dir.to_owned();
         Box::pin(async move
-        { 
+        {
             let res = ExceptTable::delete(&task_name, &dir, pool).await?;
             if res > 0
             {
@@ -246,45 +246,48 @@ impl ExcludesTrait for SqliteExcludes
         })
     }
 
-    fn truncate<'a>(&'a self, tasks: &[Task]) -> BoxFuture<'a, Result<u64, Error>>
-    {
-        let mut count = 0;
-        let pool = self.get_pool();
-        let tasks = tasks.to_owned();
-        Box::pin(async move
-        { 
-            let mut guard = self.cache.write().await;
-            *guard = HashSet::new();
-            drop(guard);
-            for t in tasks
-            {
-                if let Ok(dirs) = utilites::io::get_dirs_async(t.get_source_dir()).await 
-                {
-                    let dirs_count = dirs.len();
-                    let task_count =   ExceptTable::truncate(dirs, t.get_task_name(), Arc::clone(&pool)).await? as usize;
-                    if task_count >= dirs_count
-                    {
-                        count = task_count - dirs_count;
-                    }
-                }
-                if count > 0
-                {
-                    logger::info!("При проверке списка задачи {} исключено {} несуществующих директорий",  t.get_task_name(), count);
-                }
-            }
-            Ok(count as u64)
-        })
-    }
+    // fn truncate<'a>(&'a self, tasks: &[Task]) -> BoxFuture<'a, Result<u64, Error>>
+    // {
+    //     let mut count = 0;
+    //     let pool = self.get_pool();
+    //     let tasks = tasks.to_owned();
+    //     Box::pin(async move
+    //     { 
+    //         let mut guard = self.cache.write().await;
+    //         *guard = HashSet::new();
+    //         drop(guard);
+    //         for t in tasks
+    //         {
+    //             if let Ok(dirs) = utilites::io::get_dirs_async(t.get_source_dir()).await 
+    //             {
+    //                 let dirs_count = dirs.len();
+    //                 let task_count =   ExceptTable::truncate(dirs, t.get_task_name(), Arc::clone(&pool)).await? as usize;
+    //                 if task_count >= dirs_count
+    //                 {
+    //                     count = task_count - dirs_count;
+    //                 }
+    //             }
+    //             if count > 0
+    //             {
+    //                 logger::info!("При проверке списка задачи {} исключено {} несуществующих директорий",  t.get_task_name(), count);
+    //             }
+    //         }
+    //         Ok(count as u64)
+    //     })
+    // }
 
     fn clear<'a>(&'a self, task_name: &str) -> BoxFuture<'a, Result<(), Error>>
     {
         let pool = self.get_pool();
         let task_name = task_name.to_owned();
-        //тут мы не можем проверить что удаляем, поэтому удаляем весь кэш
         Box::pin(async move
         { 
+            let all_excludes = ExceptTable::get_hashs(&task_name, Arc::clone(&pool)).await?;
             let mut guard = self.cache.write().await;
-            *guard = HashSet::new();
+            for e in &all_excludes
+            {
+                guard.remove(e);
+            }
             drop(guard);
             let excl = ExceptTable::delete_task(&task_name, pool).await?;
             logger::info!("Удалено {} директорий из задачи {}", excl,  &task_name);
@@ -300,7 +303,7 @@ impl ExcludesTrait for SqliteExcludes
             self.clear(task.get_task_name()).await?;
             if let Ok(dirs) = get_dirs_async(&task.source_dir).await
             {
-                ExceptTable::truncate(dirs, task.get_task_name(), pool).await?;
+                ExceptTable::replace(dirs, task.get_task_name(), pool).await?;
             }
             Ok(())
         })

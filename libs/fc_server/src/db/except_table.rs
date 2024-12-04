@@ -110,24 +110,33 @@ impl ExceptTable
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count > 0)
     }
+    pub async fn get_hashs(task_name: &str, pool: Arc<SqlitePool>) -> Result<Vec<String>, DbError>
+    {
+        let q = ["SELECT * FROM ", Self::table_name()].concat();
+        let select = [" where task_id = '", task_name, "'"].concat();
+        let selector = Selector::new(&q).add_raw_query(&select);
+        let excepts: Vec<ExceptTable> = Self::select(&selector, pool).await?;
+        let hashs: Vec<String> = excepts.into_iter().map(|m|  utilites::Hasher::hash_from_strings([m.task_id, m.dir_name])).collect();
+        Ok(hashs)
+    }
 
     ///Возвращает количество удаленных директорий
-    pub async fn truncate(dirs: Vec<String>, task_id: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
-    {
-        let del_count = Self::delete_task(task_id, Arc::clone(&pool)).await?;
-        let vals: Vec<String> = dirs.into_iter().map(|v| ["('", &v, "','", task_id, "')"].concat()).collect();
-        if vals.len() > 0
-        {
-            let mut tx = pool.begin().await?;
-            let q = ["INSERT INTO ", Self::table_name()," (dir_name, task_id) VALUES " , &vals.join(",")].concat();
-            let selector = Selector::new(&q);
-            db_service::query(&selector.query().0)
-            .execute(&mut *tx).await?;
-            tx.commit().await?;
-            return Ok(del_count);
-        }
-        Ok(del_count)
-    }
+    // pub async fn truncate(dirs: Vec<String>, task_id: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
+    // {
+    //     let del_count = Self::delete_task(task_id, Arc::clone(&pool)).await?;
+    //     let vals: Vec<String> = dirs.into_iter().map(|v| ["('", &v, "','", task_id, "')"].concat()).collect();
+    //     if vals.len() > 0
+    //     {
+    //         let mut tx = pool.begin().await?;
+    //         let q = ["INSERT INTO ", Self::table_name()," (dir_name, task_id) VALUES " , &vals.join(",")].concat();
+    //         let selector = Selector::new(&q);
+    //         db_service::query(&selector.query().0)
+    //         .execute(&mut *tx).await?;
+    //         tx.commit().await?;
+    //         return Ok(del_count);
+    //     }
+    //     Ok(del_count)
+    // }
     pub async fn delete_task(task_id: &str, pool: Arc<SqlitePool>) -> Result<u64, DbError>
     {
         let q = ["DELETE FROM ", Self::table_name()," WHERE task_id = '", task_id, "'"].concat();
@@ -142,6 +151,23 @@ impl ExceptTable
         let selector = Selector::new(&q);
         let exe = Self::execute(&selector, pool).await?;
         Ok(exe)
+    }
+
+    pub async fn replace(dirs: Vec<String>, task_id: &str, pool: Arc<SqlitePool>) -> Result<(), DbError>
+    {
+        let vals: Vec<String> = dirs.into_iter().map(|dir| ["('", &dir, "','", task_id, "')"].concat()).collect();
+        if vals.len() > 0
+        {
+            let mut tx = pool.begin().await?;
+            let q = ["INSERT INTO ", Self::table_name()," (dir_name, task_id) VALUES " , &vals.join(",")].concat();
+            let selector = Selector::new(&q);
+            
+            db_service::query(&selector.query().0)
+            .execute(&mut *tx).await?;
+            tx.commit().await?;
+            return Ok(());
+        }
+        Ok(())
     }
     
     // fn id<S: AsRef<str>>(task_name: S, packet_dir: S) -> String

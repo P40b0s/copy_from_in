@@ -16,14 +16,14 @@ pub async fn clean_packets(state: Arc<AppState>)
     //Settings::clean_packets(state).await;
 }
 
-pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>
-{
-    let settings = state.get_settings().await;
-    let service = state.get_copy_service();
-    let result = service.excludes_service.truncate(&settings.tasks).await?;
-    WebsocketServer::need_packets_update().await;
-    Ok(result as u32)
-}
+// pub async fn truncate_tasks_excepts(state: Arc<AppState>) -> Result<u32, Error>
+// {
+//     let settings = state.get_settings().await;
+//     let service = state.get_copy_service();
+//     let result = service.excludes_service.truncate(&settings.tasks).await?;
+//     WebsocketServer::need_packets_update().await;
+//     Ok(result as u32)
+// }
 
 pub async fn rescan_packet(packet: Packet, state: Arc<AppState>) -> Result<(), Error>
 {

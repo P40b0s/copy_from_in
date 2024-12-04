@@ -79,7 +79,7 @@ setup ()
                 },
                 [
                     clean_button(),
-                    truncate_button(),
+                    //truncate_button(),
                     right_panel()
 
                 ])
@@ -161,54 +161,54 @@ setup ()
         })
     }            
 
-    const truncate_button = () => 
-    {
-       return h(NTooltip,{placement: 'bottom'},
-        {
-            trigger:() =>
-            h(NButton,
-            {
-                round: true,
-                text: true,
-                size: 'small',
-                disabled: in_work.value,
-                onClick: async (c) =>
-                {
-                    in_work.value = true;
-                    const result = await commands_service.truncate_tasks_excepts();
-                    if (result.is_ok())
-                    {
-                        naive_notify(notify, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");
-                    }
-                    else
-                    {
-                        naive_notify(notify, 'error', "Ошибка обрезки файла задачи", result.get_error());
-                    }
-                    in_work.value = false;
-                },
-                style:
-                {
-                    backgroundColor: 'transparent'
-                }
-            },
-            {
-                default:() => in_work.value ? h(Loader) : h(NAvatar,
-                {
-                    size: 40,
-                    src: cut_ico,
-                    class: 'hover-button',
-                    style:
-                    {
-                        backgroundColor: 'transparent',
-                        marginRight: '5px',
-                        minWidth: '50px'
-                    }   as CSSProperties
+    // const truncate_button = () => 
+    // {
+    //    return h(NTooltip,{placement: 'bottom'},
+    //     {
+    //         trigger:() =>
+    //         h(NButton,
+    //         {
+    //             round: true,
+    //             text: true,
+    //             size: 'small',
+    //             disabled: in_work.value,
+    //             onClick: async (c) =>
+    //             {
+    //                 in_work.value = true;
+    //                 const result = await commands_service.truncate_tasks_excepts();
+    //                 if (result.is_ok())
+    //                 {
+    //                     naive_notify(notify, 'success', "Обрезка файлов задач успешно завершена", "Найдено и удалено " + result.get_value() + " несовпадающих записей");
+    //                 }
+    //                 else
+    //                 {
+    //                     naive_notify(notify, 'error', "Ошибка обрезки файла задачи", result.get_error());
+    //                 }
+    //                 in_work.value = false;
+    //             },
+    //             style:
+    //             {
+    //                 backgroundColor: 'transparent'
+    //             }
+    //         },
+    //         {
+    //             default:() => in_work.value ? h(Loader) : h(NAvatar,
+    //             {
+    //                 size: 40,
+    //                 src: cut_ico,
+    //                 class: 'hover-button',
+    //                 style:
+    //                 {
+    //                     backgroundColor: 'transparent',
+    //                     marginRight: '5px',
+    //                     minWidth: '50px'
+    //                 }   as CSSProperties
                     
-                }),
-            }),
-            default:() => in_work.value ? "Обрезка файлов задач запущена, ожидайте" : "Начать обрезку файлов задач",
-        })
-    }            
+    //             }),
+    //         }),
+    //         default:() => in_work.value ? "Обрезка файлов задач запущена, ожидайте" : "Начать обрезку файлов задач",
+    //     })
+    // }            
 
     return {list}
     },

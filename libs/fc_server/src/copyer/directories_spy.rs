@@ -96,68 +96,7 @@ impl DirectoriesSpy
         let _ = NEW_PACKET_EVENT.set(Arc::new(sender));
         receiver
     }
-    ///Будет вызываться каждые 15 секунд, надо чтобы сюда пробрасывались актуальные настройки после изменения в глобальном стейте, 
-    // pub async fn process_tasks(state: Arc<AppState>)
-    // {
-    //     let handle  = tokio::runtime::Handle::current();
-    //     tokio::task::block_in_place(move || 
-    //     {
-    //         let _ = handle.block_on(async move 
-    //         {
-
-    //             Self::process_timers(Arc::clone(&state)).await;
-    //         });
-    //     });
-    // }
-
-    // async fn process_timers(state: Arc<AppState>)
-    // {
-    //     let settings = state.get_settings().await;
-    //     for t in &settings.tasks
-    //     {
-    //         let mut guard = TIMERS.lock().await;
-    //         if guard.contains_key(&t.name)
-    //         {
-    //             let countdown = guard.get(&t.name).unwrap() - 15000;
-    //             //debug!("{}", countdown);
-    //             if countdown > 0
-    //             {
-    //                 *guard.get_mut(&t.name).unwrap() = countdown;
-    //                 drop(guard);
-    //             }
-    //             else 
-    //             {
-    //                 *guard.get_mut(&t.name).unwrap() = t.timer;
-    //                 drop(guard);
-    //                 //таск 1 а вот пакетов может быть несколько
-    //                 let tsk = Arc::new(t.clone());
-    //                 let service = Arc::clone(&state.copyer_service);
-    //                 if tsk.generate_exclude_file
-    //                 {
-    //                     let _ = service.excludes_service.replace(&tsk).await;
-    //                     let mut guard = state.settings.lock().await;
-    //                     let task = guard.tasks.iter_mut().find(|t|t.get_task_name() == tsk.get_task_name()).unwrap();
-    //                     task.generate_exclude_file = false;
-    //                     let _ = guard.save(settings::Serializer::Toml);
-    //                 }
-    //                 tokio::spawn(async move
-    //                 {
-    //                     let ready_tasks: Vec<(Arc<Task>, String)> = Self::scan_dir(tsk, service).await;
-    //                     for ready_task in ready_tasks
-    //                     {
-    //                         Self::copy_files_process(ready_task.0, ready_task.1).await;
-    //                     }
-    //                 });
-    //             }
-    //         }
-    //         else
-    //         {
-    //             guard.insert(t.name.clone(), t.timer);
-    //             drop(guard);
-    //         }
-    //     }
-    // }
-
+   
     async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
         let task_name = task.get_task_name();

@@ -58,5 +58,5 @@ autocleaning = true
 visible = true
 
 [tasks.filters]
-document_types = ["Документ", "Транспортный контейнер"]
+document_types = ["Документ", "rc", "Транспортный контейнер"]
 document_uids = []
