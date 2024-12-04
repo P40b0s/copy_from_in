@@ -5,6 +5,7 @@ use once_cell::sync::{Lazy, OnceCell};
 use settings::{CopyModifier, FileMethods, Settings, Task};
 use tokio::{runtime::Runtime, sync::Mutex};
 use transport::Packet;
+use utilites::retry;
 use crate::state::AppState;
 //use crossbeam_channel::{bounded, Receiver, Sender};
 use async_channel::{bounded, Sender, Receiver};
@@ -154,7 +155,12 @@ impl DirectoriesSpy
         packet_dir_name: &str, 
         task : &Task) -> bool
     {
-        if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
+        let cp_result = retry(5, 5000, 8000, ||
+        {
+            super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000)
+           
+        }).await;
+        if let Ok(_) = cp_result
         {  
             if task.delete_after_copy
             {
@@ -171,6 +177,24 @@ impl DirectoriesSpy
             error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
             return false;
         }
+        
+        // if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
+        // {  
+        //     if task.delete_after_copy
+        //     {
+        //         if let Err(e) = tokio::fs::remove_dir_all(source_path).await
+        //         {
+        //             error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+        //         }
+        //     }
+        //     info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
+        //     return true;
+        // }
+        // else
+        // {
+        //     error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+        //     return false;
+        // }
     }
 
 
