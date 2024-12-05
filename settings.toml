@@ -33,7 +33,7 @@ clean_types = ["Квитанция"]
 generate_exclude_file = false
 color = "#7F44FF"
 sound = true
-autocleaning = false
+autocleaning = true
 visible = true
 
 [tasks.filters]

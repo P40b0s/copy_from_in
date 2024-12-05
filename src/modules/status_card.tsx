@@ -127,12 +127,13 @@ export const StatusCard = defineComponent(
                             class: 'hover-button',
                             style:
                             {
+                                cursor: 'pointer',
                                 backgroundColor: 'transparent',
                                 margin: '1px 5px 5px 1px',
                                 minWidth: '80px',
                                 borderRadius: "10px",
                                 verticalAlign: 'top'
-                            }   as CSSProperties
+                            }   as CSSProperties,
                             
                         }),
                         h('div',
