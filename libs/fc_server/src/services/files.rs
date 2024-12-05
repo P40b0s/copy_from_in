@@ -13,6 +13,16 @@ pub struct FileService
 {
     files: Vec<File>
 }
+impl Default for FileService
+{
+    fn default() -> Self 
+    {
+        Self
+        {
+            files: Vec::with_capacity(0)
+        }
+    }
+}
 impl FileService
 {
     pub fn get_pdf(&self) -> Vec<&File>
@@ -28,14 +38,15 @@ impl FileService
     ///поиск файлов в директории
     pub async fn search(path: PathBuf) -> Self
     {
-        let path = Arc::new(Mutex::new(path));
+        //let path = Arc::new(Mutex::new(path));
         let files_list = Arc::new(Mutex::new(Vec::<File>::new()));
         Self::search_files(path, Arc::clone(&files_list)).await;
         //хз, работает и так и так....
         //let mut guard = files_list.lock().await;
         //let files = std::mem::replace(&mut *guard, Vec::with_capacity(0));
         let files = Arc::try_unwrap(files_list).unwrap().into_inner();
-        Self{
+        Self
+        {
             files
         }
     }
@@ -48,47 +59,90 @@ impl FileService
         }
         Self::search(pb).await
     }
-    fn search_files(path: Arc<Mutex<PathBuf>>, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
+    fn search_files(path: PathBuf, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
     {
         async move {
-            let path_guard = path.lock().await;
-            if let Some(files) = Self::get_entries(&path_guard).await
+            //let path_guard = path.lock().await;
+            if let Some(files) = Self::get_entries(&path).await
             {
-                drop(path_guard);
-                //Добавляем все файлы виз директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
+                //Добавляем все файлы из директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
                 for f in files
                 {
                     if let Some(file) = f.path().file_name().and_then(|fl| fl.to_str())
                     {
-                        let mut path_guard = path.lock().await;
                         let mut flist_guard = files_list.lock().await;
                         //extensiion без точки - txt
                         if let Some(ext) = f.path().extension().and_then(|e| e.to_str())
                         {
+                            let mut cloned_path = path.clone();
                             let file_name = file.to_owned();
-                            let mut p = path_guard.clone();
-                            p.push(&file_name);
+                            cloned_path.push(&file_name);
                             flist_guard.push(File 
                             {
                                 file_name,
                                 file_type: ext.to_owned(),
-                                path: p.display().to_string()
+                                path: cloned_path.display().to_string()
                             });
-                            drop(path_guard);
                             drop(flist_guard);
                         }
                         else if f.path().is_dir()
                         {
-                            path_guard.push(file);
-                            drop(path_guard);
                             drop(flist_guard);
-                            Self::search_files(Arc::clone(&path), Arc::clone(&files_list)).await;
+                            let mut cloned_path = path.clone();
+                            cloned_path.push(file);
+                            Self::search_files(cloned_path, Arc::clone(&files_list)).await;
                         }
                     }
                 };
             }
         }.boxed()
     }
+
+    // fn search_files(path: Arc<Mutex<PathBuf>>, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
+    // {
+    //     async move {
+    //         let path_guard = path.lock().await;
+    //         if let Some(files) = Self::get_entries(&path_guard).await
+    //         {
+    //             drop(path_guard);
+    //             //Добавляем все файлы из директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
+    //             for f in files
+    //             {
+    //                 if let Some(file) = f.path().file_name().and_then(|fl| fl.to_str())
+    //                 {
+    //                     let mut path_guard = path.lock().await;
+    //                     let mut flist_guard = files_list.lock().await;
+    //                     //extensiion без точки - txt
+    //                     if let Some(ext) = f.path().extension().and_then(|e| e.to_str())
+    //                     {
+    //                         let file_name = file.to_owned();
+    //                         let mut p = path_guard.clone();
+    //                         p.push(&file_name);
+    //                         flist_guard.push(File 
+    //                         {
+    //                             file_name,
+    //                             file_type: ext.to_owned(),
+    //                             path: p.display().to_string()
+    //                         });
+    //                         drop(path_guard);
+    //                         drop(flist_guard);
+    //                     }
+    //                     else if f.path().is_dir()
+    //                     {
+    //                         path_guard.push(file);
+    //                         let mut cloned = path_guard.clone();
+    //                         drop(path_guard);
+    //                         drop(flist_guard);
+    //                         cloned.push(file);
+                            
+    //                         Self::search_files(Arc::clone(&path), Arc::clone(&files_list)).await;
+    //                     }
+    //                 }
+    //             };
+    //         }
+    //     }.boxed()
+    // }
+
     pub fn get_list(&self) -> &[File]
     {
         &self.files
@@ -131,7 +185,7 @@ mod tests
     #[tokio::test]
     async fn test_files2()
     {   let _ = logger::StructLogger::new_default();
-        let p = &["../../test_data/copy_from_in_test_data/in2", "70178878_1 copy 11"];
+        let p = &["/hard/xar/projects/test_data/copy_from_in_test_data/in2", "38773995_1"];
         let files =  super::FileService::search_concat(p).await;
         logger::info!("{:?}", &files.files);
         let pdfs = files.get_pdf();

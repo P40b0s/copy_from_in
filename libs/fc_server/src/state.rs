@@ -31,7 +31,7 @@ impl AppState
         Ok(Self
         {
             settings: Mutex::new(settings.unwrap()),
-            copyer_service: Arc::new(CopyService::new(SqliteExcludes::new(Arc::clone(&pool)))),
+            copyer_service: Arc::new(CopyService::new(SqliteExcludes::new(Arc::clone(&pool)).await)),
             db_pool: pool
         })
     }

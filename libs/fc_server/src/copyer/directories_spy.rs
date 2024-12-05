@@ -102,28 +102,67 @@ impl DirectoriesSpy
     {
         let task_name = task.get_task_name();
         let source_dir = task.get_source_dir();
-        let target_dir = task.get_target_dir();
+        let target_dirs = task.get_target_dirs();
         let packet_name = &founded_packet_name;
         let source_path = Path::new(source_dir).join(packet_name);
-        let target_path = Path::new(target_dir).join(packet_name);
+        //let target_path = Path::new(target_dir).join(packet_name);
         debug!("Сообщение от задачи `{}` -> найден новый пакет {}", task_name, source_path.display());
         match task.copy_modifier
         {
             //копируются все директории поэтому парсить транспортный пакет не имеет смысла
             CopyModifier::CopyAll =>
             {
-                if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
+                let mut cp_ok = Vec::with_capacity(target_dirs.len());
+                for td in target_dirs
                 {
-                    let new_packet = Packet::new_empty(&founded_packet_name, &task);
-                    new_packet_found(new_packet).await;
+                    let target_path = Path::new(td).join(packet_name);
+                    if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
+                    {
+                        cp_ok.push((true, "".to_string()));
+                    }
+                    else 
+                    {
+                        cp_ok.push((false, target_path.as_path().display().to_string()));
+                    }
+                }
+                let packet = Packet::new_empty(&founded_packet_name, &task);
+                if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
+                {
+                    let mut packet = packet;
+                    packet.add_error(first.1);
+                    new_packet_found(packet).await;
+                }
+                else 
+                {
+                    new_packet_found(packet).await;
                 }
             },
             CopyModifier::CopyOnly =>
             {
+                let mut cp_ok = Vec::with_capacity(target_dirs.len());
                 let packet = Self::get_packet(&source_path, &task).await;
                 if !packet.is_err()
                 {
-                    if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
+                    for td in target_dirs
+                    {
+                        let target_path = Path::new(td).join(packet_name);
+                        if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
+                        {
+                            
+                            cp_ok.push((true, "".to_string()));
+                        }
+                        else 
+                        {
+                            cp_ok.push((false, target_path.as_path().display().to_string()));
+                        }
+                    }
+                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
+                    {
+                        let mut packet = packet;
+                        packet.add_error(first.1);
+                        new_packet_found(packet).await;
+                    }
+                    else 
                     {
                         new_packet_found(packet).await;
                     }
@@ -135,10 +174,29 @@ impl DirectoriesSpy
             },
             CopyModifier::CopyExcept =>
             {
+                let mut cp_ok = Vec::with_capacity(target_dirs.len());
                 let packet = Self::get_packet(&source_path, &task).await;
                 if !packet.is_err()
                 {
-                    if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
+                    for td in target_dirs
+                    {
+                        let target_path = Path::new(td).join(packet_name);
+                        if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
+                        {
+                            cp_ok.push((true, "".to_string()));
+                        }
+                        else
+                        {
+                            cp_ok.push((false, target_path.as_path().display().to_string()));
+                        }
+                    }
+                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
+                    {
+                        let mut packet = packet;
+                        packet.add_error(first.1);
+                        new_packet_found(packet).await;
+                    }
+                    else 
                     {
                         new_packet_found(packet).await;
                     }
@@ -161,7 +219,7 @@ impl DirectoriesSpy
            
         }).await;
         if let Ok(_) = cp_result
-        {  
+        {
             if task.delete_after_copy
             {
                 if let Err(e) = tokio::fs::remove_dir_all(source_path).await
@@ -174,7 +232,7 @@ impl DirectoriesSpy
         }
         else
         {
-            error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+            error!("Ошибка копирования пакета (на пятой попытке) {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
             return false;
         }
         

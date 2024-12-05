@@ -188,19 +188,23 @@ pub struct SqliteExcludes
 }
 impl SqliteExcludes
 {
-    pub fn new(pool: Arc<SqlitePool>) -> Self
+    pub async fn new(pool: Arc<SqlitePool>) -> Self
     {
+        let h = ExceptTable::get_hashes(Arc::clone(&pool)).await.unwrap_or_default();
+        let hs = HashSet::from_iter(h);
         Self 
         {
             db_pool: pool,
-            cache: tokio::sync::RwLock::new(HashSet::new())
+            cache: tokio::sync::RwLock::new(hs)
         }
     }
+
     pub fn get_pool(&self) -> Arc<SqlitePool>
     {
         Arc::clone(&self.db_pool)
     }
 }
+
 impl ExcludesTrait for SqliteExcludes
 {
     fn add<'a>(&'a self, task_name: &str, dir: &str) -> BoxFuture<'a, Result<bool, Error>>
@@ -282,7 +286,7 @@ impl ExcludesTrait for SqliteExcludes
         let task_name = task_name.to_owned();
         Box::pin(async move
         { 
-            let all_excludes = ExceptTable::get_hashs(&task_name, Arc::clone(&pool)).await?;
+            let all_excludes = ExceptTable::get_hashes_by_task_name(&task_name, Arc::clone(&pool)).await?;
             let mut guard = self.cache.write().await;
             for e in &all_excludes
             {
@@ -419,7 +423,7 @@ mod sql_tests
     async fn test_redb_create_clear()
     {
         let pool = Arc::new(db_service::new_connection("medo").await.unwrap());
-        let b : Box<dyn ExcludesTrait> = Box::new(super::SqliteExcludes::new(pool));
+        let b : Box<dyn ExcludesTrait> = Box::new(super::SqliteExcludes::new(pool).await);
         let _ = logger::StructLogger::new_default();
         //let t = super::ExcludesService(super::SqliteExcludes::new(pool));
         

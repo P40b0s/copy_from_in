@@ -247,7 +247,7 @@ export const SettingsEditor =  defineComponent({
                                 name: "новая задача",
                                 description: "",
                                 source_dir: "",
-                                target_dir: "",
+                                target_dirs: [""],
                                 report_dir: "",
                                 timer: 120000,
                                 delete_after_copy: false,
@@ -566,40 +566,67 @@ export const SettingsEditor =  defineComponent({
                             description: "Директория в которую будут копироваться пакеты",
                             fontSize: '14px'
                         }),
-                        default:() =>
-                        h(NInput,
+                        default:() =>  h(NDynamicInput,
                         {
-                            readonly: false,
-                            value: selected_task.value?.target_dir,
-                            onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
-                        },
-                        {
-                            prefix: () =>
-                            h(NButton,
-                                {
-                                    color: "#8a2be2",
-                                    size: 'large',
-                                    text: true,
-                                    onClick: async ()=>
-                                    {
-                                        // Open a selection dialog for image files
-                                        // const selected = await open({
-                                        //     multiple: false,
-                                        //     title: "Выбор целевой директории",
-                                        //     defaultPath: selected_task.value?.target_dir,
-                                        //     directory: true,
-                                        //     });
-                                        //     if(selected != null)
-                                        //     {
-                                        //         (selected_task.value as Task).target_dir = selected as string
-                                        //     }
-                                    }
-                                },
-                                {
-                                    icon:() => h(NIcon, {component:  FolderOpenOutline})
-                                })
-                        })
+                            value: selected_task.value?.target_dirs,
+                            onUpdateValue(v)
+                            {
+                                (selected_task.value as Task).target_dirs = v as string[];
+                            },
+                            onCreate(index)
+                            {
+                                selected_task.value?.target_dirs.splice(index, 0, "")
+                            },
+                            onRemove(index) 
+                            {
+                                selected_task.value?.target_dirs.splice(index, 1);
+                            },
+                        }),
                     }),
+                    // h(NFormItem,
+                    // {
+                    //     path: 'targetdir',
+                    // },
+                    // {
+                    //     label:() => h(HeaderWithDescription,{
+                    //         name: "Целевая директория",
+                    //         description: "Директория в которую будут копироваться пакеты",
+                    //         fontSize: '14px'
+                    //     }),
+                    //     default:() =>
+                    //     h(NInput,
+                    //     {
+                    //         readonly: false,
+                    //         value: selected_task.value?.target_dir,
+                    //         onUpdateValue:(v)=> (selected_task.value as Task).target_dir = v
+                    //     },
+                    //     {
+                    //         prefix: () =>
+                    //         h(NButton,
+                    //             {
+                    //                 color: "#8a2be2",
+                    //                 size: 'large',
+                    //                 text: true,
+                    //                 onClick: async ()=>
+                    //                 {
+                    //                     // Open a selection dialog for image files
+                    //                     // const selected = await open({
+                    //                     //     multiple: false,
+                    //                     //     title: "Выбор целевой директории",
+                    //                     //     defaultPath: selected_task.value?.target_dir,
+                    //                     //     directory: true,
+                    //                     //     });
+                    //                     //     if(selected != null)
+                    //                     //     {
+                    //                     //         (selected_task.value as Task).target_dir = selected as string
+                    //                     //     }
+                    //                 }
+                    //             },
+                    //             {
+                    //                 icon:() => h(NIcon, {component:  FolderOpenOutline})
+                    //             })
+                    //     })
+                    // }),
                     h(NFormItem,
                     {
                         path: 'reportdir',
@@ -723,8 +750,6 @@ export const SettingsEditor =  defineComponent({
                                 },
                             }),
                         }
-
-                       
                     ),
                     h(NFormItem,
                         {

@@ -110,11 +110,20 @@ impl ExceptTable
         let count: CountRequest = Self::get_one(&selector, pool).await?;
         Ok(count.count > 0)
     }
-    pub async fn get_hashs(task_name: &str, pool: Arc<SqlitePool>) -> Result<Vec<String>, DbError>
+    pub async fn get_hashes_by_task_name(task_name: &str, pool: Arc<SqlitePool>) -> Result<Vec<String>, DbError>
     {
         let q = ["SELECT * FROM ", Self::table_name()].concat();
         let select = [" where task_id = '", task_name, "'"].concat();
         let selector = Selector::new(&q).add_raw_query(&select);
+        let excepts: Vec<ExceptTable> = Self::select(&selector, pool).await?;
+        let hashs: Vec<String> = excepts.into_iter().map(|m|  utilites::Hasher::hash_from_strings([m.task_id, m.dir_name])).collect();
+        Ok(hashs)
+    }
+
+    pub async fn get_hashes(pool: Arc<SqlitePool>) -> Result<Vec<String>, DbError>
+    {
+        let q = ["SELECT * FROM ", Self::table_name()].concat();
+        let selector = Selector::new(&q);
         let excepts: Vec<ExceptTable> = Self::select(&selector, pool).await?;
         let hashs: Vec<String> = excepts.into_iter().map(|m|  utilites::Hasher::hash_from_strings([m.task_id, m.dir_name])).collect();
         Ok(hashs)
