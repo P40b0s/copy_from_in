@@ -12,13 +12,20 @@ pub use validation_error::ValidationError;
 #[cfg(test)]
 mod test
 {
+    use std::path::{Path, PathBuf};
+
     use serde::Deserialize;
-    use crate::{file_methods::FileMethods, CopyModifier, Settings};
+    use crate::{file_methods::FileMethods, CopyModifier, Settings, Task};
     use utilites::{Serializer};
     #[test]
     fn test_serialize_medo()
     {
-        let medo: Settings = Settings::default();
+        let mut medo: Settings = Settings::default();
+        let mut task = Task::default();
+        task.target_dirs.push(PathBuf::new().join("d1"));
+        task.target_dirs.push(PathBuf::new().join("d2"));
+        task.target_dirs.push(PathBuf::new().join("d3"));
+        medo.tasks.push(task);
         let r = medo.save(Serializer::Toml);
         assert!(r.is_ok())
     }

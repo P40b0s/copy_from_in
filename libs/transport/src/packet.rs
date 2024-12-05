@@ -132,6 +132,14 @@ impl Packet
     {
         &self.packet_info.error
     }
+    ///Добавляет ошибку к пакету но только если ошибка не существует
+    pub fn add_error(&mut self, err: String)
+    {
+        if self.packet_info.error.is_none()
+        {
+            self.packet_info.error = Some(err);
+        }
+    }
     pub fn is_err(&self) -> bool
     {
         self.packet_info.error.is_some()

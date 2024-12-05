@@ -11,8 +11,8 @@ pub struct Task
     pub description: String,
     #[serde(default="def_dirs")]
     pub source_dir: PathBuf,
-    #[serde(default="def_dirs")]
-    pub target_dir: PathBuf,
+    #[serde(default="def_target_dirs")]
+    pub target_dirs: Vec<PathBuf>,
     #[serde(default="def_dirs")]
     pub report_dir: PathBuf,
     #[serde(default="def_timer")]
@@ -74,6 +74,10 @@ fn def_dirs() -> PathBuf
 {
     PathBuf::from("")
 }
+fn def_target_dirs() -> Vec<PathBuf>
+{
+    Vec::with_capacity(0)
+}
 fn def_str() -> String
 {
     "".to_owned()
@@ -90,7 +94,7 @@ impl Default for Task
         Task
         {
             source_dir: PathBuf::from(""),
-            target_dir: PathBuf::from(""),
+            target_dirs: Vec::with_capacity(0),
             report_dir: PathBuf::from(""),
             timer: 20000,
             name: "default_task".to_owned(),
@@ -124,9 +128,9 @@ impl Task
     {
         &self.source_dir
     }
-    pub fn get_target_dir(&self) -> &PathBuf
+    pub fn get_target_dirs(&self) -> &[PathBuf]
     {
-        &self.target_dir
+        &self.target_dirs
     }
     pub fn get_task_delay(&self) -> Duration
     {

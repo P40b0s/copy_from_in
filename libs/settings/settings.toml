@@ -1,1 +1,20 @@
-tasks = []
+[[tasks]]
+name = "default_task"
+description = ""
+source_dir = ""
+target_dirs = ["d1", "d2", "d3"]
+report_dir = ""
+timer = 20000
+delete_after_copy = false
+copy_modifier = "CopyAll"
+is_active = false
+clean_types = []
+generate_exclude_file = false
+color = "#4f46"
+sound = false
+autocleaning = false
+visible = true
+
+[tasks.filters]
+document_types = []
+document_uids = []

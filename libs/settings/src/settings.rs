@@ -40,12 +40,15 @@ impl FileMethods for Settings
                         errors.push(ValidationError::new(Some("source_directory".to_owned()), err));
                     }
                 }
-                if let Ok(e) = task.target_dir.try_exists()
+                for td in &task.target_dirs
                 {
-                    if !e
+                    if let Ok(e) = td.try_exists()
                     {
-                        let err = ["Директория ", &task.target_dir.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
-                        errors.push(ValidationError::new(Some("target_directory".to_owned()), err));
+                        if !e
+                        {
+                            let err = ["Директория ", &td.to_str().unwrap_or("***"), " в задаче ", &task.name, " не существует!"].concat();
+                            errors.push(ValidationError::new(Some("target_directory".to_owned()), err));
+                        }
                     }
                 }
                 if task.report_dir.to_str().is_some_and(|r| r != "")

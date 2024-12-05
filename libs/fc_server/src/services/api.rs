@@ -321,8 +321,17 @@ async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
     let task = task.unwrap();
     let fs = if task.delete_after_copy
     {
-        debug!("Начат поиск файлов в {:?}", &[task.get_target_dir().as_path(), &Path::new(&request.dir_name)]);
-        FileService::search_concat(&[task.get_target_dir().as_path(), &Path::new(&request.dir_name)]).await
+        let mut service = FileService::default();
+        for path in task.get_target_dirs()
+        {
+            debug!("Начат поиск файлов в {:?}", &[path.as_path(), &Path::new(&request.dir_name)]);
+            let srv = FileService::search_concat(&[path.as_path(), &Path::new(&request.dir_name)]).await;
+            if srv.get_list().len() > 0 
+            {
+                service = srv;
+            }
+        }
+        service
     }
     else 
     {
