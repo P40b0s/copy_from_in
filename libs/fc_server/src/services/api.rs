@@ -319,26 +319,23 @@ async fn get_files_list(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
         return Ok(error_response(format!("Задача {} не обнаружена", &request.task_name), StatusCode::BAD_REQUEST));
     }
     let task = task.unwrap();
-    let fs = if task.delete_after_copy
+    //ищем директорию с пакетом во всех директориях таска
+    debug!("Начат поиск файлов в {:?}", &[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]);
+    let srv = FileService::search_concat(&[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]).await;
+    if srv.get_list().len() > 0
     {
-        let mut service = FileService::default();
-        for path in task.get_target_dirs()
-        {
-            debug!("Начат поиск файлов в {:?}", &[path.as_path(), &Path::new(&request.dir_name)]);
-            let srv = FileService::search_concat(&[path.as_path(), &Path::new(&request.dir_name)]).await;
-            if srv.get_list().len() > 0 
-            {
-                service = srv;
-            }
-        }
-        service
+        return Ok(json_response(&srv.get_list()));
     }
-    else 
+    for path in task.get_target_dirs()
     {
-        debug!("Начат поиск файлов в {:?}", &[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]);
-        FileService::search_concat(&[task.get_source_dir().as_path(), &Path::new(&request.dir_name)]).await
-    };
-    Ok(json_response(&fs.get_list()))
+        debug!("Начат поиск файлов в {:?}", &[path.as_path(), &Path::new(&request.dir_name)]);
+        let srv = FileService::search_concat(&[path.as_path(), &Path::new(&request.dir_name)]).await;
+        if srv.get_list().len() > 0 
+        {
+            return Ok(json_response(&srv.get_list()));
+        }
+    }
+    Ok(error_response(["Местоположение пакета ", &request.dir_name, " не обнаружено"].concat(), StatusCode::NOT_FOUND))
 }
 
 

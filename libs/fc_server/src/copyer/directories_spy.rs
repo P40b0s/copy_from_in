@@ -97,7 +97,7 @@ impl DirectoriesSpy
         let _ = NEW_PACKET_EVENT.set(Arc::new(sender));
         receiver
     }
-   
+    
     async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
         let task_name = task.get_task_name();
@@ -125,7 +125,7 @@ impl DirectoriesSpy
                         packet.add_copy_status(false, target_path.as_path().display().to_string());
                     }
                 }
-                if task.delete_after_copy
+                if task.delete_after_copy && packet.copy_ok()
                 {
                     if let Err(e) = tokio::fs::remove_dir_all(&source_path).await
                     {
@@ -161,7 +161,7 @@ impl DirectoriesSpy
                                 packet.add_copy_status(false, target_path.as_path().display().to_string());
                             }
                         }
-                        if task.delete_after_copy
+                        if task.delete_after_copy && packet.copy_ok()
                         {
                             if let Err(e) = tokio::fs::remove_dir_all(source_path).await
                             {
@@ -194,7 +194,7 @@ impl DirectoriesSpy
         }
         else
         {
-            error!("Ошибка копирования пакета (на пятой попытке) {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+            error!("Ошибка копирования пакета (на десятой попытке) {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
             return false;
         }
     }

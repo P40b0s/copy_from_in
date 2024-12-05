@@ -150,6 +150,11 @@ impl Packet
             CopyStatus { copy_ok: is_copied, copy_path: path }
         );
     }
+    ///Все файлы успешно скопированы
+    pub fn copy_ok(&self) -> bool
+    {
+        self.copy_status.iter().all(|a| a.copy_ok)
+    }
     pub fn is_err(&self) -> bool
     {
         self.packet_info.error.is_some()
