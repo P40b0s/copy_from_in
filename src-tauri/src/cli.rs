@@ -9,6 +9,7 @@ pub struct Cli
   #[arg(long)]
   host: String,
   #[arg(long)]
+  #[clap(default_value="/api/v1/")]
   api_path: String,
   #[arg(long)]
   ws_port: usize,
