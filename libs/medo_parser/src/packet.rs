@@ -167,7 +167,7 @@ impl Packet
                 base_dir = Some(d.to_owned());
             }
         }
-        if base_dir.is_none()
+        if base_dir.is_none() || base_dir.as_ref().unwrap().is_empty()
         {
             return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", packet_name.display())));
         }
@@ -176,6 +176,16 @@ impl Packet
         .and_then(|m| Some(m.is_file())))
         {
             if is_file
+            {
+                return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
+            }
+        }
+        //какая то ошибка в винде бывает не распознает что это файл, и верхний кейс не срабатывает
+        //а хотя может там проблема например с получением метадаты, и он уходит в NONE
+        if let Some(is_txt_file) = self.path.as_ref()
+        .and_then(|f| Some(f.ends_with(".txt")))
+        {
+            if is_txt_file
             {
                 return Err(MedoParserError::PacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
             }

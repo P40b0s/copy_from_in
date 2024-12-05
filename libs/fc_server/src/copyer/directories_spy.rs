@@ -112,35 +112,24 @@ impl DirectoriesSpy
             //копируются все директории поэтому парсить транспортный пакет не имеет смысла
             CopyModifier::CopyAll =>
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
+                let mut packet = Packet::new_empty(&founded_packet_name, &task);
                 for td in target_dirs
                 {
                     let target_path = Path::new(td).join(packet_name);
                     if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                     {
-                        cp_ok.push((true, "".to_string()));
+                        packet.add_copy_status(true, target_path.as_path().display().to_string());
                     }
                     else 
                     {
-                        cp_ok.push((false, target_path.as_path().display().to_string()));
+                        packet.add_copy_status(false, target_path.as_path().display().to_string());
                     }
                 }
-                let packet = Packet::new_empty(&founded_packet_name, &task);
-                if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
-                {
-                    let mut packet = packet;
-                    packet.add_error(first.1);
-                    new_packet_found(packet).await;
-                }
-                else 
-                {
-                    new_packet_found(packet).await;
-                }
+                new_packet_found(packet).await;
             },
             CopyModifier::CopyOnly =>
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
-                let packet = Self::get_packet(&source_path, &task).await;
+                let mut packet = Self::get_packet(&source_path, &task).await;
                 if !packet.is_err()
                 {
                     for td in target_dirs
@@ -149,23 +138,14 @@ impl DirectoriesSpy
                         if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
                         {
                             
-                            cp_ok.push((true, "".to_string()));
+                            packet.add_copy_status(true, target_path.as_path().display().to_string());
                         }
                         else 
                         {
-                            cp_ok.push((false, target_path.as_path().display().to_string()));
+                            packet.add_copy_status(false, target_path.as_path().display().to_string());
                         }
                     }
-                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
-                    {
-                        let mut packet = packet;
-                        packet.add_error(first.1);
-                        new_packet_found(packet).await;
-                    }
-                    else 
-                    {
-                        new_packet_found(packet).await;
-                    }
+                    new_packet_found(packet).await;
                 }
                 else
                 {
@@ -174,8 +154,7 @@ impl DirectoriesSpy
             },
             CopyModifier::CopyExcept =>
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
-                let packet = Self::get_packet(&source_path, &task).await;
+                let mut packet = Self::get_packet(&source_path, &task).await;
                 if !packet.is_err()
                 {
                     for td in target_dirs
@@ -183,23 +162,14 @@ impl DirectoriesSpy
                         let target_path = Path::new(td).join(packet_name);
                         if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
                         {
-                            cp_ok.push((true, "".to_string()));
+                            packet.add_copy_status(true, target_path.as_path().display().to_string());
                         }
                         else
                         {
-                            cp_ok.push((false, target_path.as_path().display().to_string()));
+                            packet.add_copy_status(false, target_path.as_path().display().to_string());
                         }
                     }
-                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
-                    {
-                        let mut packet = packet;
-                        packet.add_error(first.1);
-                        new_packet_found(packet).await;
-                    }
-                    else 
-                    {
-                        new_packet_found(packet).await;
-                    }
+                    new_packet_found(packet).await;
                 }
                 else
                 {

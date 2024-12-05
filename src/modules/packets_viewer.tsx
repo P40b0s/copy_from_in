@@ -58,6 +58,7 @@ export const PacketsViewer =  defineComponent({
             let r = await commands_packets.get_packets_list(items_on_page, current_offset);
             if(r.is_ok())
                 packets.value = r.get_value();
+            //console.log(packets.value);
         }
         
         const new_packet_event = events.packets_update(async (packet) => 
@@ -294,16 +295,38 @@ export const PacketsViewer =  defineComponent({
             ]);
         }
         
+
+        const status_style = (packet: IPacket) =>
+        {
+            const copy_error = packet.copyStatus.some(s=>s.copyOk == false);
+            const icon = () =>
+            {
+                if(packet.packetInfo?.error)
+                    return error_ico;
+                else return get_icon(packet);
+            }
+            const box_color = () =>
+            {
+                if(packet.packetInfo?.error || copy_error)
+                    return '#f6848487';
+                else return 'rgb(100, 165, 9)';
+            }
+            return {icon, box_color, copy_error}
+        }
+
+
+
         const doc_status = (packet: IPacket) =>
         {
             const parse_date = new DateTime(packet.parseTime);
             const parse_time = parse_date.to_string(DateFormat.DotDate) + " " + parse_date.to_string(DateFormat.Time)
+            const {icon, box_color} = status_style(packet);
             return h(StatusCard,
             {
                 key: packet.id,
-                avatar: packet.packetInfo?.error ? error_ico : get_icon(packet),
+                avatar: icon(),
                 task_color: packet.task.color,
-                shadowbox_color: packet.packetInfo?.error ? '#f6848487' : 'rgb(100, 165, 9)',
+                shadowbox_color: box_color(),
                 files: packet.packetInfo?.files,
             },
             {
@@ -439,6 +462,8 @@ export const PacketsViewer =  defineComponent({
                             ]),
                             right_icons_panel(packet)
                         ]),
+                        copy_error_field(packet),
+                        packet_error_field(packet),
                         requisites(packet),
                         packet.packetInfo?.requisites?.annotation ?
                         h('div', 
@@ -471,6 +496,47 @@ export const PacketsViewer =  defineComponent({
                 ])
             })
         }
+        const copy_error_field = (packet: IPacket) => 
+        {
+            const { copy_error } = status_style(packet);
+            if(copy_error)
+            {
+                return h('div',
+                    {
+                        style:
+                        {
+                            //marginLeft:'17px',
+                            fontWeight: '300',
+                            borderRadius: '5px',
+                            marginTop: '5px',
+                            fontSize: '14px',
+                            backgroundColor: packet.task.color,
+                            background: "rgba(116, 32, 32, 0.85)",
+                            boxShadow: "0 2px 8px 0 rgba(169, 30, 30, 0.85)",
+                            padding: '2px',
+                        } as CSSProperties
+                    },
+                    [
+                        h('div', {style:{fontWeight: '700'}}, "При копировании файлов произошла ошибка, вы можете пересканировать данный пакет.")
+                    ].concat(packet.copyStatus.map(c=>
+                    {
+                        if(c.copyOk)
+                        {
+                            return h('div', `🟢 Пакет ${packet.name} успешно скопирован в ${c.copyPath}`)
+                        }
+                        else
+                        {
+                            return h('div', `❌ Ошибка копирования пакета ${packet.name} в ${c.copyPath}`)
+                        }
+                    }))
+                )
+            }
+            else
+            {
+                return [];
+            }
+        }
+        
 
         const right_icons_panel = (packet: IPacket) =>
         {
@@ -489,7 +555,7 @@ export const PacketsViewer =  defineComponent({
                
                 open_file_viewer_button(packet),
                 report_icon(packet),
-                packet.packetInfo?.error ? rescan_item_button(packet) : h('span'),
+                (packet.packetInfo?.error || packet.copyStatus.some(s=>s.copyOk == false)) ? rescan_item_button(packet) : h('span'),
                 del_button(packet),
             ])
         }
@@ -779,42 +845,35 @@ export const PacketsViewer =  defineComponent({
                     
                 ])
             }
-            else if (packet.packetInfo?.error)
+            else return []
+        }
+        const packet_error_field = (packet: IPacket) => 
+        {
+            if(packet.packetInfo?.error)
             {
                 return h('div',
                 {
                     style:
                     {
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
+                        //marginLeft:'17px',
+                        fontWeight: '300',
+                        borderRadius: '5px',
+                        marginTop: '5px',
+                        fontSize: '14px',
+                        backgroundColor: packet.task.color,
+                        background: "rgba(116, 32, 32, 0.85)",
+                        boxShadow: "0 2px 8px 0 rgba(169, 30, 30, 0.85)",
+                        padding: '2px',
                     } as CSSProperties
                 },
                 [
-                    h(NTooltip, null,
-                    {
-                        trigger:() =>
-                        h(NIcon, 
-                        {
-                            component: AlertOutline,
-                            color: 'rgb(239, 67, 67)',
-                            style:
-                            {
-                                marginRight: '2px'
-                            } as CSSProperties,
-                        }),
-                        default:() => "Ошибка разбора пакета"
-                    }),
-                    packet.packetInfo?.error
+                    h('div', {style:{fontWeight: '700'}}, "Ошибка при разборе транспортного пакета"),
+                    h('div', `❌ ${packet.packetInfo?.error}`)
                 ])
             }
-            //если нет ошибок и документа значит документ копируется с опцией CopyAll
-            //в этом случае ошибки парсинга пакета  не имеют значения 
-            else
-            {
-                return [];
-            }
+            else return [];
         }
+        
         return {list, complex}
     },
     render ()

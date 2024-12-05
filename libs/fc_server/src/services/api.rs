@@ -196,7 +196,7 @@ async fn get_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Result
     {
         if let Some(task) = tasks.iter().find(|f| f.get_task_name() == d.get_task_name())
         {
-            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended()));
+            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended(), d.get_copy_status()));
         }
         else
         {
@@ -243,7 +243,7 @@ async fn search_packets(req: Request<Incoming>, app_state: Arc<AppState>) -> Res
     {
         if let Some(task) = tasks.iter().find(|f| f.get_task_name() == d.get_task_name())
         {
-            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended()));
+            complex_data.push(Packet::new_from_db(task.clone(), d.get_id(), d.get_packet_info(), d.report_is_sended(), d.get_copy_status()));
         }
         else
         {

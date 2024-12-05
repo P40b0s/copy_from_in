@@ -1,16 +1,19 @@
 use std::{fmt::Display, sync::Arc};
 use db_service::{from_json, get_fields_for_update, query, to_json, CountRequest, DbError, FromRow, IdSelector, QuerySelector, Result, Row, Selector, SortingOrder, SqlOperations, SqlitePool, SqliteRow};
-use transport::{PacketInfo, Packet};
+use transport::{CopyStatus, Packet, PacketInfo};
 use super::addresse_table::AddresseTable;
 
+///Она не передается напрямую на клиента! при передаче идет ее преобразование с заполнением тасками
 #[derive(Debug)]
 pub struct PacketTable
 {
     id: String,
     packet_info: PacketInfo,
     task_name: String,
-    report_sended: bool
+    report_sended: bool,
+    copy_status: Vec<CopyStatus>
 }
+
 impl PacketTable
 {
     pub fn new(packet: &Packet) -> Self
@@ -20,7 +23,8 @@ impl PacketTable
             id: packet.get_id().to_owned(),
             packet_info: packet.get_packet_info().to_owned(),
             task_name: packet.get_task().get_task_name().to_owned(),
-            report_sended: packet.report_sended
+            report_sended: packet.report_sended,
+            copy_status: packet.copy_status.clone(),
         }
     }
     pub fn get_packet_info(&self) -> &PacketInfo
@@ -30,6 +34,10 @@ impl PacketTable
     pub fn get_task_name(&self) -> &str
     {
         &self.task_name
+    }
+    pub fn get_copy_status(&self) -> Vec<CopyStatus>
+    {
+        self.copy_status.clone()
     }
     pub fn report_is_sended(&self) -> bool
     {
@@ -54,7 +62,8 @@ enum PacketTableFields
     acknowledgment, //12
     visible, //13
     trace_message, //14
-    report_sended //15
+    report_sended, //15
+    copy_status //16
 }
 //TODO сделать еще трейт со схемой этого поля, и можно будет использовать
 // impl Display for PacketTableFields
@@ -81,6 +90,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
             id,
             task_name: row.try_get("task_name")?,
             report_sended: row.try_get("report_sended")?,
+            copy_status: from_json(row, "copy_status").unwrap_or_default(),
             packet_info: PacketInfo
             {
                  //sender info нам нужен только при парсинге пакета, потом мы данные из него передаем в таблицу адресов
@@ -133,7 +143,8 @@ impl<'a> SqlOperations<'a> for PacketTable
             "acknowledgment", //12
             "visible", //13
             "trace_message", //14
-            "report_sended" //15
+            "report_sended", //15
+            "copy_status" //16
         ]
     }
     
@@ -156,6 +167,7 @@ impl<'a> SqlOperations<'a> for PacketTable
             ", Self::table_fields()[13], " INTEGER NOT NULL DEFAULT 1,
             ", Self::table_fields()[14], " TEXT,
             ", Self::table_fields()[15], " INTEGER NOT NULL DEFAULT 0,
+            ", Self::table_fields()[16], " TEXT DEFAULT('[]'),
              FOREIGN KEY (sender_id) REFERENCES addresses(id)
             );"].concat()
     }
@@ -183,6 +195,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
+        .bind(to_json(&self.copy_status))
         .execute(&*pool).await?;
         Ok(res.rows_affected())
     }
@@ -206,6 +219,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
+        .bind(to_json(&self.copy_status))
         .execute(&*pool).await?;
         // if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         // {
@@ -233,6 +247,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.visible)
         .bind(self.packet_info.trace_message.as_ref())
         .bind(self.report_is_sended())
+        .bind(to_json(&self.copy_status))
         .execute(&*pool).await?;
         // if let Ok(addreesses) = AddresseTable::try_from(&self.packet_info)
         // {
