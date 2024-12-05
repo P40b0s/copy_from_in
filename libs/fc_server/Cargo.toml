@@ -1,6 +1,6 @@
 [package]
 name = "fc_server"
-version = "0.2.2"
+version = "1.0.3"
 edition = "2021"
 
 description = "Сервер копирования пакетов МЭДО"
