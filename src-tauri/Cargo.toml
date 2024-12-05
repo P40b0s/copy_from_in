@@ -1,6 +1,6 @@
 [package]
 name = "client"
-version = "1.0.3"
+version = "1.0.4"
 description = "Планировщик копирования пакетов МЭДО"
 authors = ["phobos"]
 license = ""

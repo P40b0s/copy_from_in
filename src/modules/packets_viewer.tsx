@@ -328,10 +328,7 @@ export const PacketsViewer =  defineComponent({
                 task_color: packet.task.color,
                 shadowbox_color: box_color(),
                 files: packet.packetInfo?.files,
-                onClick: () =>
-                {
-                    emitter.emit('openFileViewer', packet);
-                },
+                
                 
             },
             {

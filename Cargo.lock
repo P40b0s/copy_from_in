@@ -757,7 +757,7 @@ checksum = "afb84c814227b90d6895e01398aee0d8033c00e7466aca416fb6a8e0eb19d8a7"
 
 [[package]]
 name = "client"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1494,7 +1494,7 @@ checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
 
 [[package]]
 name = "fc_server"
-version = "1.0.3"
+version = "1.0.4"
 dependencies = [
  "anyhow",
  "async-channel",
