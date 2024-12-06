@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use logger::warn;
 use serde::{Deserialize, Serialize};
 
@@ -7,8 +9,20 @@ use utilites::{Serializer, serialize, deserialize, serialize_to_file};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings
 {
+    pub forget_directories_watcher: Option<ForgetDirectoriesWatcher>,
     pub tasks: Vec<Task>
 }
+///Настройка для отслеживания директорий которые не зашли в архитетор  
+/// была ошибка копирования поэтому нужно поменять им имя через какое то время чтобы архитектор заново по ним прошелся
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ForgetDirectoriesWatcher
+{
+    pub dir_path: PathBuf,
+    ///время между запуском в секундах
+    pub cycle_time: u32
+}
+
+
 impl Default for Settings
 {
     fn default() -> Self 
@@ -16,6 +30,7 @@ impl Default for Settings
         Settings 
         { 
             tasks: vec![],
+            forget_directories_watcher: None
         }
     }
     

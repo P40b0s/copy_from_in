@@ -1,3 +1,7 @@
+[forget_directories_watcher]
+dir_path = "/hard/xar/medo_testdata/check_forget_dirs_watcher"
+cycle_time = 30
+
 [[tasks]]
 name = "from_backup_to_architector"
 description = "задача копирования из бэкапа в архитектор"

@@ -15,7 +15,7 @@ mod test
     use std::path::{Path, PathBuf};
 
     use serde::Deserialize;
-    use crate::{file_methods::FileMethods, CopyModifier, Settings, Task};
+    use crate::{file_methods::FileMethods, settings::ForgetDirectoriesWatcher, CopyModifier, Settings, Task};
     use utilites::{Serializer};
     #[test]
     fn test_serialize_medo()
@@ -26,6 +26,7 @@ mod test
         task.target_dirs.push(PathBuf::new().join("d2"));
         task.target_dirs.push(PathBuf::new().join("d3"));
         medo.tasks.push(task);
+        medo.forget_directories_watcher = Some(ForgetDirectoriesWatcher { dir_path: PathBuf::new(), cycle_time: 120 });
         let r = medo.save(Serializer::Toml);
         assert!(r.is_ok())
     }
