@@ -66,15 +66,15 @@ fn create_ticket(ack_uid: &str, destination_organ_uid :&str, destination_organ_n
 }
 fn create_enveloper(addresse: &str) -> Vec<u8>
 {
-    let ticket = format!("[ПИСЬМО КП ПС СЗИ]\r\n
-ТЕМА=Квитанция о приеме\r\n
-ШИФРОВАНИЕ=0\r\n
-ЭЦП=1\r\n
-ДОСТАВЛЕНО=1\r\n
-ПРОЧТЕНО=1\r\n
-[АДРЕСАТЫ]\r\n
-0={}\r\n
-[ФАЙЛЫ]\r\n
+    let ticket = format!("[ПИСЬМО КП ПС СЗИ]\r
+ТЕМА=Квитанция о приеме\r
+ШИФРОВАНИЕ=0\r
+ЭЦП=1\r
+ДОСТАВЛЕНО=1\r
+ПРОЧТЕНО=1\r
+[АДРЕСАТЫ]\r
+0={}\r
+[ФАЙЛЫ]\r
 0=acknowledgment.xml", addresse);
     let encoded = WINDOWS_1251.encode(&ticket, encoding::EncoderTrap::Replace);
     return encoded.unwrap()
@@ -86,6 +86,6 @@ mod tests
     #[test]
     pub fn test_xml()
     {
-        DeliveryTicketPacket::create_packet("ид дока который пришел", "ид органа которому направляем", "наименование органа которму направляем", "ooo@lll.ru").send("/hard/xar/projects/fullstack/complite_in_parser/medo_parser");
+        DeliveryTicketPacket::create_packet("ид дока который пришел", "ид органа которому направляем", "наименование органа которму направляем", "ooo@lll.ru").send("/hard/xar/medo_testdata/reports");
     }
 }
