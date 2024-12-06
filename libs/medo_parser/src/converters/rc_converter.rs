@@ -7,9 +7,15 @@ impl UniversalConverter for RcParser
 {
     fn convert(&self, to: &mut PacketInfo) 
     {
+       
         to.packet_type = Some("rc".to_owned());
         let mut req = Requisites::default();
-        req.document_guid = self.guid.clone();
+        //в rc приходят не те форты guid что я хнаю в БД поэтому парсим их и переводим в нормальную.
+        if let Some(duid) = &self.guid
+        {
+            let document_guid = uuid::Uuid::parse_str(duid);
+            req.document_guid = document_guid.ok().and_then(|g| Some(g.to_string()));
+        }
         req.act_type = self.viddoc.clone();
         req.pages = self.pages_orig;
         req.document_number = self.regnumber.clone();
@@ -23,15 +29,26 @@ impl UniversalConverter for RcParser
         }
         req.annotation =  self.content_2.clone();
         to.requisites = Some(req);
-        let s = SenderInfo 
+        if let Some(org) = self.signer_org.as_ref()
         {
-            medo_addressee : Some("неизвестно".to_owned()),
-            organization : Some("неизвестно".to_owned()),
-            source_guid : Some("00000000-0000-0000-0000-000000000000".to_owned()),
-            ..SenderInfo::default()
-        };
-        to.sender_info = Some(s);
-        logger::warn!("В пакете rc отсутсвуют свойства отправителя {}", &to.packet_directory);
+            let (addr, uid) = if org == "Президент РФ"
+            {
+                logger::warn!("В пакете rc {} установлены свойства администрации президента", &to.packet_directory);
+                (Some("ADM_PREZ~MEDOGU".to_owned()), Some("0b21bba1-f44d-4216-b465-147665360c06".to_owned()))
+            }
+            else
+            {
+                logger::warn!("В пакете rc {} не найдены свойтсва отправителя", &to.packet_directory);
+                (None, None)
+            };
+            to.sender_info = Some(SenderInfo 
+            {
+                medo_addressee : addr,
+                organization : Some(org.to_owned()),
+                source_guid : uid,
+                ..SenderInfo::default()
+            });
+        }
         if to.default_pdf.is_none()
         {
             let mut pdfs = to.files.iter().filter(|f| f.contains(".pdf"));

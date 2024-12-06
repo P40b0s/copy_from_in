@@ -10,18 +10,23 @@ use crate::{MedoParser, MedoParserError, open_file, FileEncoding};
 ///Структура для содержимого файла .rc
 pub struct RcParser
 {
+    ///<barcode>2100088686184</barcode>
     #[serde(skip_serializing_if="Option::is_none")]
     pub barcode: Option<String>,
+    ///<change_time>05.12.2024 22:45:38</change_time>
     #[serde(skip_serializing_if="Option::is_none")]
     pub change_time: Option<String>,
+    ///Составное название с реквизитами  
+    /// <content>Указ Президента Российской Федерации  от  10.10.2024  №  999
+    ///&quot;ааа ббб ввв &quot; </content>
     #[serde(skip_serializing_if="Option::is_none")]
-    ///Составное название с реквизитами
     pub content: Option<String>,
+    ///Только название  
+    /// <content_2>&quot;ааа ббб ввв&quot;</content_2>
     #[serde(skip_serializing_if="Option::is_none")]
-    ///Только название
     pub content_2: Option<String>,
+    ///исполнитель  
     #[serde(skip_serializing_if="Option::is_none")]
-    ///исполнитель
     pub executor: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub guid: Option<String>,
