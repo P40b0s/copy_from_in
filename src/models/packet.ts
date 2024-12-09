@@ -19,7 +19,7 @@ export interface IPacketInfo
     ///(фактически когда пакет пришел к нам)
     ///зависит от времени на сервере, тому что берет локальное время создания
     deliveryTime? : string;
-    error?: string;
+    error?: [number, string];
     files?: string[];
     requisites?: Requisites;
     //senderInfo?: SenderInfo;
@@ -30,27 +30,6 @@ export interface IPacketInfo
     visible: boolean;
     traceMessage?: string;
 }
-
-// export interface SenderInfo
-// {
-//     organization?: string;
-//     person?: string;
-//     department?: string;
-//     post?: string;
-//     addressee?: string;
-//     medoAddessee?: string;
-//     sourceGuid?: string;
-//     executor?: Executor;
-// }
-
-
-// export interface Executor
-// {
-//     organization?: string;
-//     person?: string;
-//     post?: string;
-//     contactInfo?: string;
-// }
 
 export interface MinistryOfJustice
 {

@@ -64,10 +64,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 1000,
+        "height": 800,
         "resizable": true,
         "title": "Клиент для планировщика копирования пакетов МЭДО",
-        "width": 1200
+        "width": 1600
       }
     ]
   }

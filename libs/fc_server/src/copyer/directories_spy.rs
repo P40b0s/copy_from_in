@@ -138,45 +138,52 @@ impl DirectoriesSpy
             CopyModifier::CopyExcept => Self::copy_with_rules(&source_path, target_dirs, packet_name, &task, false).await
         }
         
-        }
+    }
 
-        async fn copy_with_rules(source_path: &PathBuf, target_dirs: &[PathBuf], packet_name: &str, task: &Task, need_rule_accept: bool)
+    async fn copy_with_rules(source_path: &PathBuf, target_dirs: &[PathBuf], packet_name: &str, task: &Task, need_rule_accept: bool)
+    {
+        let mut packet = Self::get_packet(&source_path, &task).await;
+        if !Self::autoclean(&source_path, &packet, &task).await
         {
-            let mut packet = Self::get_packet(&source_path, &task).await;
-            if !Self::autoclean(&source_path, &packet, &task).await
+            if !packet.is_err()
             {
-                if !packet.is_err()
+                if Self::pass_rules(&source_path, &packet, &task, need_rule_accept).await
                 {
-                    if Self::pass_rules(&source_path, &packet, &task, need_rule_accept).await
+                    for td in target_dirs
                     {
-                        for td in target_dirs
+                        let target_path = Path::new(td).join(packet_name);
+                        if Self::copy_process(&target_path, &source_path, packet_name, &task).await
                         {
-                            let target_path = Path::new(td).join(packet_name);
-                            if Self::copy_process(&target_path, &source_path, packet_name, &task).await
-                            {
-                                packet.add_copy_status(true, target_path.as_path().display().to_string());
-                            }
-                            else 
-                            {
-                                packet.add_copy_status(false, target_path.as_path().display().to_string());
-                            }
+                            packet.add_copy_status(true, target_path.as_path().display().to_string());
                         }
-                        if task.delete_after_copy && packet.copy_ok()
+                        else 
                         {
-                            if let Err(e) = tokio::fs::remove_dir_all(source_path).await
-                            {
-                                error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-                            }
+                            packet.add_copy_status(false, target_path.as_path().display().to_string());
                         }
-                        new_packet_found(packet).await;
                     }
-                }
-                else
-                {
+                    if task.delete_after_copy && packet.copy_ok()
+                    {
+                        if let Err(e) = tokio::fs::remove_dir_all(source_path).await
+                        {
+                            error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                        }
+                    }
                     new_packet_found(packet).await;
                 }
             }
+            else
+            {
+                if let Some(err) = packet.get_error()
+                {
+                    if err.0 != -1
+                    {
+                        new_packet_found(packet).await;
+                    }
+                }
+            }
+        }
     }
+
     async fn copy_process(target_path: &PathBuf,
         source_path: &PathBuf,
         packet_dir_name: &str, 
@@ -198,7 +205,6 @@ impl DirectoriesSpy
             return false;
         }
     }
-
 
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
     {
@@ -247,45 +253,6 @@ impl DirectoriesSpy
         }
         false
     }
-
-    ///Отработали ли правила из текущей задачи
-    ///`need_rule_accept` при ключе фильтра CopyOnly нужно поставить true а при ключе CopyExcept - false
-    ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
-    // async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
-    // {
-    //     if task.autocleaning
-    //     {
-    //         if let Some(dt) = packet.get_packet_info().packet_type.as_ref()
-    //         {
-    //             if task.clean_types.contains(&dt)
-    //             {
-    //                 if let Ok(_) = tokio::fs::remove_dir_all(source_path).await
-    //                 {
-    //                     debug!("Пакет {} был удален, так как в настройках задачи {} включен флаг автоочистка", packet.get_packet_name(), packet.get_task().get_task_name());
-    //                     return false;
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
-    //     && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-    //     && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-    //     {
-    //         return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
-    //     }
-    //     else
-    //     {
-    //         if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-    //         {
-    //             return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
-    //         }
-    //         if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-    //         {
-    //             return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task).await;
-    //         }
-    //     }
-    //     return false;
-    // }
 
     async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
     {
@@ -354,7 +321,7 @@ async fn new_packet_found(mut packet: Packet)
 {
     if packet.is_err()
     {
-        logger::error!("{}", packet.get_error().as_ref().unwrap());
+        logger::error!("{}", packet.get_error().as_ref().unwrap().1);
     }
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
@@ -370,7 +337,7 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
     {
         if let Some(e) = new_packet.error.as_ref()
         {
-            logger::error!("{}, уведомление отправлено не будет", e);
+            logger::error!("{}, уведомление отправлено не будет", e.1);
             return false;
         }
         else

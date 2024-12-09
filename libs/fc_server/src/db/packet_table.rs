@@ -84,6 +84,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
     {
         let id: String =  row.try_get("id")?;
         let files = serde_json::from_str::<Vec<String>>(row.try_get("files")?).unwrap();
+        let error: Option<String> = row.try_get("error")?;
         Ok(
         Self
         {
@@ -91,6 +92,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
             task_name: row.try_get("task_name")?,
             report_sended: row.try_get("report_sended")?,
             copy_status: from_json(row, "copy_status").unwrap_or_default(),
+           
             packet_info: PacketInfo
             {
                  //sender info нам нужен только при парсинге пакета, потом мы данные из него передаем в таблицу адресов
@@ -104,7 +106,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
                 requisites: from_json(row, "requisites"),
                 sender_id: row.try_get( "sender_id")?,
                 wrong_encoding: false,
-                error: row.try_get("error")?,
+                error: error.and_then(|e| Some((0, e))),
                 pdf_hash: row.try_get("pdf_hash")?,
                 acknowledgment: from_json(row, "acknowledgment"),
                 trace_message: row.try_get("trace_message")?,
@@ -185,7 +187,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
@@ -209,7 +211,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
@@ -237,7 +239,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref())
+        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))

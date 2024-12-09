@@ -83,7 +83,7 @@ impl Packet
         let mut pi = PacketInfo::default();
         pi.packet_directory = name.to_string();
         pi.delivery_time = Self::time_now();
-        pi.error = Some(error.to_string());
+        pi.error = Some((1, error.to_string()));
         Self
         {
             id: Self::id(task.get_task_name(), &pi.packet_directory),
@@ -140,7 +140,7 @@ impl Packet
     {
         &self.packet_info
     }
-    pub fn get_error(&self) -> &Option<String>
+    pub fn get_error(&self) -> &Option<(i8, String)>
     {
         &self.packet_info.error
     }

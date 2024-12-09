@@ -10,14 +10,20 @@
     "main-body"
     "footer"; 
 }
-.menu { grid-area: menu; }
+.menu 
+{ 
+  grid-area: menu;
+  font-family: 'Source Code Pro';
+}
 .footer 
 { 
-  grid-area: footer; 
+  grid-area: footer;
+  font-family: 'Source Code Pro';
 
 }
 .main-body 
 { 
   grid-area: main-body;
+  font-family: 'Source Code Pro';
 
 }

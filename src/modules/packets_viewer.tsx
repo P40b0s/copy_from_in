@@ -17,7 +17,7 @@ import { app_state_store } from '../store/index.ts';
 import { StatusCard } from './status_card.tsx';
 import { background, envelope_ico, error_ico, image_ico, pdf_ico } from '../services/svg.ts';
 import { Filter, IPacket, Task } from '../models/types.ts';
-import { AlertOutline, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, MenuOutline, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
+import { AlertOutline, AtCircle, AttachSharp, CheckmarkDoneCircle, FlashOff, FolderOpen, MailSharp, MenuOutline, RefreshCircleSharp, SettingsSharp, TimeOutline, TrashBin } from '@vicons/ionicons5';
 import { commands_packets, commands_service, commands_settings } from '../services/tauri/commands.ts';
 import { naive_notify } from '../services/notification.ts';
 import { events } from '../services/tauri/events.ts';
@@ -366,6 +366,8 @@ export const PacketsViewer =  defineComponent({
                                 justifyItems: 'center',
                                 alignItems: 'center',
                                 width: "inherit",
+                                "font-size": '18px',
+                                fontWeight: '600',
                                 backgroundColor: packet.task.color,
                                 padding: "2px",
                                 background: "rgba(27, 126, 110, 0.35)",
@@ -413,38 +415,10 @@ export const PacketsViewer =  defineComponent({
                                     display: 'flex',
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    paddingRight: '15px',
-                                } as CSSProperties
-                            },
-                            [
-                                h(NTooltip, null,
-                                {
-                                    trigger:() =>
-                                    h(NIcon, 
-                                    {
-                                        component: SettingsSharp,
-                                        color: packet.task.color,
-                                        style:
-                                        {
-                                            marginLeft: '5px',
-                                            marginRight: '2px'
-                                        } as CSSProperties,
-                                    }),
-                                    default:() => packet.task.description
-                                }),
-                                packet.task?.name,
-                            ]),
-                            h('div',
-                            {
-                                style:
-                                {
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
                                    
                                 } as CSSProperties
                             },
-                            [
+                            packet.name != "" ?[
                                 h(NTooltip, null,
                                 {
                                     trigger:() =>
@@ -461,6 +435,60 @@ export const PacketsViewer =  defineComponent({
                                     default:() => "Наименование директории пакета"
                                 }),
                                 packet.name,
+                            ]: []),
+                            h('div',
+                            {
+                                style:
+                                {
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    paddingRight: '15px',
+                                } as CSSProperties
+                            },
+                            packet.packetInfo?.packetType ? [
+                                h(NTooltip, null,
+                                {
+                                    trigger:() =>
+                                    h(NIcon, 
+                                    {
+                                        component: AtCircle,
+                                        color: packet.task.color,
+                                        style:
+                                        {
+                                            marginLeft: '5px',
+                                            marginRight: '2px',
+                                        } as CSSProperties,
+                                    }),
+                                    default:() =>  "Тип пакета"
+                                }),
+                                packet.packetInfo?.packetType,
+                            ]: []),
+                            h('div',
+                            {
+                                style:
+                                {
+                                    display: 'flex',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                } as CSSProperties
+                            },
+                            [
+                                h(NTooltip, null,
+                                {
+                                    trigger:() =>
+                                    h(NIcon, 
+                                    {
+                                        component: SettingsSharp,
+                                        color: packet.task.color,
+                                        style:
+                                        {
+                                            marginRight: '2px'
+                                        } as CSSProperties,
+                                    }),
+                                    default:() => packet.task.description
+                                }),
+                                packet.task?.name,
                             ]),
                             right_icons_panel(packet)
                         ]),
@@ -511,7 +539,7 @@ export const PacketsViewer =  defineComponent({
                             fontWeight: '300',
                             borderRadius: '5px',
                             marginTop: '5px',
-                            fontSize: '14px',
+                            fontSize: '16px',
                             backgroundColor: packet.task.color,
                             background: "rgba(116, 32, 32, 0.85)",
                             boxShadow: "0 2px 8px 0 rgba(169, 30, 30, 0.85)",
@@ -860,7 +888,7 @@ export const PacketsViewer =  defineComponent({
                         fontWeight: '300',
                         borderRadius: '5px',
                         marginTop: '5px',
-                        fontSize: '14px',
+                        fontSize: '16px',
                         backgroundColor: packet.task.color,
                         background: "rgba(116, 32, 32, 0.85)",
                         boxShadow: "0 2px 8px 0 rgba(169, 30, 30, 0.85)",
@@ -869,7 +897,7 @@ export const PacketsViewer =  defineComponent({
                 },
                 [
                     h('div', {style:{fontWeight: '700'}}, "Ошибка при разборе транспортного пакета"),
-                    h('div', `❌ ${packet.packetInfo?.error}`)
+                    h('div', `❌ ${packet.packetInfo?.error[1]}`)
                 ])
             }
             else return [];
