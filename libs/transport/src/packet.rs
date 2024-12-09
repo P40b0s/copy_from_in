@@ -6,7 +6,13 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::json;
 use settings::Task;
 use utilites::Date;
-
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CopyStatus
+{
+    pub copy_ok: bool,
+    pub copy_path: String
+}
 ///Эта структура будет ходить между клиентом - сервером
 /// все ошибки будут внутри packet_info.error
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
@@ -18,7 +24,8 @@ pub struct Packet
     task: Task,
     pub name: String,
     pub parse_time: String,
-    pub report_sended: bool
+    pub report_sended: bool,
+    pub copy_status: Vec<CopyStatus>
 }
 
 impl Packet
@@ -52,6 +59,7 @@ impl Packet
             report_sended: false,
             task: task.clone(),
             packet_info,
+            copy_status: Vec::new()
         }
     }
     pub fn new_packet(task: &Task, packet: PacketInfo) -> Self
@@ -66,6 +74,7 @@ impl Packet
             report_sended: false,
             task: task.clone(),
             packet_info: packet,
+            copy_status: Vec::new()
         }
     }
     pub fn new_err<S: ToString>(name: S, task: &Task, error: S) -> Self
@@ -74,7 +83,7 @@ impl Packet
         let mut pi = PacketInfo::default();
         pi.packet_directory = name.to_string();
         pi.delivery_time = Self::time_now();
-        pi.error = Some(error.to_string());
+        pi.error = Some((1, error.to_string()));
         Self
         {
             id: Self::id(task.get_task_name(), &pi.packet_directory),
@@ -83,6 +92,7 @@ impl Packet
             report_sended: false,
             task: task.clone(),
             packet_info: pi,
+            copy_status: Vec::new()
         }
     }
     fn time_now() -> String
@@ -106,9 +116,10 @@ impl Packet
             report_sended: false,
             task: task.clone(),
             packet_info: pi,
+            copy_status: Vec::new()
         }
     }
-    pub fn new_from_db<S: ToString>(task: Task, id: S, packet: &PacketInfo, report_sended: bool) -> Self
+    pub fn new_from_db<S: ToString>(task: Task, id: S, packet: &PacketInfo, report_sended: bool, copy_status: Vec<CopyStatus>) -> Self
     {
         Self
         {
@@ -118,6 +129,7 @@ impl Packet
             report_sended,
             task,
             packet_info: packet.clone(),
+            copy_status
         }
     }
     pub fn get_task(&self) -> &Task
@@ -128,17 +140,20 @@ impl Packet
     {
         &self.packet_info
     }
-    pub fn get_error(&self) -> &Option<String>
+    pub fn get_error(&self) -> &Option<(i8, String)>
     {
         &self.packet_info.error
     }
-    ///Добавляет ошибку к пакету но только если ошибка не существует
-    pub fn add_error(&mut self, err: String)
+    pub fn add_copy_status(&mut self, is_copied: bool, path: String)
     {
-        if self.packet_info.error.is_none()
-        {
-            self.packet_info.error = Some(err);
-        }
+        self.copy_status.push(
+            CopyStatus { copy_ok: is_copied, copy_path: path }
+        );
+    }
+    ///Все файлы успешно скопированы
+    pub fn copy_ok(&self) -> bool
+    {
+        self.copy_status.iter().all(|a| a.copy_ok)
     }
     pub fn is_err(&self) -> bool
     {

@@ -4,6 +4,7 @@ mod packets_handler;
 pub use error::Error;
 use once_cell::sync::OnceCell;
 use packets_handler::start_packets_handler;
+use services::start_forget_directories_handler;
 use tokio::runtime::Handle;
 pub use utilites;
 mod copyer;
@@ -28,6 +29,7 @@ async fn main() -> Result<(), Error>
     let _ = services::start_http_server(params.http_port, Arc::clone(&app_state)).await;
     services::start_ws_server(params.ws_port, Arc::clone(&app_state)).await;
     start_packets_handler(app_state.get_db_pool()).await;
+    start_forget_directories_handler(Arc::clone(&app_state)).await;
     let settings = Arc::clone(&app_state);
     let ds = DirectoriesSpy::new(settings, 15000);
     ds.start_tasks().await;

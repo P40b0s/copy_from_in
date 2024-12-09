@@ -1,5 +1,5 @@
 use thiserror::Error;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Error)]
 pub enum MedoParserError
@@ -16,6 +16,8 @@ pub enum MedoParserError
     ZipEmpty(String),
     #[error("`{0}`")]
     PacketError(String),
+    #[error("Пакет `{0}` не является допустимым транспортным пакетом")]
+    IsNotPacketError(String),
     #[error("Ошибка обработки файла .ltr: `{0}`")]
     LtrError(String),
     #[error("Ошибка десериализации: `{0}`")]

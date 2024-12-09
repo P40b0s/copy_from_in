@@ -23,7 +23,7 @@ export const MainTab =  defineComponent({
                 style:
                 {
                     marginBottom: '0px',
-                    height: '100%'
+                    height: '100%',
                 } as CSSProperties
             },
             {

@@ -1,6 +1,11 @@
 import { RendererElement, RendererNode, VNode } from "vue";
 import type { IPacketInfo } from './packet';
 
+export interface CopyStatus
+{
+    copyOk: boolean,
+    copyPath: string
+}
 export interface IPacket
 {
     id: string;
@@ -10,6 +15,7 @@ export interface IPacket
     packetInfo?: IPacketInfo,
     task: Task,
     reportSended: boolean,
+    copyStatus: CopyStatus[]
 }
 
 export type Task = 

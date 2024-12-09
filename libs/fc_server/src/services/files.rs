@@ -62,7 +62,6 @@ impl FileService
     fn search_files(path: PathBuf, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
     {
         async move {
-            //let path_guard = path.lock().await;
             if let Some(files) = Self::get_entries(&path).await
             {
                 //Добавляем все файлы из директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
@@ -97,51 +96,6 @@ impl FileService
             }
         }.boxed()
     }
-
-    // fn search_files(path: Arc<Mutex<PathBuf>>, files_list: Arc<Mutex<Vec<File>>>) -> BoxFuture<'static, ()>
-    // {
-    //     async move {
-    //         let path_guard = path.lock().await;
-    //         if let Some(files) = Self::get_entries(&path_guard).await
-    //         {
-    //             drop(path_guard);
-    //             //Добавляем все файлы из директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
-    //             for f in files
-    //             {
-    //                 if let Some(file) = f.path().file_name().and_then(|fl| fl.to_str())
-    //                 {
-    //                     let mut path_guard = path.lock().await;
-    //                     let mut flist_guard = files_list.lock().await;
-    //                     //extensiion без точки - txt
-    //                     if let Some(ext) = f.path().extension().and_then(|e| e.to_str())
-    //                     {
-    //                         let file_name = file.to_owned();
-    //                         let mut p = path_guard.clone();
-    //                         p.push(&file_name);
-    //                         flist_guard.push(File 
-    //                         {
-    //                             file_name,
-    //                             file_type: ext.to_owned(),
-    //                             path: p.display().to_string()
-    //                         });
-    //                         drop(path_guard);
-    //                         drop(flist_guard);
-    //                     }
-    //                     else if f.path().is_dir()
-    //                     {
-    //                         path_guard.push(file);
-    //                         let mut cloned = path_guard.clone();
-    //                         drop(path_guard);
-    //                         drop(flist_guard);
-    //                         cloned.push(file);
-                            
-    //                         Self::search_files(Arc::clone(&path), Arc::clone(&files_list)).await;
-    //                     }
-    //                 }
-    //             };
-    //         }
-    //     }.boxed()
-    // }
 
     pub fn get_list(&self) -> &[File]
     {

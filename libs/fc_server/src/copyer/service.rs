@@ -39,7 +39,7 @@ impl PacketCleaner
                                     let packet = Packet::parse(&source_path, packet_info, t);
                                     if let Some(e) = packet.get_error()
                                     {
-                                        let wrn = ["Директория ", d, " не является пакетом ", e.as_ref()].concat();
+                                        let wrn = ["Директория ", d, " не является пакетом ", &e.1].concat();
                                         logger::warn!("{}", &wrn);
                                         if let Some(files) = get_files(&source_path)
                                         {

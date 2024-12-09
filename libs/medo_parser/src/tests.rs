@@ -231,7 +231,7 @@ fn xz_encoding_packet()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 
@@ -252,7 +252,7 @@ fn test_parse_container_2_5()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 #[test]
@@ -268,7 +268,7 @@ fn test_parse_container_2_7_1()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 
@@ -290,7 +290,7 @@ fn test_packet_27466149()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 #[test]
@@ -307,7 +307,7 @@ fn test_packet_53294501()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 #[test]
@@ -322,7 +322,7 @@ fn test_acknowledgment()
     }
     else
     {
-        error!("{}", packet.get_error().unwrap());
+        error!("{}", packet.get_error().as_ref().unwrap().1);
     }
 }
 
@@ -412,7 +412,7 @@ fn test_all_dirs_as_packets()
             else
             {
                 let p = &packet;
-                error!("{}", p.get_error().unwrap());
+                error!("{}", p.get_error().as_ref().unwrap().1);
                 let f_name = [p.get_packet_name(), ".json"].concat();
                 serialize(p, &f_name, Some(errors_path))
             }
@@ -438,7 +438,7 @@ fn test_rc_files()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -466,7 +466,7 @@ fn test_converting_rc()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -492,7 +492,7 @@ fn test_converting_2_7_1()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -518,7 +518,7 @@ fn test_converting_ack()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -544,7 +544,7 @@ fn test_wrong_xml()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -571,7 +571,7 @@ fn test_converting_2_5()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -619,7 +619,7 @@ fn test_duplicate_field()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().unwrap());
+        error!("{}", p.get_error().as_ref().unwrap().1);
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }

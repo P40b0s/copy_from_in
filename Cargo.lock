@@ -757,7 +757,7 @@ checksum = "afb84c814227b90d6895e01398aee0d8033c00e7466aca416fb6a8e0eb19d8a7"
 
 [[package]]
 name = "client"
-version = "0.1.0"
+version = "1.0.4"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -769,7 +769,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
- "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
+ "logger 0.1.1 (git+https://github.com/P40b0s/logger.git)",
  "medo_parser",
  "nosleep",
  "once_cell",
@@ -1494,7 +1494,7 @@ checksum = "486f806e73c5707928240ddc295403b1b93c96a02038563881c4a2fd84b81ac4"
 
 [[package]]
 name = "fc_server"
-version = "0.2.2"
+version = "1.0.4"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1510,7 +1510,7 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
- "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
+ "logger 0.1.1 (git+https://github.com/P40b0s/logger.git)",
  "medo_parser",
  "once_cell",
  "pdf",
@@ -1541,6 +1541,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69ff9c9d5fb3e6da8ac2f77ab76fe7e8087d512ce095200f8f29ac5b656cf6dc"
 dependencies = [
+ "chrono",
  "log",
 ]
 
@@ -2673,7 +2674,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4979f22fdb869068da03c9f7528f8297c6fd2606bc3a4affe42e6a823fdb8da4"
 dependencies = [
  "cfg-if",
- "windows-targets 0.52.6",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -2746,12 +2747,13 @@ dependencies = [
 [[package]]
 name = "logger"
 version = "0.1.1"
-source = "git+https://github.com/P40b0s/logger.git#155c99ed5a6b7c745371ecc425ff3b0f60ceb687"
+source = "git+https://github.com/P40b0s/logger.git#be85ce4b976c5b0161013cbfd114890f075ca68b"
 dependencies = [
  "chrono",
  "fern",
  "log",
  "owo-colors",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -3443,7 +3445,7 @@ version = "0.1.2"
 dependencies = [
  "futures",
  "image 0.24.9",
- "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
+ "logger 0.1.1 (git+https://github.com/P40b0s/logger.git)",
  "once_cell",
  "pdfium-render",
  "rand 0.8.5",
@@ -4282,7 +4284,7 @@ dependencies = [
 name = "settings"
 version = "0.3.2"
 dependencies = [
- "logger 0.1.1 (git+https://github.com/P40b0s/logger.git?branch=main)",
+ "logger 0.1.1 (git+https://github.com/P40b0s/logger.git)",
  "serde",
  "serde_json",
  "utilites",

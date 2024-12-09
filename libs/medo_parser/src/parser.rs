@@ -9,3 +9,8 @@ pub trait MedoParser where Self: Sized
     /// вот их и надо добавить с этот список
     fn parse(file: &PathBuf, paths: Option<&mut Vec<PathBuf>>) -> Result<Self, super::MedoParserError>;
 }
+
+pub trait Parser where Self: Sized
+{
+    fn parse(file: &PathBuf, paths: Option<&mut Vec<PathBuf>>) -> Result<Self, super::MedoParserError>;
+}

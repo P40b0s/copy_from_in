@@ -97,7 +97,7 @@ impl DirectoriesSpy
         let _ = NEW_PACKET_EVENT.set(Arc::new(sender));
         receiver
     }
-   
+    
     async fn copy_files_process(task: Arc<Task>, founded_packet_name : String)
     {
         let task_name = task.get_task_name();
@@ -112,149 +112,99 @@ impl DirectoriesSpy
             //копируются все директории поэтому парсить транспортный пакет не имеет смысла
             CopyModifier::CopyAll =>
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
+                let mut packet = Packet::new_empty(&founded_packet_name, &task);
                 for td in target_dirs
                 {
                     let target_path = Path::new(td).join(packet_name);
                     if Self::copy_process(&target_path, &source_path, &founded_packet_name, &task).await
                     {
-                        cp_ok.push((true, "".to_string()));
+                        packet.add_copy_status(true, target_path.as_path().display().to_string());
                     }
                     else 
                     {
-                        cp_ok.push((false, target_path.as_path().display().to_string()));
+                        packet.add_copy_status(false, target_path.as_path().display().to_string());
                     }
                 }
-                let packet = Packet::new_empty(&founded_packet_name, &task);
-                if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
+                if task.delete_after_copy && packet.copy_ok()
                 {
-                    let mut packet = packet;
-                    packet.add_error(first.1);
-                    new_packet_found(packet).await;
+                    if let Err(e) = tokio::fs::remove_dir_all(&source_path).await
+                    {
+                        error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                    }
                 }
-                else 
-                {
-                    new_packet_found(packet).await;
-                }
+                new_packet_found(packet).await;
             },
-            CopyModifier::CopyOnly =>
+            CopyModifier::CopyOnly => Self::copy_with_rules(&source_path, target_dirs, packet_name, &task, true).await,
+            CopyModifier::CopyExcept => Self::copy_with_rules(&source_path, target_dirs, packet_name, &task, false).await
+        }
+        
+    }
+
+    async fn copy_with_rules(source_path: &PathBuf, target_dirs: &[PathBuf], packet_name: &str, task: &Task, need_rule_accept: bool)
+    {
+        let mut packet = Self::get_packet(&source_path, &task).await;
+        if !Self::autoclean(&source_path, &packet, &task).await
+        {
+            if !packet.is_err()
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
-                let packet = Self::get_packet(&source_path, &task).await;
-                if !packet.is_err()
+                if Self::pass_rules(&source_path, &packet, &task, need_rule_accept).await
                 {
                     for td in target_dirs
                     {
                         let target_path = Path::new(td).join(packet_name);
-                        if Self::copy_with_rules(&source_path, &target_path, &packet, &task, true).await
+                        if Self::copy_process(&target_path, &source_path, packet_name, &task).await
                         {
-                            
-                            cp_ok.push((true, "".to_string()));
+                            packet.add_copy_status(true, target_path.as_path().display().to_string());
                         }
                         else 
                         {
-                            cp_ok.push((false, target_path.as_path().display().to_string()));
+                            packet.add_copy_status(false, target_path.as_path().display().to_string());
                         }
                     }
-                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
+                    if task.delete_after_copy && packet.copy_ok()
                     {
-                        let mut packet = packet;
-                        packet.add_error(first.1);
-                        new_packet_found(packet).await;
+                        if let Err(e) = tokio::fs::remove_dir_all(source_path).await
+                        {
+                            error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                        }
                     }
-                    else 
-                    {
-                        new_packet_found(packet).await;
-                    }
-                }
-                else
-                {
                     new_packet_found(packet).await;
                 }
-            },
-            CopyModifier::CopyExcept =>
+            }
+            else
             {
-                let mut cp_ok = Vec::with_capacity(target_dirs.len());
-                let packet = Self::get_packet(&source_path, &task).await;
-                if !packet.is_err()
+                if let Some(err) = packet.get_error()
                 {
-                    for td in target_dirs
-                    {
-                        let target_path = Path::new(td).join(packet_name);
-                        if Self::copy_with_rules(&source_path, &target_path, &packet, &task, false).await
-                        {
-                            cp_ok.push((true, "".to_string()));
-                        }
-                        else
-                        {
-                            cp_ok.push((false, target_path.as_path().display().to_string()));
-                        }
-                    }
-                    if let Some(first) = cp_ok.into_iter().find(|f| f.0 == false)
-                    {
-                        let mut packet = packet;
-                        packet.add_error(first.1);
-                        new_packet_found(packet).await;
-                    }
-                    else 
+                    if err.0 != -1
                     {
                         new_packet_found(packet).await;
                     }
                 }
-                else
-                {
-                    new_packet_found(packet).await;
-                }
-            },
+            }
         }
     }
+
     async fn copy_process(target_path: &PathBuf,
         source_path: &PathBuf,
         packet_dir_name: &str, 
         task : &Task) -> bool
     {
-        let cp_result = retry(5, 5000, 8000, ||
+        let cp_result = retry(10, 10000, 30000, ||
         {
             super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000)
            
         }).await;
         if let Ok(_) = cp_result
         {
-            if task.delete_after_copy
-            {
-                if let Err(e) = tokio::fs::remove_dir_all(source_path).await
-                {
-                    error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-                }
-            }
             info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
             return true;
         }
         else
         {
-            error!("Ошибка копирования пакета (на пятой попытке) {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
+            error!("Ошибка копирования пакета (на десятой попытке) {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
             return false;
         }
-        
-        // if let Ok(_) = super::io::copy_recursively_async(Arc::new(source_path.clone()), Arc::new(target_path.clone()), 2000).await
-        // {  
-        //     if task.delete_after_copy
-        //     {
-        //         if let Err(e) = tokio::fs::remove_dir_all(source_path).await
-        //         {
-        //             error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-        //         }
-        //     }
-        //     info!("Задачей `{}` c модификатором {} пакет {} скопирован в {}",task.name, task.copy_modifier, packet_dir_name, &target_path.display());
-        //     return true;
-        // }
-        // else
-        // {
-        //     error!("Ошибка копирования пакета {} в {} для задачи {}",packet_dir_name, &target_path.display(), task.name);
-        //     return false;
-        // }
     }
-
 
     async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
     {
@@ -262,10 +212,30 @@ impl DirectoriesSpy
         Packet::parse(source_path, packet_info, task)
     }
 
-    ///Отработали ли правила из текущей задачи
-    ///`need_rule_accept` при ключе фильтра CopyOnly нужно поставить true а при ключе CopyExcept - false
-    ///`only_doc` правила подтвердятся только если тип документа один из тек что перечислены в конфиге
-    async fn copy_with_rules(source_path: &PathBuf, target_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
+    async fn pass_rules(source_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
+    {
+        let mut pass = false;
+        if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
+        && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
+        && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
+        {
+            pass = true;
+        }
+        else
+        {
+            if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
+            {
+                pass = true;
+            }
+            if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
+            {
+                pass = true;
+            }
+        }
+        pass
+    }
+    ///если установлена автоочистка пакетов то при удалении вернет true иначе false
+    async fn autoclean(source_path: &PathBuf, packet: &Packet, task: &Task) -> bool
     {
         if task.autocleaning
         {
@@ -276,29 +246,12 @@ impl DirectoriesSpy
                     if let Ok(_) = tokio::fs::remove_dir_all(source_path).await
                     {
                         debug!("Пакет {} был удален, так как в настройках задачи {} включен флаг автоочистка", packet.get_packet_name(), packet.get_task().get_task_name());
-                        return false;
+                        return true;
                     }
                 }
             }
         }
-        if task.filters.document_types.len() > 0 && task.filters.document_uids.len() > 0 
-        && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-        && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-        {
-            return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
-        }
-        else
-        {
-            if task.filters.document_types.len() > 0 && Self::packet_type_rule(packet, task, source_path, need_rule_accept).await 
-            {
-                return Self::copy_process(&target_path, &source_path,  &packet.get_packet_name(), &task).await;
-            }
-            if task.filters.document_uids.len() > 0 && Self::source_uid_rule(packet, task, source_path, need_rule_accept).await
-            {
-                return Self::copy_process(&target_path, &source_path, &packet.get_packet_name(), &task).await;
-            }
-        }
-        return false;
+        false
     }
 
     async fn packet_type_rule(packet: &Packet, task: &Task, source_path: &PathBuf, need_rule_accept: bool) -> bool
@@ -368,7 +321,7 @@ async fn new_packet_found(mut packet: Packet)
 {
     if packet.is_err()
     {
-        logger::error!("{}", packet.get_error().as_ref().unwrap());
+        logger::error!("{}", packet.get_error().as_ref().unwrap().1);
     }
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
@@ -384,7 +337,7 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
     {
         if let Some(e) = new_packet.error.as_ref()
         {
-            logger::error!("{}, уведомление отправлено не будет", e);
+            logger::error!("{}, уведомление отправлено не будет", e.1);
             return false;
         }
         else

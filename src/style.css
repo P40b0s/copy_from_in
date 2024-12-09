@@ -11,18 +11,29 @@
 }
 @font-face 
 {
-  font-family: 'monospace' !important;
-  src: url('./assets/fonts/Source_Code_Pro/SourceCodePro-VariableFont_wght.ttf')  format('truetype'),
-  url('./assets/fonts/Source_Code_Pro/static/SourceCodePro-Regular.ttf')  format('truetype');
+  font-family: 'Source Code Pro';
+  src: url('./assets/fonts/Source_Code_Pro/WOFF/TTF/SourceCodePro-Regular.ttf.woff')  format('woff');
   font-weight: normal;
   font-style: normal;
 }
-a {
+@font-face 
+{
+  font-family: 'Source Code Pro';
+  src: url('./assets/fonts/Source_Code_Pro/WOFF/TTF/SourceCodePro-Bold.ttf.woff')  format('woff');
+  font-weight: bold;
+  font-style: normal;
+}
+
+a 
+{
+  
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
-a:hover {
+
+a:hover 
+{
   color: #535bf2;
 }
 

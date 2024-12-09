@@ -37,7 +37,8 @@ export const App = defineComponent({
                     default:() => 
                     h('div',
                     {
-                        class: 'main-container'
+                        class: 'main-container',
+                        fontFamily: 'Source Code Pro'
                     },
                     [
                         h(Services, {class: 'menu'}),

@@ -1,3 +1,7 @@
+[forget_directories_watcher]
+dir_path = "/hard/xar/medo_testdata/check_forget_dirs_watcher"
+cycle_time = 30
+
 [[tasks]]
 name = "from_backup_to_architector"
 description = "задача копирования из бэкапа в архитектор"
@@ -33,7 +37,7 @@ clean_types = ["Квитанция"]
 generate_exclude_file = false
 color = "#7F44FF"
 sound = true
-autocleaning = false
+autocleaning = true
 visible = true
 
 [tasks.filters]

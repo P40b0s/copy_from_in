@@ -28,7 +28,7 @@ impl DeliveryTicketPacket
         if dir.exists()
         {
             let xml_path = dir.as_path().join("acknowledgment.xml");
-            let env_path = dir.as_path().join("envelope.ltr");
+            let env_path = dir.as_path().join("envelope.ini");
             let _ = fs::write(&xml_path, &self.xml_file);
             let _ = fs::write(&env_path, &self.envelope_file);
         }
@@ -66,15 +66,15 @@ fn create_ticket(ack_uid: &str, destination_organ_uid :&str, destination_organ_n
 }
 fn create_enveloper(addresse: &str) -> Vec<u8>
 {
-    let ticket = format!("[ПИСЬМО КП ПС СЗИ]
-ТЕМА=Квитанция о приеме
-ШИФРОВАНИЕ=0
-ЭЦП=1
-ДОСТАВЛЕНО=1
-ПРОЧТЕНО=1
-[АДРЕСАТЫ]
-0={}
-[ФАЙЛЫ]
+    let ticket = format!("[ПИСЬМО КП ПС СЗИ]\r
+ТЕМА=Квитанция о приеме\r
+ШИФРОВАНИЕ=0\r
+ЭЦП=1\r
+ДОСТАВЛЕНО=1\r
+ПРОЧТЕНО=1\r
+[АДРЕСАТЫ]\r
+0={}\r
+[ФАЙЛЫ]\r
 0=acknowledgment.xml", addresse);
     let encoded = WINDOWS_1251.encode(&ticket, encoding::EncoderTrap::Replace);
     return encoded.unwrap()
@@ -86,6 +86,6 @@ mod tests
     #[test]
     pub fn test_xml()
     {
-        DeliveryTicketPacket::create_packet("ид дока который пришел", "ид органа которому направляем", "наименование органа которму направляем", "ooo@lll.ru").send("/hard/xar/projects/fullstack/complite_in_parser/medo_parser");
+        DeliveryTicketPacket::create_packet("ид дока который пришел", "ид органа которому направляем", "наименование органа которму направляем", "ooo@lll.ru").send("/hard/xar/medo_testdata/reports");
     }
 }

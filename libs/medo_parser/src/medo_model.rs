@@ -55,7 +55,7 @@ pub struct PacketInfo
     pub delivery_time : String,
     pub wrong_encoding: bool,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error: Option<String>,
+    pub error: Option<(i8, String)>,
     pub files: Vec<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub requisites: Option<Requisites>,

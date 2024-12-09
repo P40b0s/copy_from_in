@@ -3,7 +3,7 @@ mod contract;
 mod packet;
 mod pagination;
 mod files;
-pub use packet::{Packet, ContactInfo, ContactType, Senders};
+pub use packet::{Packet, CopyStatus, ContactInfo, ContactType, Senders};
 use anyhow::{Result, Context};
 use bytes::Bytes;
 pub use contract::Contract;

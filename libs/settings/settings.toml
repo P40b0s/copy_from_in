@@ -1,3 +1,7 @@
+[forget_directories_watcher]
+dir_path = ""
+cycle_time = 120
+
 [[tasks]]
 name = "default_task"
 description = ""
