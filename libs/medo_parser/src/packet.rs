@@ -275,6 +275,7 @@ impl Packet
         //Если не вылетело с ошибкой то заново формируем лист файлов, возможно добавились файлы из архива
         self.founded_files =  Some(paths.iter().map(|f|f.display().to_string()).collect());
         //rc файл заменяет собой пакет мэдо, так что либо то либо то
+
         if !self.is_parsed()
         {
             if file_count > 0

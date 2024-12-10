@@ -4,7 +4,7 @@ use service::Client;
 use transport::Contract;
 use utilites::Date;
 use uuid::{NoContext, Timestamp, Uuid};
-use crate::emits::TauriEmits;
+//use crate::emits::TauriEmits;
 
 
 static CLIENT_ID: Lazy<String> = Lazy::new(|| {
@@ -18,24 +18,4 @@ impl Client<Contract> for WebsocketClient
     {
         &CLIENT_ID
     }
-}
-pub async fn start_ws_service(addr: String)
-{   
-    debug!("стартуем получение сообщений от сервера");
-    WebsocketClient::start_client(&addr, |msg|
-    {
-        debug!("Получено сообщение от сервера {:?}", msg);
-        let _ = match msg
-        {
-            Contract::NewPacket(p) => TauriEmits::packets_update(p),
-            Contract::Error(e) => TauriEmits::error(e),
-            Contract::ErrorConversion(e) => TauriEmits::error(e),
-            Contract::TaskUpdated(t) => TauriEmits::task_updated(t),
-            Contract::TaskDeleted(t) => TauriEmits::task_deleted(t),
-            Contract::CleanStart => TauriEmits::clean_start(),
-            Contract::CleanComplete(c) => TauriEmits::clean_complete(c),
-            Contract::NeedPacketsrefresh => TauriEmits::need_packets_refresh(),
-            Contract::SenderUpdate(s) => TauriEmits::sender_update(s),
-        };
-    }).await;
 }

@@ -1,5 +1,34 @@
 
-
-fn main() {
-  tauri_build::build()
+fn main() 
+{
+  tauri_build::try_build(
+    tauri_build::Attributes::new()
+    .plugin("packets",
+  tauri_build::InlinedPlugin::new().commands(&[
+    "get_packets_list",
+    "search_packets",
+    "get_count",
+    "get_files_list",
+    "get_pdf_pages_count",
+    "get_pdf_page",
+    "get_file_body",
+    "get_senders",
+    "update_sender"]))
+    .plugin("service",
+  tauri_build::InlinedPlugin::new().commands(&[
+    "clear_dirs",
+    "ws_server_online",
+    "rescan_packet",
+    "delete_packet"]))
+    .plugin("settings",
+  tauri_build::InlinedPlugin::new().commands(&[
+    "get",
+    "update",
+    "delete"]))
+    .plugin("date",
+  tauri_build::InlinedPlugin::new().commands(&[
+    "get_date_now"]))
+    .plugin("websocket",
+  tauri_build::InlinedPlugin::new().default_permission(tauri_build::DefaultPermissionRule::AllowAllCommands))
+  ).unwrap();
 }

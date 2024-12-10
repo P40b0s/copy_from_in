@@ -4,6 +4,7 @@ logs
 *.log
 settings.toml
 test_data
+./libs
 libs
 /libs/
 ./libs/*.*

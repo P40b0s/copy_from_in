@@ -4,12 +4,11 @@ use std::sync::Arc;
 use logger::debug;
 use settings::Task;
 use tauri::plugin::{Builder, TauriPlugin};
-use tauri::{Manager, Runtime, State};
+use tauri::{Manager, RunEvent, Runtime, State};
 use transport::{File, FileRequest, FilesRequest, Packet, Pagination, Senders};
 use crate::http_service;
 use crate::state::AppState;
 use crate::Error;
-
 
 #[tauri::command]
 pub async fn get_packets_list(Pagination {row, offset} : Pagination, state: State<'_, Arc<AppState>>) -> Result<Vec<Packet>, Error>
@@ -79,24 +78,38 @@ pub async fn update_sender(payload: Senders, state: State<'_, Arc<AppState>>) ->
     Ok(res)
 }
 
-pub fn packets_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
+
+
+pub struct PacketsPlugin{}
+
+impl super::Plugin for PacketsPlugin
 {
-    Builder::new("packets")
-      .invoke_handler(tauri::generate_handler![
-        get_packets_list,
-        search_packets,
-        get_count,
-        get_files_list,
-        get_pdf_pages_count,
-        get_pdf_page,
-        get_file_body,
-        get_senders,
-        update_sender
-        ])
-        .setup(|app_handle| 
-        {
-            app_handle.manage(app_state);
-            Ok(())
-        })
-      .build()
+    const NAME: &str = "packets";
+    fn build<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
+    {
+        Builder::new(Self::NAME)
+          .invoke_handler(tauri::generate_handler![
+            get_packets_list,
+            search_packets,
+            get_count,
+            get_files_list,
+            get_pdf_pages_count,
+            get_pdf_page,
+            get_file_body,
+            get_senders,
+            update_sender
+            ])
+            .setup(|app_handle, _| 
+            {
+                app_handle.manage(app_state);
+                Ok(())
+            })
+            // .on_event(|a, e|
+            // {
+               
+            // })
+          .build()
+    }
 }
+
+

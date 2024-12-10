@@ -37,19 +37,25 @@ pub async fn delete_packet(payload: Packet, state: State<'_, Arc<AppState>>) -> 
   Ok(())
 }
 
-pub fn service_plugin<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
+pub struct ServicePlugin{}
+impl super::Plugin for ServicePlugin
 {
-  Builder::new("service")
-    .invoke_handler(tauri::generate_handler![
-      clear_dirs,
-      ws_server_online,
-      rescan_packet,
-      delete_packet,
-      ])
-    .setup(|app_handle| 
-      {
-          app_handle.manage(app_state);
-          Ok(())
-      })
-    .build()
+  const NAME: &str = "service";
+  fn build<R: Runtime>(app_state: Arc<AppState>) -> TauriPlugin<R> 
+  {
+    Builder::new(Self::NAME)
+      .invoke_handler(tauri::generate_handler![
+        clear_dirs,
+        ws_server_online,
+        rescan_packet,
+        delete_packet,
+        ])
+      .setup(|app_handle, _| 
+        {
+            app_handle.manage(app_state);
+            Ok(())
+        })
+      .build()
+  }
 }
+

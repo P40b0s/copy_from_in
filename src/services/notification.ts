@@ -1,4 +1,4 @@
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/api/notification';
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 import { NAvatar, NButton, NotificationType } from 'naive-ui';
 import { NotificationApiInjection } from 'naive-ui/es/notification/src/NotificationProvider';
 import { match } from 'ts-pattern';

@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite'
 import vue ,{ type Options} from '@vitejs/plugin-vue'
-
 export default defineConfig({
   clearScreen: false,
   server: {
@@ -14,8 +13,8 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_'],
   build: {
     target: ['es2021', 'chrome97', 'safari13'],
-    minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
-    sourcemap: !!process.env.TAURI_DEBUG,
+    minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
   plugins: [
     vue(

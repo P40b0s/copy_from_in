@@ -8,7 +8,7 @@ import
     ref,
     onUnmounted,
   } from 'vue'
-import { open } from '@tauri-apps/api/dialog';
+import { open } from '@tauri-apps/plugin-dialog';
 import { FormInst, FormItemRule, FormRules, NButton, NCard, NColorPicker, NDynamicInput, NForm, NFormItem, NIcon, NInput, NInputNumber, NPopconfirm, NScrollbar, NSelect, NSpin, NSwitch, NTooltip, SelectGroupOption, SelectOption, useNotification} from 'naive-ui';
 import { CopyModifer, Task, VN, taskClone} from '../models/types.ts';
 import { commands_settings } from '../services/tauri/commands.ts';

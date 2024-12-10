@@ -1,4 +1,4 @@
-import { InvokeArgs, invoke as inv,} from '@tauri-apps/api/tauri';
+import { InvokeArgs, invoke as inv,} from '@tauri-apps/api/core';
 import { Dictionary, Disease, DiseaseTest, DiseaseType, Journal, Ordered, Phones, User, Vacation, Vactination } from '../models/user';
 import { global_store } from '../store';
 import { parseDate } from './date';

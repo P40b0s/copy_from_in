@@ -1,6 +1,6 @@
 [package]
 name = "client"
-version = "1.0.4"
+version = "1.0.5"
 description = "Планировщик копирования пакетов МЭДО"
 authors = ["phobos"]
 license = ""
@@ -9,9 +9,15 @@ default-run = "client"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "test_tauri_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "1.5.5", features = [] }
+tauri-build = { version = "2.0.3", features = [] }
 
 
 
@@ -21,9 +27,10 @@ linker = "x86_64-w64-mingw32-gcc"
 ar = "x86_64-w64-mingw32-ar"
 
 [dependencies]
+#features = ["app-all", "fs-all", "notification-all"]
 serde_json = "1.0.128"
 serde = { version = "1.0.210", features = ["derive"] }
-tauri = { version = "1.8.0", features = ["app-all", "clipboard-all", "fs-all", "notification-all", "dialog-all"] }
+tauri = { version = "2.1.1" }
 #logger = {path = "../../../rust/universal_format/format_constructor/logger"}
 logger = {git = "https://github.com/P40b0s/logger.git"}
 once_cell="1.20.2"
