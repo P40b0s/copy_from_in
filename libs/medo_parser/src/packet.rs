@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt::{Display, Write}, path::{Path, PathBuf}};
+use std::{borrow::Cow, fmt::Display, path::{Path, PathBuf}};
 use serde::{Serialize, Deserialize};
 use utilites::{Date, DateFormat};
 use crate::{get_entries, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};

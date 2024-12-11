@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use quick_xml::DeError;
 use serde::{Serialize, Deserialize};
 use crate::{MedoParser, MedoParserError, open_file, FileEncoding};
 

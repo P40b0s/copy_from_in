@@ -50,6 +50,25 @@ export const naive_notify =  (injection: NotificationApiInjection, type: Notific
         keepAliveOnHover: true
     })
 }
+export const naive_notify_with_render =  (injection: NotificationApiInjection, type: NotificationType, title: string, description: string | (() => VNodeChild) | undefined, duration: number = 25500) => 
+{
+    const n = injection.create({
+        type: type,
+        title: title,
+        description: description,
+        avatar:() => h(NAvatar,
+            {
+                
+                round: true,
+                size: 50,
+                color: 'transparent',
+                src: avatar_selector(type)
+                
+            }),
+        duration: duration,
+        keepAliveOnHover: true
+    })
+}
 
 //export const notification = useNotification();
         

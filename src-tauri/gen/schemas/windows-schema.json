@@ -1655,6 +1655,176 @@
           "description": "Denies the unminimize command without any pre-configured scope.",
           "type": "string",
           "const": "core:window:deny-unminimize"
+        },
+        {
+          "description": "Enables the get_date_now command without any pre-configured scope.",
+          "type": "string",
+          "const": "date:allow-get-date-now"
+        },
+        {
+          "description": "Denies the get_date_now command without any pre-configured scope.",
+          "type": "string",
+          "const": "date:deny-get-date-now"
+        },
+        {
+          "description": "Enables the get_count command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-count"
+        },
+        {
+          "description": "Enables the get_file_body command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-file-body"
+        },
+        {
+          "description": "Enables the get_files_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-files-list"
+        },
+        {
+          "description": "Enables the get_packets_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-packets-list"
+        },
+        {
+          "description": "Enables the get_pdf_page command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-pdf-page"
+        },
+        {
+          "description": "Enables the get_pdf_pages_count command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-pdf-pages-count"
+        },
+        {
+          "description": "Enables the get_senders command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-get-senders"
+        },
+        {
+          "description": "Enables the search_packets command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-search-packets"
+        },
+        {
+          "description": "Enables the update_sender command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:allow-update-sender"
+        },
+        {
+          "description": "Denies the get_count command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-count"
+        },
+        {
+          "description": "Denies the get_file_body command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-file-body"
+        },
+        {
+          "description": "Denies the get_files_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-files-list"
+        },
+        {
+          "description": "Denies the get_packets_list command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-packets-list"
+        },
+        {
+          "description": "Denies the get_pdf_page command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-pdf-page"
+        },
+        {
+          "description": "Denies the get_pdf_pages_count command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-pdf-pages-count"
+        },
+        {
+          "description": "Denies the get_senders command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-get-senders"
+        },
+        {
+          "description": "Denies the search_packets command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-search-packets"
+        },
+        {
+          "description": "Denies the update_sender command without any pre-configured scope.",
+          "type": "string",
+          "const": "packets:deny-update-sender"
+        },
+        {
+          "description": "Enables the clear_dirs command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:allow-clear-dirs"
+        },
+        {
+          "description": "Enables the delete_packet command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:allow-delete-packet"
+        },
+        {
+          "description": "Enables the rescan_packet command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:allow-rescan-packet"
+        },
+        {
+          "description": "Enables the ws_server_online command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:allow-ws-server-online"
+        },
+        {
+          "description": "Denies the clear_dirs command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:deny-clear-dirs"
+        },
+        {
+          "description": "Denies the delete_packet command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:deny-delete-packet"
+        },
+        {
+          "description": "Denies the rescan_packet command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:deny-rescan-packet"
+        },
+        {
+          "description": "Denies the ws_server_online command without any pre-configured scope.",
+          "type": "string",
+          "const": "service:deny-ws-server-online"
+        },
+        {
+          "description": "Enables the delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:allow-delete"
+        },
+        {
+          "description": "Enables the get command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:allow-get"
+        },
+        {
+          "description": "Enables the update command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:allow-update"
+        },
+        {
+          "description": "Denies the delete command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:deny-delete"
+        },
+        {
+          "description": "Denies the get command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:deny-get"
+        },
+        {
+          "description": "Denies the update command without any pre-configured scope.",
+          "type": "string",
+          "const": "settings:deny-update"
         }
       ]
     },

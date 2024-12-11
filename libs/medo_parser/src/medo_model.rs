@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use utilites::Date;
 #[cfg(feature = "all")]
 use crate::packet::Packet;
-use crate::packet::PacketError;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]

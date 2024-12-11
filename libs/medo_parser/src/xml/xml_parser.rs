@@ -1,5 +1,4 @@
 use std::{path::{PathBuf, Path}, borrow::Cow};
-use logger::backtrace;
 use quick_xml::DeError;
 use serde::{Serialize, Deserialize};
 use super::Ltr;

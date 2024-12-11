@@ -1,5 +1,5 @@
 use thiserror::Error;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 #[derive(Debug, Error)]
 pub enum MedoParserError

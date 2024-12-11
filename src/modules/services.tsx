@@ -15,6 +15,7 @@ import { Loader } from './loader.tsx';
 import store from '../store/app_state_store.ts';
 import { events } from '../services/tauri/events.ts';
 import { error_sound, new_packet_notify_sound } from '../services/sounds.ts';
+import { useSenders } from './Senders/senders.ts';
 
 
 export const Services =  defineComponent({
@@ -38,7 +39,8 @@ setup ()
             error_sound();
           else
             new_packet_notify_sound();
-        naive_notify(notify, 'info', `Задачей ${packet.payload.task.name} в ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, "", 4000);
+        
+        naive_notify(notify, 'info', "Найден новый пакет", `Задачей ${packet.payload.task.name} в ${packet.payload.parseTime} Найден новый пакет: ${packet.payload.name}"`, 4000);
     })
     onUnmounted(()=>
     {
