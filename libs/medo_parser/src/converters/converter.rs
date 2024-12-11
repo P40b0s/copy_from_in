@@ -29,7 +29,7 @@ impl From<&Packet> for PacketInfo
         {
             rc.convert(&mut info);
         }
-        info.error =value.get_error().to_owned();
+        info.error = value.get_error().as_ref().and_then(|e| Some(e.to_string()));
         info.update_key = Date::now().format(DateFormat::Serialize);
         //FIXME исправлено, тут мы не можем зать полный путь к пакету
         // if info.default_pdf.is_some()
@@ -63,7 +63,7 @@ impl From<Packet> for PacketInfo
         {
             rc.convert(&mut info);
         }
-        info.error = value.get_error().to_owned();
+        info.error = value.get_error().as_ref().and_then(|e| Some(e.to_string()));
         info.update_key = Date::now().format(DateFormat::Serialize);
         
         // if info.default_pdf.is_some()

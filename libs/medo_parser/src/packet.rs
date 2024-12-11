@@ -1,15 +1,14 @@
-use std::{borrow::Cow, fmt::Display, path::{Path, PathBuf}};
+use std::{borrow::Cow, fmt::{Display, Write}, path::{Path, PathBuf}};
 use serde::{Serialize, Deserialize};
 use utilites::{Date, DateFormat};
 use crate::{get_entries, traits::Uid, Container, MedoParser, MedoParserError, RcParser, XmlParser};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd)]
 #[serde(rename_all = "camelCase")]
 pub enum PacketError
 {
-    None,
     Error(String),
-    IsNotPacket(String)
+    IsNotPacket
 }
 impl Into<PacketError> for MedoParserError
 {
@@ -17,11 +16,34 @@ impl Into<PacketError> for MedoParserError
     {
         match self 
         {
-            MedoParserError::IsNotPacketError(p) => PacketError::IsNotPacket(p),
+            MedoParserError::IsNotPacketError(_) => PacketError::IsNotPacket,
             _ => PacketError::Error(self.to_string()),
         }
     }
 }
+impl Into<PacketError> for &MedoParserError
+{
+    fn into(self) -> PacketError 
+    {
+        match self 
+        {
+            MedoParserError::IsNotPacketError(_) => PacketError::IsNotPacket,
+            _ => PacketError::Error(self.to_string()),
+        }
+    }
+}
+impl Display for PacketError
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+    {
+        match  self 
+        {
+            PacketError::Error(e) => f.write_str(e),
+            PacketError::IsNotPacket => f.write_str("Не является пакетом")    
+        }
+    }
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -38,7 +60,7 @@ pub struct Packet
     #[serde(skip_serializing_if="Option::is_none")]
     packet_date_time: Option<String>,
     wrong_encoding: bool,
-    error: Option<(i8, String)>,
+    error: Option<PacketError>,
     #[serde(skip_serializing)]
     path: Option<PathBuf>
 }
@@ -49,24 +71,23 @@ impl Packet
     {
         self.wrong_encoding
     }
-    fn add_error(&mut self, error: MedoParserError)
+    pub fn new_with_error<P: AsRef<Path>>(path: P, e: &MedoParserError) -> Self
     {
-        let err = match error
+        Self 
         {
-            MedoParserError::IsNotPacketError(p) => Some((-1, p)),
-            MedoParserError::PacketError(p) => Some((1, p)),
-            _ => Some((0, error.to_string())),
-        };
-        self.error =  err;
+            xml: None,
+            rc: None,
+            founded_files: None,
+            wrong_encoding: false,
+            error: Some(e.into()),
+            packet_dir: None,
+            packet_date_time: None,
+            path: Some(path.as_ref().into())
+        }
     }
-    pub fn get_error(&self) -> &Option<(i8, String)>
+    pub fn get_error(&self) -> &Option<PacketError>
     {
         &self.error
-        // match &self.error
-        // {
-        //     Some(e) => Some(Cow::from(&e.1)),
-        //     None => None
-        // }
     }
     ///Проверка распарсился ли транспотный пакет
     pub fn is_parsed(&self) -> bool
@@ -144,9 +165,41 @@ impl Packet
         self.get_xml().and_then(|x|x.get_header().and_then(|h|Some(h.get_source().get_uid())))
     }
 
-    pub fn parse<P: AsRef<Path>>(path: P) -> Self
+    pub fn parse<P: AsRef<Path> + Clone>(path: P) -> Option<Self>
     {
-        let mut p = Packet 
+        let packet = Self::parse_transport_packet(path.clone());
+        //если это не транспортный пакет, то возвращаем ошибку сразу, иначе пробуем повторно
+        if let Some(e) = packet.as_ref().err()
+        {
+            match  e
+            {
+                MedoParserError::IsNotPacketError(_) => return None,
+                _ => 
+                {
+                    let res = utilites::retry_sync(4, 5000, 15000, ||
+                    {
+                        Self::parse_transport_packet(path.clone())
+                    });
+                    if let Ok(r) = res
+                    {
+                        return Some(r);
+                    }
+                    else 
+                    {
+                        return Some(Packet::new_with_error(path, res.err().as_ref().unwrap()));
+                    }
+                }
+            }
+        }
+        else
+        {
+            return packet.ok();
+        };
+    }
+  
+    fn parse_transport_packet<P: AsRef<Path>>(path: P) -> Result<Self, MedoParserError>
+    {
+        let mut packet = Packet 
         {
             xml: None,
             rc: None,
@@ -157,28 +210,11 @@ impl Packet
             packet_date_time: None,
             path: Some(path.as_ref().into())
         };
-        let result = p.parse_transport_packet();
-        if result.is_err()
-        {
-            p.add_error(result.err().unwrap());
-            return p;
-        }
-        let r = result.unwrap();
-        p.xml = r.xml;
-        p.founded_files = r.founded_files;
-        p.wrong_encoding = r.wrong_encoding;
-        p.packet_dir = r.packet_dir;
-        p.path = r.path;
-        p
-    }
-  
-    fn parse_transport_packet(&mut self) -> Result<Self, MedoParserError>
-    {
         let mut paths: Vec<PathBuf>  = vec![];
         let mut base_dir = Some(String::new());
-        let empty_pb = PathBuf::new();
-        let packet_name = self.path.as_ref().unwrap_or(&empty_pb);
-        if let Some(d) = self.path.as_ref().and_then(|p| p.into_iter().last())
+        //let empty_pb = PathBuf::new();
+        let packet_name = path.as_ref();
+        if let Some(d) = path.as_ref().into_iter().last()
         {
             if let Some(d) = d.to_str()
             {
@@ -190,9 +226,9 @@ impl Packet
             logger::error!("Ошибка определения базовой директории пакета {}", packet_name.display());
             return Err(MedoParserError::PacketError(format!("Ошибка определения базовой директории пакета {}", packet_name.display())));
         }
-        if let Some(is_file) = self.path.as_ref()
-        .and_then(|f| f.metadata().ok()
-        .and_then(|m| Some(m.is_file())))
+        if let Some(is_file) = path.as_ref()
+        .metadata().ok()
+        .and_then(|m| Some(m.is_file()))
         {
             if is_file
             {
@@ -202,33 +238,29 @@ impl Packet
         }
         //какая то ошибка в винде бывает не распознает что это файл, и верхний кейс не срабатывает
         //а хотя может там проблема например с получением метадаты, и он уходит в NONE
-        if let Some(is_txt_file) = self.path.as_ref()
-        .and_then(|f| Some(f.ends_with(".txt")))
+        if path.as_ref()
+        .ends_with(".txt")
         {
-            if is_txt_file
-            {
-                logger::error!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display());
-                return Err(MedoParserError::IsNotPacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
-            }
+            logger::error!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display());
+            return Err(MedoParserError::IsNotPacketError(format!("Ошибка, файл {} не является допустимым транспотрным пакетом", packet_name.display())));
         }
-        if let Some(created) = self.path.as_ref()
-        .and_then(|f| f.metadata().ok()
-        .and_then(|m| m.created().ok()))
+        if let Some(created) = path.as_ref().metadata().ok()
+        .and_then(|m| m.created().ok())
         {
-            self.packet_date_time = Some(Date::from_system_time(created).format(DateFormat::Serialize));
+            packet.packet_date_time = Some(Date::from_system_time(created).format(DateFormat::Serialize));
         }
 
         let base_dir = base_dir.unwrap();
-        self.packet_dir = Some(base_dir.clone());
+        packet.packet_dir = Some(base_dir.clone());
         //let mut comm: Communication = Communication::default();
 
         let mut file_count = 0;
-        if let Some(files) = get_entries(self.path.as_ref().unwrap())
+        if let Some(files) = get_entries(path.as_ref())
         {
             if files.len() == 0
             {
-                logger::error!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display());
-                return Err(MedoParserError::PacketError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", self.path.as_ref().unwrap().display())));
+                logger::error!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", packet_name.display());
+                return Err(MedoParserError::PacketError(format!("Ошибка, в транспотрном пакете {} отсутсвуют файлы", packet_name.display())));
             }
             file_count = 0;
             //Добавляем все файлы виз директории в список, добавляем отдельно потому что если будет ошибка то в этот список попадут не все файлы
@@ -244,7 +276,7 @@ impl Packet
                 }
             });
             //Собираем все имена найденных файлов
-            self.founded_files =  Some(paths.iter().map(|f|f.display().to_string()).collect());
+            packet.founded_files =  Some(paths.iter().map(|f|f.display().to_string()).collect());
             for f in files
             {
                 if let Some(ext) = f.path().extension()
@@ -258,12 +290,12 @@ impl Packet
                             XmlParser::EXTENSION =>
                             {
                                 let xml = XmlParser::parse(&f.path(), Some(&mut paths))?;
-                                self.xml = Some(xml);
+                                packet.xml = Some(xml);
                             },
                             RcParser::EXTENSION =>
                             {
                                 let rc = RcParser::parse(&f.path(), None)?;
-                                self.rc = Some(rc);
+                                packet.rc = Some(rc);
                             }
                             _ => {}
                         };
@@ -273,22 +305,22 @@ impl Packet
             }
         }
         //Если не вылетело с ошибкой то заново формируем лист файлов, возможно добавились файлы из архива
-        self.founded_files =  Some(paths.iter().map(|f|f.display().to_string()).collect());
+        packet.founded_files =  Some(paths.iter().map(|f|f.display().to_string()).collect());
         //rc файл заменяет собой пакет мэдо, так что либо то либо то
 
-        if !self.is_parsed()
+        if !packet.is_parsed()
         {
             if file_count > 0
             {
-                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотртного пакета {}, текущей парсер не может обрабатывать поступившие файлы, необходимо обратиться к администратору", packet_name.display())));
             }
             if file_count == 0
             {
-                logger::debug!("filecount {}, self.founded_files {:?} packet {:?} ", file_count, &self.founded_files, &self);
-                return Err(MedoParserError::IsNotPacketError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+                logger::debug!("filecount {}, self.founded_files {:?} packet {:?} ", file_count, &packet.founded_files, &packet);
+                return Err(MedoParserError::IsNotPacketError(format!("Ошибка обработки транспотрного пакета {}, в текущей директории отсутсвуют файлы (есть директории), необходимо обратиться к администратору", packet_name.display())));
             }
-            return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", self.path.as_ref().unwrap().display())));
+            return Err(MedoParserError::PacketError(format!("Ошибка обработки транспотрного пакета {}, необходимо обратиться к администратору", packet_name.display())));
         }
-        Ok(self.clone())
+        Ok(packet)
     }
 }

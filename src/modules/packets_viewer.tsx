@@ -27,11 +27,7 @@ import emitter from '../services/emit.ts';
 import { sleepNow } from '../services/helpers.ts';
 import { Senders } from '../models/senders.ts';
 import { useSenders } from './Senders/senders.ts';
-
-export const PacketsViewerAsync = defineAsyncComponent({
-    loader: () => import ('./packets_viewer.tsx'),
-    loadingComponent: h(NSpin)
-})
+import Loader2 from './Loader/Loader2.vue';
 
 //Если компонент активен, то поддерживается добавление нового найденого пакета в список
 export const PacketsViewer =  defineComponent({
@@ -48,9 +44,17 @@ export const PacketsViewer =  defineComponent({
         const search_value = ref("");
         //сейчас выполняется поиск
         const in_search = ref(false);
+        const in_load = ref(false);
         //количество найденных значений
         const searched_count = ref(0);
+        const window_height = ref(0);
         const { get_icon, get_senders, get_organization } = useSenders();
+        const resize = () =>
+        {
+            window_height.value = window.innerHeight;
+            console.log(window_height.value);
+        }
+        window.addEventListener('resize', resize);
         const get_packets = async () =>
         {
             await get_senders();
@@ -105,6 +109,7 @@ export const PacketsViewer =  defineComponent({
             new_packet_event.then(u=> u.unsubscribe());
             update_packets_event.then(u=> u.unsubscribe())
             document.removeEventListener('visibilitychange', () => vis_change());
+            window.removeEventListener('resize', resize); 
         })
         const get_pages_count = async () : Promise<number> =>
         {
@@ -143,32 +148,35 @@ export const PacketsViewer =  defineComponent({
                     showSizePicker: false,
                     simple: true,
                     page: current_page.value,
-                    onUpdatePage: async (page) => 
+                    onUpdatePage: async (page) =>
                     {
+                        in_load.value = true;
                         current_page.value = page;
                         current_offset = (page - 1) * items_on_page;
                         total_count.value = await get_pages_count();
                         let r = await commands_packets.get_packets_list(items_on_page, current_offset);
+                        in_load.value = false;
                         if(r.is_ok())
                             packets.value = r.get_value();
                         scrollbar_ref.value.scrollTo({top: 0})
+                       
                     },
                     style:
                     {
                         marginTop: '5px',
-                        marginBottom: '5px'
+                        marginBottom: '10px',
+                        marginLeft: "10px"
                     }
                 },
                 {
                     
                 })
-
             ])
         }
         
         const list = () =>
         {
-            return h('div',
+            return in_load.value ? h(Loader2) : h('div',
             {
                 style:
                 {
@@ -280,7 +288,7 @@ export const PacketsViewer =  defineComponent({
                 {
                     style:
                     {
-                        maxHeight: '78vh',
+                        maxHeight: window_height.value == 0 ? "78vh" : window_height.value -200 + "px",
                         marginTop: '5px'
                     } as CSSProperties,
                     ref: scrollbar_ref

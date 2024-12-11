@@ -222,16 +222,14 @@ fn xz_encoding_packet()
     logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("53865418");
-
-    let mut packet = Packet::parse(&win);
-
+    let mut packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_packet_2_7_1.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 
@@ -245,14 +243,14 @@ fn test_parse_container_2_5()
     logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("54146104");
-    let mut packet = Packet::parse(&win);
+    let mut packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_packet_2_2.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 #[test]
@@ -261,14 +259,14 @@ fn test_parse_container_2_7_1()
     logger::StructLogger::new_default();
     let win = Path::new(ABSOLUTE_PATH)
     .join("СФ_53596025_1_1");
-    let packet = Packet::parse(&win);
+    let packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_packet_2_7_1.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 
@@ -283,14 +281,14 @@ fn test_packet_27466149()
 {
     logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/27466149");
-    let mut packet = Packet::parse(&win);
+    let mut packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_packet_2_7_1.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 #[test]
@@ -300,14 +298,14 @@ fn test_packet_53294501()
 {
     logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/0/53294501");
-    let packet = Packet::parse(&win);
+    let packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_packet_2_7_1.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 #[test]
@@ -315,14 +313,14 @@ fn test_acknowledgment()
 {
     logger::StructLogger::new_default();
     let win = PathBuf::from("/hard/xar/medo_testdata/1/52691083");
-    let mut packet = Packet::parse(&win);
+    let mut packet = Packet::parse(&win).unwrap();
     if packet.get_error().is_none()
     {
         serialize(&packet, "test_acknowledgment.json", None);
     }
     else
     {
-        error!("{}", packet.get_error().as_ref().unwrap().1);
+        error!("{}", packet.get_error().as_ref().unwrap());
     }
 }
 
@@ -403,7 +401,7 @@ fn test_all_dirs_as_packets()
         for d in &dirs
         {
             //let full: PathBuf = [&path.to_str().unwrap(), d.as_str()].iter().collect();
-            let packet = Packet::parse(&d.path());
+            let packet = Packet::parse(&d.path()).unwrap();
             if packet.get_error().is_none()
             {
                 //write_json(&p, "test_packet_2_7_1.json");
@@ -412,7 +410,7 @@ fn test_all_dirs_as_packets()
             else
             {
                 let p = &packet;
-                error!("{}", p.get_error().as_ref().unwrap().1);
+                error!("{}", p.get_error().as_ref().unwrap());
                 let f_name = [p.get_packet_name(), ".json"].concat();
                 serialize(p, &f_name, Some(errors_path))
             }
@@ -429,7 +427,7 @@ fn test_rc_files()
     logger::StructLogger::new_default();
     let errors_path = "/hard/xar/medo_testdata/errors";
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
-    let  packet = Packet::parse(&d);
+    let  packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         //write_json(&p, "test_packet_2_7_1.json");
@@ -438,7 +436,7 @@ fn test_rc_files()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -454,7 +452,7 @@ fn test_converting_rc()
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/П-У-738-22-ZZZ-268-04PUOEFQ2B");
-    let packet = Packet::parse(&d);
+    let packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         //write_json(&p, "test_packet_2_7_1.json");
@@ -466,7 +464,7 @@ fn test_converting_rc()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -480,7 +478,7 @@ fn test_converting_2_7_1()
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/projects/fullstack/complite_in_parser/test_data/in_docs/271/53580416_1");
-    let packet = Packet::parse(&d);
+    let packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         //write_json(&p, "test_packet_2_7_1.json");
@@ -492,7 +490,7 @@ fn test_converting_2_7_1()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -506,7 +504,7 @@ fn test_converting_ack()
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/52690151");
-    let packet = Packet::parse(&d);
+    let packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         //write_json(&p, "test_packet_2_7_1.json");
@@ -518,7 +516,7 @@ fn test_converting_ack()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -533,7 +531,7 @@ fn test_wrong_xml()
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/29943971 - копия");
-    let packet = Packet::parse(&d);
+    let packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         info!("Успешно обработан пакет {} версии {}", &d.display(), &packet.get_xml().as_ref().unwrap().communication.version);
@@ -544,7 +542,7 @@ fn test_wrong_xml()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -559,7 +557,7 @@ fn test_converting_2_5()
     let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/0/54139378");
-    let mut packet = Packet::parse(&d);
+    let mut packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         //write_json(&p, "test_packet_2_7_1.json");
@@ -571,7 +569,7 @@ fn test_converting_2_5()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }
@@ -599,7 +597,7 @@ fn test_duplicate_field()
     //let c_in_data = PathBuf::from("/hard/xar/medo_testdata/0");
     logger::StructLogger::new_default();
     let d = PathBuf::from("/hard/xar/medo_testdata/error_duplicate_fields/2");
-    let mut packet = Packet::parse(&d);
+    let mut packet = Packet::parse(&d).unwrap();
     if packet.get_error().is_none()
     {
         let attachments = packet.get_container().unwrap().attachments.as_ref().and_then(|a| Some(&a.attachments)).unwrap();
@@ -619,7 +617,7 @@ fn test_duplicate_field()
     else
     {
         let p = &packet;
-        error!("{}", p.get_error().as_ref().unwrap().1);
+        error!("{}", p.get_error().as_ref().unwrap());
         let f_name = [p.get_packet_name(), ".json"].concat();
         serialize(p, &f_name, Some(errors_path))
     }

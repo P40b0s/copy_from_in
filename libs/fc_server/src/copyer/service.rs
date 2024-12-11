@@ -35,37 +35,45 @@ impl PacketCleaner
                                 {
                                     let source_path = Path::new(t.get_source_dir()).join(d);
                                     //надо сконвертить внутренний пакет мэдо в универсальный транспортный пакет что лежит в transport
-                                    let packet_info = PacketInfo::parse(&source_path);
-                                    let packet = Packet::parse(&source_path, packet_info, t);
-                                    if let Some(e) = packet.get_error()
+                                    if let Some(packet_info) = PacketInfo::parse(&source_path)
                                     {
-                                        let wrn = ["Директория ", d, " не является пакетом ", &e.1].concat();
-                                        logger::warn!("{}", &wrn);
-                                        if let Some(files) = get_files(&source_path)
+                                        let packet = Packet::parse(&source_path, packet_info, t);
+                                        if let Some(e) = packet.get_error()
                                         {
-                                            if files.is_empty()
+                                            let wrn = ["Директория ", d, " не является пакетом ", &e].concat();
+                                            logger::warn!("{}", &wrn);
+                                            if let Some(files) = get_files(&source_path)
                                             {
-                                                let _ = std::fs::remove_dir_all(&source_path);
-                                                PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
-                                                let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
-                                                logger::info!("{}", inf);
-                                                count+=1;
+                                                if files.is_empty()
+                                                {
+                                                    let _ = std::fs::remove_dir_all(&source_path);
+                                                    PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
+                                                    let inf = ["В задаче ", t.get_task_name(), " удалена пустая директория ", &source_path.display().to_string()].concat();
+                                                    logger::info!("{}", inf);
+                                                    count+=1;
+                                                }
+                                            }
+                                        }
+                                        else 
+                                        {
+                                            if let Some(pt) = packet.get_packet_info().packet_type.as_ref()
+                                            {
+                                                if t.clean_types.contains(pt)
+                                                {
+                                                    let _ = std::fs::remove_dir_all(&source_path);
+                                                    PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
+                                                    let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
+                                                    logger::info!("{}", inf);
+                                                    count+=1;
+                                                }
                                             }
                                         }
                                     }
                                     else 
                                     {
-                                        if let Some(pt) = packet.get_packet_info().packet_type.as_ref()
-                                        {
-                                            if t.clean_types.contains(pt)
-                                            {
-                                                let _ = std::fs::remove_dir_all(&source_path);
-                                                PacketTable::truncate(t.get_task_name(), &[d.to_owned()], app_state.get_db_pool()).await;
-                                                let inf = ["Пакет ", &source_path.display().to_string(), " типа `", &pt, "` в задаче " , t.get_task_name(),"  удален"].concat();
-                                                logger::info!("{}", inf);
-                                                count+=1;
-                                            }
-                                        }
+                                        let _ = std::fs::remove_file(&source_path);
+                                        let inf = ["Файл не являющийся пакетом ", &source_path.display().to_string(), " ` в задаче " , t.get_task_name(),"  удален"].concat();
+                                        logger::info!("{}", inf);
                                     }
                                 }
                             }

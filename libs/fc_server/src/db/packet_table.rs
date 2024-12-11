@@ -106,7 +106,7 @@ impl FromRow<'_, SqliteRow> for PacketTable
                 requisites: from_json(row, "requisites"),
                 sender_id: row.try_get( "sender_id")?,
                 wrong_encoding: false,
-                error: error.and_then(|e| Some((0, e))),
+                error,
                 pdf_hash: row.try_get("pdf_hash")?,
                 acknowledgment: from_json(row, "acknowledgment"),
                 trace_message: row.try_get("trace_message")?,
@@ -187,7 +187,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
+        .bind(self.packet_info.get_error())
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
@@ -211,7 +211,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
+        .bind(self.packet_info.get_error())
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))
@@ -239,7 +239,7 @@ impl<'a> SqlOperations<'a> for PacketTable
         .bind(&self.packet_info.packet_directory)
         .bind(self.packet_info.packet_type.as_ref())
         .bind(&self.packet_info.delivery_time)
-        .bind(self.packet_info.error.as_ref().and_then(|a|Some(a.1.clone())))
+        .bind(self.packet_info.get_error())
         .bind(self.packet_info.default_pdf.as_ref())
         .bind(self.packet_info.pdf_hash.as_ref())
         .bind(to_json(&self.packet_info.files))

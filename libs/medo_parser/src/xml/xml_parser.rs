@@ -133,10 +133,6 @@ fn process_root_xml(file_path: &PathBuf, paths: &mut Vec<PathBuf>) -> Result<(Co
     {
         logger::warn!("При обработке файла {} \r\nпроизошла ошибка определения кодировки", file_path.display());
     }
-    else
-    {
-        logger::info!("Обработан файл {}", file_path.display());
-    }
     let comm = de.unwrap();
     //парсим файл ltr
     let ltr = process_ltr(file_path);

@@ -142,46 +142,44 @@ impl DirectoriesSpy
 
     async fn copy_with_rules(source_path: &PathBuf, target_dirs: &[PathBuf], packet_name: &str, task: &Task, need_rule_accept: bool)
     {
-        let mut packet = Self::get_packet(&source_path, &task).await;
-        if !Self::autoclean(&source_path, &packet, &task).await
+        if let Some(packet) = Self::get_packet(&source_path, &task).await
         {
-            if !packet.is_err()
+            let mut packet = packet;
+            if !Self::autoclean(&source_path, &packet, &task).await
             {
-                if Self::pass_rules(&source_path, &packet, &task, need_rule_accept).await
+                if !packet.is_err()
                 {
-                    for td in target_dirs
+                    if Self::pass_rules(&source_path, &packet, &task, need_rule_accept).await
                     {
-                        let target_path = Path::new(td).join(packet_name);
-                        if Self::copy_process(&target_path, &source_path, packet_name, &task).await
+                        for td in target_dirs
                         {
-                            packet.add_copy_status(true, target_path.as_path().display().to_string());
+                            let target_path = Path::new(td).join(packet_name);
+                            if Self::copy_process(&target_path, &source_path, packet_name, &task).await
+                            {
+                                packet.add_copy_status(true, target_path.as_path().display().to_string());
+                            }
+                            else 
+                            {
+                                packet.add_copy_status(false, target_path.as_path().display().to_string());
+                            }
                         }
-                        else 
+                        if task.delete_after_copy && packet.copy_ok()
                         {
-                            packet.add_copy_status(false, target_path.as_path().display().to_string());
+                            if let Err(e) = tokio::fs::remove_dir_all(source_path).await
+                            {
+                                error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
+                            }
                         }
-                    }
-                    if task.delete_after_copy && packet.copy_ok()
-                    {
-                        if let Err(e) = tokio::fs::remove_dir_all(source_path).await
-                        {
-                            error!("Ошибка удаления директории {} для задачи {} -> {}",source_path.display(), task.name, e.to_string() );
-                        }
-                    }
-                    new_packet_found(packet).await;
-                }
-            }
-            else
-            {
-                if let Some(err) = packet.get_error()
-                {
-                    if err.0 != -1
-                    {
                         new_packet_found(packet).await;
                     }
                 }
+                else
+                {
+                    new_packet_found(packet).await;
+                }
             }
         }
+        
     }
 
     async fn copy_process(target_path: &PathBuf,
@@ -206,10 +204,17 @@ impl DirectoriesSpy
         }
     }
 
-    async fn get_packet(source_path: &PathBuf, task : &Task) -> Packet
+    async fn get_packet(source_path: &PathBuf, task : &Task) -> Option<Packet>
     {
-        let packet_info = PacketInfo::parse(source_path);
-        Packet::parse(source_path, packet_info, task)
+        if let Some(packet_info) = PacketInfo::parse(source_path)
+        {
+            Some(Packet::parse(source_path, packet_info, task))
+        }
+        else 
+        {
+            None
+        }
+       
     }
 
     async fn pass_rules(source_path: &PathBuf, packet: &Packet, task: &Task, need_rule_accept: bool) -> bool
@@ -321,7 +326,7 @@ async fn new_packet_found(mut packet: Packet)
 {
     if packet.is_err()
     {
-        logger::error!("{}", packet.get_error().as_ref().unwrap().1);
+        logger::error!("{}", packet.get_error().as_ref().unwrap());
     }
     let sended = send_report(packet.get_packet_name(), packet.get_packet_info(), packet.get_task()).await;
     packet.report_sended = sended;
@@ -337,7 +342,7 @@ async fn send_report(packet_name: &str, new_packet: &PacketInfo, task: &Task) ->
     {
         if let Some(e) = new_packet.error.as_ref()
         {
-            logger::error!("{}, уведомление отправлено не будет", e.1);
+            logger::error!("{}, уведомление отправлено не будет", e);
             return false;
         }
         else

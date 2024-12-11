@@ -28,7 +28,7 @@
     "ts-pattern": "^5.5.0",
     "typestyle": "^2.4.0",
     "uuid": "^11.0.2",
-    "vue": "3.5.12"
+    "vue": "3.5.13"
   },
   "devDependencies": {
     "@tauri-apps/cli": "2.1.0",

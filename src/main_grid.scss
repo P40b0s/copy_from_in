@@ -1,4 +1,5 @@
 .main-container {
+  font-family: var(--font);
   display: grid; 
   min-height: 100vh;
   width: 100%;
@@ -6,24 +7,19 @@
   grid-template-rows: auto 1fr auto; 
   gap: 0px 0px; 
   grid-template-areas: 
-    "menu"
+    "header"
     "main-body"
     "footer"; 
 }
-.menu 
-{ 
-  grid-area: menu;
-  font-family: 'Source Code Pro';
+.header 
+{
+  grid-area: header;
 }
 .footer 
-{ 
+{
   grid-area: footer;
-  font-family: 'Source Code Pro';
-
 }
 .main-body 
-{ 
+{
   grid-area: main-body;
-  font-family: 'Source Code Pro';
-
 }

@@ -8,6 +8,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  --font: 'Source Code Pro';
 }
 @font-face 
 {
@@ -23,6 +24,8 @@
   font-weight: bold;
   font-style: normal;
 }
+
+
 
 a 
 {
@@ -44,17 +47,11 @@ body {
   line-height: 1.6 !important;
   overflow-x: hidden;
   overflow-y: hidden;
-  /* display: flex; */
-  /* place-items: center; */
-  /* min-width: 320px; */
-  /* min-height: 100vh; */
 }
 
 #app {
-  /* max-width: 1280px; */
-  /* padding: 2rem; */
   text-align: center;
-  height: 100vh;
+  height: 100%;
 }
 
 @media (prefers-color-scheme: dark) 
@@ -265,7 +262,6 @@ body {
     opacity: 0.8;
   }
 }
-
 
 .hover-button:before 
 {

@@ -13,12 +13,6 @@ import { darkTheme } from 'naive-ui';
 import { Services } from './modules/services.tsx';
 import FileViewer from './modules/file_viewer/FileViewer.vue';
 import Loader2 from './modules/Loader/Loader2.vue';
-export const AppAsync = defineAsyncComponent({
-    loader: () => import ('./app.tsx'),
-    loadingComponent: h(NSpin)
-})
-//slot(name="test" :opened="is_open")
-//slots: test:({ opened }: {opened: boolean})
 export const App = defineComponent({
     setup () 
     {
@@ -38,10 +32,9 @@ export const App = defineComponent({
                     h('div',
                     {
                         class: 'main-container',
-                        fontFamily: 'Source Code Pro'
                     },
                     [
-                        h(Services, {class: 'menu'}),
+                        h(Services, {class: 'header'}),
                         h(MainTab, {class: "main-body"}),
                         h('div', {class: 'footer'}, ""),
                         h(Suspense, 

@@ -16,38 +16,38 @@ import SendersViewer from './Senders/SendersViewer.vue';
 export const MainTab =  defineComponent({
     setup (props) 
     {
-    const crd = () => 
-    {
-        return h(NCard,
-            {
-                style:
-                {
-                    marginBottom: '0px',
-                    height: '100%',
-                } as CSSProperties
-            },
-            {
-                header:() =>
-                h('div',
-                {
-                    style:
-                    {
-                        display: 'flex',
-                        flexDirection: 'row'
-                    } as CSSProperties
-                },
-                [
-                ]),
-                default:() =>  tab_view(),
-                    // h(Suspense, 
-                    // null,
-                    // {
-                    //     default:()=> h(FileViewer),
-                    //     fallback:() => h(Loader2)
-                    // })])
-            }
-        )
-    }
+    // const crd = () => 
+    // {
+    //     return h(NCard,
+    //         {
+    //             style:
+    //             {
+    //                 marginBottom: '0px',
+    //                 height: '100%',
+    //             } as CSSProperties
+    //         },
+    //         {
+    //             header:() =>
+    //             h('div',
+    //             {
+    //                 style:
+    //                 {
+    //                     display: 'flex',
+    //                     flexDirection: 'row'
+    //                 } as CSSProperties
+    //             },
+    //             [
+    //             ]),
+    //             default:() =>  tab_view(),
+    //                 // h(Suspense, 
+    //                 // null,
+    //                 // {
+    //                 //     default:()=> h(FileViewer),
+    //                 //     fallback:() => h(Loader2)
+    //                 // })])
+    //         }
+    //     )
+    // }
 
     const tab_view = () =>
     {
@@ -135,10 +135,10 @@ export const MainTab =  defineComponent({
         )
     }
 
-    return {crd}
+    return {tab_view}
     },
     render ()
     {
-        return this.crd();
+        return this.tab_view();
     }
 })

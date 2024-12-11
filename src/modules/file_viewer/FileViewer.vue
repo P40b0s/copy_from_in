@@ -194,6 +194,7 @@ onUnmounted(()=>
 </script>
     
 <style lang="scss">
+
 .pdf-container
 {
   height: 100%;
@@ -234,6 +235,7 @@ onUnmounted(()=>
   min-width: 650px;
   overflow-x: hidden;
   overflow-y: hidden;
+  font-family: var(--font);
   .n-base-selection .n-base-selection-label
   {
     height: initial !important;

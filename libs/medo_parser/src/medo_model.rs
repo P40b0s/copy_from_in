@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use utilites::Date;
 #[cfg(feature = "all")]
 use crate::packet::Packet;
+use crate::packet::PacketError;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -55,7 +56,7 @@ pub struct PacketInfo
     pub delivery_time : String,
     pub wrong_encoding: bool,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub error: Option<(i8, String)>,
+    pub error: Option<String>,
     pub files: Vec<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub requisites: Option<Requisites>,
@@ -82,10 +83,18 @@ impl PacketInfo
     {
        Path::new(&self.packet_directory).to_owned()
     }
-    #[cfg(feature = "all")]
-    pub fn parse<P: AsRef<Path>>(path: P) -> Self
+    pub fn add_error<E: ToString>(&mut self, e: E)
     {
-        Packet::parse(path).into()
+        self.error = Some(e.to_string());
+    }
+    pub fn get_error(&self) -> Option<&String>
+    {
+        self.error.as_ref()
+    }
+    #[cfg(feature = "all")]
+    pub fn parse<P: AsRef<Path> + Clone>(path: P) -> Option<Self>
+    {
+        Packet::parse(path).and_then(|p|Some(p.into()))
     }
 }
 

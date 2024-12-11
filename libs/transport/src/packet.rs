@@ -35,6 +35,7 @@ impl Packet
     /// `medo_parser::PacketInfo::parse()` -> `medo_parser::Packet::parse()`
     /// меняем, сделал футуру чтобы весь парсер с собой не таскать а только модель, поэтому от прозрачного проброса пришлось отказаться  
     /// запускаем отдельно и передаем сюда
+    /// если packet_info не является пакетов возвращаем None
     pub fn parse<P: AsRef<Path>>(path: P, packet_info: PacketInfo, task: &Task) -> Self
     {
         let path = Path::new(path.as_ref());
@@ -83,7 +84,7 @@ impl Packet
         let mut pi = PacketInfo::default();
         pi.packet_directory = name.to_string();
         pi.delivery_time = Self::time_now();
-        pi.error = Some((1, error.to_string()));
+        pi.add_error(error);
         Self
         {
             id: Self::id(task.get_task_name(), &pi.packet_directory),
@@ -140,14 +141,18 @@ impl Packet
     {
         &self.packet_info
     }
-    pub fn get_error(&self) -> &Option<(i8, String)>
+    pub fn get_error(&self) -> Option<&String>
     {
-        &self.packet_info.error
+        self.packet_info.get_error()
     }
     pub fn add_copy_status(&mut self, is_copied: bool, path: String)
     {
         self.copy_status.push(
-            CopyStatus { copy_ok: is_copied, copy_path: path }
+            CopyStatus 
+            { 
+                copy_ok: is_copied,
+                copy_path: path
+            }
         );
     }
     ///Все файлы успешно скопированы

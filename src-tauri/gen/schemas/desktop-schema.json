@@ -1667,56 +1667,6 @@
           "const": "date:deny-get-date-now"
         },
         {
-          "description": "Default plugin permissions.",
-          "type": "string",
-          "const": "packets:default"
-        },
-        {
-          "description": "Enables the allow-$get_count command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-count"
-        },
-        {
-          "description": "Enables the allow-$get_file_body command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-file-body"
-        },
-        {
-          "description": "Enables the allow-$get_files_list command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-files-list"
-        },
-        {
-          "description": "Enables the allow-$get_packets_list command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-packets-list"
-        },
-        {
-          "description": "Enables the allow-$get_pdf_page command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-pdf-page"
-        },
-        {
-          "description": "Enables the allow-$get_pdf_pages_count command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-pdf-pages-count"
-        },
-        {
-          "description": "Enables the allow-$get_senders command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$get-senders"
-        },
-        {
-          "description": "Enables the allow-$search_packets command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$search-packets"
-        },
-        {
-          "description": "Enables the allow-$update_sender command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:allow-allow-$update-sender"
-        },
-        {
           "description": "Enables the get_count command without any pre-configured scope.",
           "type": "string",
           "const": "packets:allow-get-count"
@@ -1760,51 +1710,6 @@
           "description": "Enables the update_sender command without any pre-configured scope.",
           "type": "string",
           "const": "packets:allow-update-sender"
-        },
-        {
-          "description": "Denies the allow-$get_count command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-count"
-        },
-        {
-          "description": "Denies the allow-$get_file_body command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-file-body"
-        },
-        {
-          "description": "Denies the allow-$get_files_list command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-files-list"
-        },
-        {
-          "description": "Denies the allow-$get_packets_list command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-packets-list"
-        },
-        {
-          "description": "Denies the allow-$get_pdf_page command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-pdf-page"
-        },
-        {
-          "description": "Denies the allow-$get_pdf_pages_count command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-pdf-pages-count"
-        },
-        {
-          "description": "Denies the allow-$get_senders command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$get-senders"
-        },
-        {
-          "description": "Denies the allow-$search_packets command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$search-packets"
-        },
-        {
-          "description": "Denies the allow-$update_sender command without any pre-configured scope.",
-          "type": "string",
-          "const": "packets:deny-allow-$update-sender"
         },
         {
           "description": "Denies the get_count command without any pre-configured scope.",

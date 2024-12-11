@@ -2,14 +2,15 @@ import { invoke, InvokeArgs } from "@tauri-apps/api/core";
 import { event } from "@tauri-apps/api";
 import { UnlistenFn, listen } from "@tauri-apps/api/event";
 
+/**в вресии таури 2 это потеряло смысл */
 function is_tauri() : boolean
 {
     // @ts-ignore
     //if (window.__TAURI_IPC__)  
-    if (window.__TAURI__.core || window.__TAURI_IPC__) 
-        return true;
-    else
-        return true;
+    //if (window.__TAURI__.core || window.__TAURI_IPC__) 
+    //    return true;
+    //else
+    return true;
 }
 
 export class Unlistener
@@ -41,7 +42,7 @@ export abstract class AbstractEvents<E extends string>
         }
         else
         {
-            console.error("таури не заинжекчен!", window.__TAURI_IPC__)
+            console.error("таури не заинжекчен!")
             return new Unlistener(undefined);
         }
     }
